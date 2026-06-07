@@ -43,12 +43,16 @@ final class ChatViewModel {
 
     func loadModel() async {
         state = .loading
-
         do {
+            print("shakib Starting model load")
+
             let model = try await #huggingFaceLoadModelContainer(
-                configuration: LLMRegistry.qwen3_4b_4bit
+                configuration: LLMRegistry.qwen3_0_6b_4bit
             )
+            print("shakib Model loaded")
+
             session = ChatSession(model)
+            print("shakib Session created")
             state = .ready
         } catch {
             state = .failed(error.localizedDescription)
