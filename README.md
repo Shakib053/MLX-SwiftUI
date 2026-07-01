@@ -15,6 +15,15 @@ MLX-SwiftUI is a compact on-device AI chat application built to demonstrate prac
 - Clean chat composer with user and assistant message bubbles.
 - Local-first interaction flow without relying on a hosted API.
 
+## Project Structure
+
+```text
+MLX-SwiftUI
+├── MLX_SwiftUIApp.swift
+├── ContentView.swift
+└── ChatViewModel.swift
+```
+
 ## Tech Stack
 
 - Swift
@@ -31,6 +40,7 @@ MLX-SwiftUI is a compact on-device AI chat application built to demonstrate prac
 - `ContentView` manages the visible UI states, chat layout, message bubbles, loading view, error view, and composer.
 - `ChatViewModel` handles model loading, session creation, prompt submission, response updates, and chat state.
 
+
 ## Getting Started
 
 1. Open `MLX-SwiftUI.xcodeproj` in Xcode.
@@ -38,10 +48,11 @@ MLX-SwiftUI is a compact on-device AI chat application built to demonstrate prac
 3. Build and run the app on an iPhone or iPad simulator/device.
 4. On first launch, the model may need to download. Later launches reuse the cached model.
 
-## Project Highlights
+## Future Improvements
 
-- Demonstrates practical on-device AI integration in a native iOS app.
-- Uses modern SwiftUI and the Observation framework for state-driven UI.
-- Handles asynchronous model loading, prompt execution, and failure recovery.
-- Presents a focused local AI chat experience suitable for portfolio and technical review.
-
+- Fallback for simulators and model download failure.
+- Streaming responses.
+- Chat history persistence.
+- Model selection.
+- Better error handling.
+- Performance optimization.
