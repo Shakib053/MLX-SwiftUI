@@ -16,11 +16,25 @@
 
 /* Begin PBXFileReference section */
 		0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MLX-SwiftUI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0C35EDE22FFD5F160004A005 /* Exceptions for "MLX-SwiftUI" folder in "MLX-SwiftUI" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0C3B37AD2FD1CF730062165A /* MLX-SwiftUI */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0C3B37B02FD1CF730062165A /* MLX-SwiftUI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0C35EDE22FFD5F160004A005 /* Exceptions for "MLX-SwiftUI" folder in "MLX-SwiftUI" target */,
+			);
 			path = "MLX-SwiftUI";
 			sourceTree = "<group>";
 		};
@@ -45,6 +59,7 @@
 		0C3B37A52FD1CF730062165A = {
 			isa = PBXGroup;
 			children = (
+				4D1A100A3C1E4D2C8A0F0103 /* Config */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
 				0C3B37AF2FD1CF730062165A /* Products */,
 			);
@@ -56,6 +71,14 @@
 				0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4D1A100A3C1E4D2C8A0F0103 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */,
+			);
+			name = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -269,6 +292,7 @@
 		};
 		0C3B37BA2FD1CF740062165A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -277,6 +301,9 @@
 				DEVELOPMENT_TEAM = GRW9NYZR4G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
+				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
+				INFOPLIST_KEY_HuggingFaceToken = "$(HF_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,6 +328,7 @@
 		};
 		0C3B37BB2FD1CF740062165A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -309,6 +337,9 @@
 				DEVELOPMENT_TEAM = GRW9NYZR4G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
+				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
+				INFOPLIST_KEY_HuggingFaceToken = "$(HF_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

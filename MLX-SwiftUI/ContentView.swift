@@ -39,10 +39,10 @@ struct ContentView: View {
         VStack(spacing: 14) {
             ProgressView()
                 .tint(.white)
-            Text("Loading Qwen...")
+            Text(viewModel.loadingTitle)
                 .font(.system(.title2, design: .rounded, weight: .semibold))
                 .foregroundStyle(.white)
-            Text("The model will download the first time, then open instantly later.")
+            Text(viewModel.loadingMessage)
                 .font(.system(.footnote, design: .rounded))
                 .foregroundStyle(.white.opacity(0.75))
                 .multilineTextAlignment(.center)
@@ -112,7 +112,7 @@ struct ContentView: View {
                 Text("Qwen 3")
                     .font(.system(.headline, design: .rounded, weight: .semibold))
                     .foregroundStyle(.white)
-                Text("Local chat")
+                Text(viewModel.headerSubtitle)
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(.white.opacity(0.7))
             }
