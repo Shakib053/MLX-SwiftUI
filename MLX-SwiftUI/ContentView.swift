@@ -90,12 +90,11 @@ struct ContentView: View {
                     }
                     .padding(16)
                 }
-                .onChange(of: viewModel.messages.count) { _ in
-                    if let lastID = viewModel.messages.last?.id {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            proxy.scrollTo(lastID, anchor: .bottom)
-                        }
-                    }
+                .onChange(of: viewModel.messages.count) { _, _ in
+                    scrollToLatestMessage(with: proxy)
+                }
+                .onChange(of: viewModel.messages.last?.text) { _, _ in
+                    scrollToLatestMessage(with: proxy)
                 }
             }
 
@@ -171,13 +170,29 @@ struct ContentView: View {
     }
 
     private func bubbleBody(_ message: ChatMessage) -> some View {
-        Text(message.text.isEmpty && message.role == .assistant && viewModel.isSending ? "…" : message.text)
+        Text(displayText(for: message))
             .font(.system(.body, design: .rounded))
             .foregroundStyle(message.role == .user ? .black : .white)
             .padding(14)
             .background(message.role == .user ? Color.white.opacity(0.9) : Color.white.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .frame(maxWidth: 320, alignment: .leading)
+    }
+
+    private func displayText(for message: ChatMessage) -> String {
+        if message.text.isEmpty && message.role == .assistant && viewModel.isSending {
+            return "Thinking..."
+        }
+
+        return message.text
+    }
+
+    private func scrollToLatestMessage(with proxy: ScrollViewProxy) {
+        guard let lastID = viewModel.messages.last?.id else { return }
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            proxy.scrollTo(lastID, anchor: .bottom)
+        }
     }
 }
 

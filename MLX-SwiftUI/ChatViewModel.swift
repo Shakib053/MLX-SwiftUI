@@ -6,8 +6,62 @@ import MLXLLM
 import HuggingFace
 import Tokenizers
 
+struct ChatRequest {
+    let prompt: String
+    let systemPrompt: String
+    let maxTokens: Int
+    let temperature: Double
+
+    init(
+        prompt: String,
+        systemPrompt: String = "Return only the final answer to the user's question. Do not include hidden reasoning, internal prompts, role labels, or chat-template tokens.",
+        maxTokens: Int = 512,
+        temperature: Double = 0.7
+    ) {
+        self.prompt = prompt
+        self.systemPrompt = systemPrompt
+        self.maxTokens = maxTokens
+        self.temperature = temperature
+    }
+}
+
+typealias ChatTextStream = AsyncThrowingStream<String, Error>
+
 protocol ChatBackend {
-    func respond(to prompt: String) async throws -> String
+    func streamResponse(for request: ChatRequest) -> ChatTextStream
+}
+
+extension ChatBackend {
+    func streamResponse(to prompt: String) -> ChatTextStream {
+        streamResponse(for: ChatRequest(prompt: prompt))
+    }
+}
+
+private enum ChatStreamAdapter {
+    static func textStream<Source: AsyncSequence>(
+        from source: Source,
+        text: @escaping (Source.Element) -> String?
+    ) -> ChatTextStream {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await event in source {
+                        guard let chunk = text(event), !chunk.isEmpty else {
+                            continue
+                        }
+                        continuation.yield(chunk)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
 }
 
 struct LocalMLXChatBackend: ChatBackend {
@@ -17,63 +71,54 @@ struct LocalMLXChatBackend: ChatBackend {
         self.session = session
     }
 
-    func respond(to prompt: String) async throws -> String {
-        let response = try await session.respond(to: prompt)
-        return ChatResponseSanitizer.clean(response)
+    func streamResponse(for request: ChatRequest) -> ChatTextStream {
+        session.streamResponse(to: request.prompt)
     }
 }
 
 struct HuggingFaceAPIChatBackend: ChatBackend {
-    private let apiURL = URL(string: "https://router.huggingface.co/v1/chat/completions")!
     private let model = "Qwen/Qwen3-4B-Instruct-2507"
-    private let token: String
-    private let urlSession: URLSession
+    private let client: InferenceClient
 
     init(token: String, urlSession: URLSession = .shared) {
-        self.token = token
-        self.urlSession = urlSession
+        self.client = InferenceClient(
+            session: urlSession,
+            host: URL(string: "https://router.huggingface.co")!,
+            bearerToken: token
+        )
     }
 
-    func respond(to prompt: String) async throws -> String {
-        var request = URLRequest(url: apiURL)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(
-            HuggingFaceChatRequest(
-                model: model,
-                messages: [
-                    .init(
-                        role: "system",
-                        content: "Return only the final answer to the user's question. Do not include hidden reasoning, internal prompts, role labels, or chat-template tokens."
-                    ),
-                    .init(role: "user", content: prompt)
-                ],
-                maxTokens: 512,
-                temperature: 0.7
-            )
+    func streamResponse(for request: ChatRequest) -> ChatTextStream {
+        let stream = client.chatCompletionStream(
+            model: model,
+            messages: [
+                ChatCompletion.Message.system(request.systemPrompt),
+                ChatCompletion.Message.user(request.prompt)
+            ],
+            temperature: request.temperature,
+            maxTokens: request.maxTokens
         )
 
-        let (data, response) = try await urlSession.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ChatBackendError.invalidResponse
+        return ChatStreamAdapter.textStream(from: stream) { chunk in
+            chunk.choices.first?.message.content?.plainText
         }
+    }
+}
 
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            let apiError = try? JSONDecoder().decode(HuggingFaceErrorResponse.self, from: data)
-            throw ChatBackendError.apiError(
-                statusCode: httpResponse.statusCode,
-                message: apiError?.error ?? String(data: data, encoding: .utf8)
-            )
+private extension ChatCompletion.Message.Content {
+    var plainText: String {
+        switch self {
+        case .text(let text):
+            return text
+        case .mixed(let items):
+            return items.compactMap { item in
+                if case .text(let text) = item {
+                    return text
+                }
+                return nil
+            }
+            .joined()
         }
-
-        let decoded = try JSONDecoder().decode(HuggingFaceChatResponse.self, from: data)
-        guard let content = decoded.choices.first?.message.content.trimmingCharacters(in: .whitespacesAndNewlines),
-              !content.isEmpty else {
-            throw ChatBackendError.emptyResponse
-        }
-
-        return ChatResponseSanitizer.clean(content)
     }
 }
 
@@ -243,41 +288,6 @@ enum ChatBackendError: LocalizedError {
     }
 }
 
-private struct HuggingFaceChatRequest: Encodable {
-    let model: String
-    let messages: [Message]
-    let maxTokens: Int
-    let temperature: Double
-
-    enum CodingKeys: String, CodingKey {
-        case model
-        case messages
-        case maxTokens = "max_tokens"
-        case temperature
-    }
-
-    struct Message: Encodable {
-        let role: String
-        let content: String
-    }
-}
-
-private struct HuggingFaceChatResponse: Decodable {
-    let choices: [Choice]
-
-    struct Choice: Decodable {
-        let message: Message
-    }
-
-    struct Message: Decodable {
-        let content: String
-    }
-}
-
-private struct HuggingFaceErrorResponse: Decodable {
-    let error: String?
-}
-
 enum ChatState: Equatable {
     case loading
     case ready
@@ -377,10 +387,24 @@ final class ChatViewModel {
         isSending = true
 
         do {
-            let responseText = try await backend.respond(to: prompt)
+            let request = ChatRequest(prompt: prompt)
+            var responseText = ""
+            let stream = backend.streamResponse(for: request)
+
+            for try await chunk in stream {
+                responseText += chunk
+
+                if let lastIndex = messages.indices.last {
+                    messages[lastIndex].text = responseText
+                }
+            }
 
             if let lastIndex = messages.indices.last {
-                messages[lastIndex].text = responseText
+                let finalText = ChatResponseSanitizer.clean(responseText)
+                guard !finalText.isEmpty else {
+                    throw ChatBackendError.emptyResponse
+                }
+                messages[lastIndex].text = finalText
             }
             isSending = false
         } catch {
@@ -400,7 +424,7 @@ final class ChatViewModel {
             }
             return sanitizedToken(value)
         }
-        let token = Secrets.hfToken
+        let token = infoPlistValues.first ?? Secrets.hfToken
 
         guard !token.isEmpty else {
             throw ChatBackendError.missingHuggingFaceToken(
