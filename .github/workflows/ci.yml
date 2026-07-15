@@ -18,12 +18,6 @@ jobs:
         run: |
           echo "HF_TOKEN = ci-placeholder" > Secrets.xcconfig
 
-      - name: Show available schemes
-        run: |
-          xcodebuild \
-            -project MLX-SwiftUI.xcodeproj \
-            -list
-
       - name: Build MLX-SwiftUI
         run: |
           xcodebuild \
