@@ -18,11 +18,17 @@ jobs:
         run: |
           echo "HF_TOKEN = ci-placeholder" > Secrets.xcconfig
 
+      - name: Show available schemes
+        run: |
+          xcodebuild \
+            -project MLX-SwiftUI.xcodeproj \
+            -list
+
       - name: Build MLX-SwiftUI
         run: |
           xcodebuild \
             -project MLX-SwiftUI.xcodeproj \
-            -scheme MLX-SwiftUI-CI \
+            -scheme MLX-SwiftUI \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -skipMacroValidation \
