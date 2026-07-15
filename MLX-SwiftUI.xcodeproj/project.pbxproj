@@ -40,6 +40,11 @@
 			path = "MLX-SwiftUI";
 			sourceTree = "<group>";
 		};
+		0CAA868E3007F8DE003D8F7F /* .github */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .github;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +66,7 @@
 		0C3B37A52FD1CF730062165A = {
 			isa = PBXGroup;
 			children = (
+				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
 				4D1A100A3C1E4D2C8A0F0103 /* Config */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
@@ -101,6 +107,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
+				0CAA868E3007F8DE003D8F7F /* .github */,
 			);
 			name = "MLX-SwiftUI";
 			packageProductDependencies = (
