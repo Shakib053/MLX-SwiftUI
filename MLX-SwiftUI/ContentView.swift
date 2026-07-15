@@ -1,3 +1,10 @@
+//
+//  ContentView.swift
+//  MLX-SwiftUI
+//
+//  Created by Kazi Tanjim Shakib on 4/6/26.
+//
+
 import SwiftUI
 
 struct ContentView: View {
@@ -9,10 +16,6 @@ struct ContentView: View {
 
             Tab("Models", systemImage: "cpu") {
                 PlaceholderTabView(title: "Models", systemImage: "cpu")
-            }
-
-            Tab("Personas", systemImage: "person.2") {
-                PlaceholderTabView(title: "Personas", systemImage: "person.2")
             }
 
             Tab("Settings", systemImage: "gearshape") {
