@@ -7,15 +7,24 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Build and Test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Create temporary configuration
         run: |
-          xcodebuild build \
-            -scheme MLX-SwiftUI \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
-            -project MLX-SwiftUI.xcodeproj
-            -skipMacroValidation
+          echo "HF_TOKEN = ci-placeholder" > Secrets.xcconfig
+
+      - name: Build MLX-SwiftUI
+        run: |
+          xcodebuild \
+            -project MLX-SwiftUI.xcodeproj \
+            -scheme MLX-SwiftUI-CI \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
