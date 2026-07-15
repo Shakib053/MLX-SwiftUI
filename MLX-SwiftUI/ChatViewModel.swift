@@ -1,3 +1,10 @@
+//
+//  ChatViewModel.swift
+//  MLX-SwiftUI
+//
+//  Created by Kazi Tanjim Shakib on 4/6/26.
+//
+
 import Foundation
 import Observation
 import MLXHuggingFace
