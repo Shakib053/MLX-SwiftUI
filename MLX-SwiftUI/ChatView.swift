@@ -18,6 +18,8 @@ struct ChatView: View {
             switch viewModel.state {
             case .loading:
                 loadingView
+            case .downloading:
+                downloadView
             case .ready:
                 chatView
             case .failed(let message):
@@ -61,6 +63,63 @@ struct ChatView: View {
         .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
+    private var downloadView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.white)
+
+            Text(viewModel.loadingTitle)
+                .font(.system(.title2, design: .rounded, weight: .semibold))
+                .foregroundStyle(.white)
+
+            ProgressView(value: viewModel.downloadProgress)
+                .tint(.orange)
+
+            Text("\(Int(viewModel.downloadProgress * 100))%")
+                .font(.system(.headline, design: .rounded, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Text(viewModel.loadingMessage)
+                .font(.system(.footnote, design: .rounded))
+                .foregroundStyle(.white.opacity(0.75))
+                .multilineTextAlignment(.center)
+
+            if let fallbackError = viewModel.fallbackError {
+                Text(fallbackError)
+                    .font(.system(.footnote, design: .rounded))
+                    .foregroundStyle(.yellow)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button {
+                Task { await viewModel.useHostedFallback() }
+            } label: {
+                if viewModel.isConnectingToFallback {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Label("Chat Online While Downloading", systemImage: "cloud.fill")
+                }
+            }
+            .font(.system(.headline, design: .rounded, weight: .semibold))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(.white.opacity(0.14), in: Capsule())
+            .foregroundStyle(.white)
+            .disabled(viewModel.isConnectingToFallback)
+
+            Text("Online chat sends your prompts to the hosted Hugging Face service.")
+                .font(.system(.caption2, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+        }
+        .padding(28)
+        .frame(maxWidth: 420)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding()
+    }
+
     private func errorView(_ message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -75,13 +134,19 @@ struct ChatView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             Button("Try Again") {
-                Task { await viewModel.loadModel() }
+                viewModel.retryDownload()
             }
             .font(.system(.headline, design: .rounded, weight: .semibold))
             .padding(.horizontal, 22)
             .padding(.vertical, 14)
             .background(.white.opacity(0.14), in: Capsule())
             .foregroundStyle(.white)
+
+            Button("Chat Online Instead") {
+                Task { await viewModel.useHostedFallback() }
+            }
+            .font(.system(.subheadline, design: .rounded, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.85))
         }
         .padding(28)
     }
@@ -89,6 +154,11 @@ struct ChatView: View {
     private var chatView: some View {
         VStack(spacing: 0) {
             header
+
+            if viewModel.backendMode == .hosted,
+               viewModel.isLocalModelReady || viewModel.downloadError != nil {
+                localModelStatusBanner
+            }
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -113,6 +183,27 @@ struct ChatView: View {
         .onAppear {
             isComposerFocused = true
         }
+    }
+
+    private var localModelStatusBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: viewModel.isLocalModelReady ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+            Text(viewModel.isLocalModelReady
+                 ? "Local model ready for your next chat"
+                 : "Local model download failed")
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+            Spacer()
+            if viewModel.downloadError != nil {
+                Button("Retry") {
+                    viewModel.retryDownload()
+                }
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(viewModel.isLocalModelReady ? Color.green.opacity(0.25) : Color.orange.opacity(0.25))
     }
 
     private var header: some View {
