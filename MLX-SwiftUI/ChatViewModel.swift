@@ -297,9 +297,56 @@ enum ChatBackendError: LocalizedError {
 
 enum ChatState: Equatable {
     case loading
+    case downloading
     case ready
     case failed(String)
 }
+
+enum ChatBackendMode: Equatable {
+    case local
+    case hosted
+}
+
+#if DEBUG
+enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
+    case normal
+    case slow
+    case cached
+    case localFailure
+    case hostedFailure
+    case bothUnavailable
+    case hostedOnly
+
+    static let defaultsKey = "simulatorDownloadScenario"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .normal: "Normal download (20 seconds)"
+        case .slow: "Slow download (60 seconds)"
+        case .cached: "Cached model"
+        case .localFailure: "Local download failure"
+        case .hostedFailure: "Hosted fallback failure"
+        case .bothUnavailable: "Both unavailable"
+        case .hostedOnly: "Hosted only"
+        }
+    }
+
+    static var selected: SimulatorDownloadScenario {
+        get {
+            guard let value = UserDefaults.standard.string(forKey: defaultsKey),
+                  let scenario = SimulatorDownloadScenario(rawValue: value) else {
+                return .normal
+            }
+            return scenario
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: defaultsKey)
+        }
+    }
+}
+#endif
 
 struct ChatMessage: Identifiable, Equatable {
     let id = UUID()
@@ -319,69 +366,203 @@ final class ChatViewModel {
     var messages: [ChatMessage] = []
     var draft = ""
     var isSending = false
+    var downloadProgress = 0.0
+    var downloadError: String?
+    var fallbackError: String?
+    var isConnectingToFallback = false
+    var isLocalModelReady = false
+    var backendMode: ChatBackendMode?
 
     var loadingTitle: String {
-        #if targetEnvironment(simulator)
-        "Connecting to hosted fallback..."
-        #else
-        "Loading Qwen..."
-        #endif
+        state == .downloading ? "Downloading Qwen for offline chat" : "Preparing Qwen..."
     }
 
     var loadingMessage: String {
-        #if targetEnvironment(simulator)
-        "Simulator builds use Hugging Face Inference Providers instead of downloading a local model."
+        #if DEBUG && targetEnvironment(simulator)
+        "Simulator is reproducing the device download flow. No MLX model is being downloaded."
         #else
-        "The model will download the first time, then open instantly later."
+        "The model downloads once and is reused from the device cache on later launches."
         #endif
     }
 
     var headerSubtitle: String {
-        #if targetEnvironment(simulator)
-        "Simulator fallback"
-        #else
-        "Local chat"
-        #endif
+        if backendMode == .local {
+            return "Private on-device chat"
+        }
+        if isLocalModelReady {
+            return "Online fallback • Local model ready for next chat"
+        }
+        if downloadError != nil {
+            return "Online fallback • Local download failed"
+        }
+        if downloadProgress > 0, downloadProgress < 1 {
+            return "Online fallback • Local model \(Int(downloadProgress * 100))%"
+        }
+        return "Online fallback"
     }
 
     private var backend: (any ChatBackend)?
     private var didStartLoading = false
+    private var localLoadingTask: Task<Void, Never>?
 
     func start() async {
         guard !didStartLoading else { return }
         didStartLoading = true
-        await loadModel()
+        #if DEBUG && targetEnvironment(simulator)
+        if SimulatorDownloadScenario.selected == .hostedOnly {
+            await connectHosted(isInitialLoad: true)
+        } else {
+            startLocalModelLoad()
+        }
+        #else
+        startLocalModelLoad()
+        #endif
     }
 
     func loadModel() async {
-        state = .loading
-        do {
-            #if targetEnvironment(simulator)
-            print("[ChatViewModel] Starting Hugging Face simulator fallback")
-            let token = try huggingFaceToken()
-            backend = HuggingFaceAPIChatBackend(token: token)
-            print("[ChatViewModel] Fallback backend created")
-            #else
-            print("[ChatViewModel] Starting model load")
+        retryDownload()
+    }
 
-            let model = try await #huggingFaceLoadModelContainer(
-                configuration: LLMRegistry.qwen3_0_6b_4bit
-            )
-            print("[ChatViewModel] Model loaded")
+    func useHostedFallback() async {
+        await connectHosted(isInitialLoad: false)
+    }
 
-            backend = LocalMLXChatBackend(
-                session: ChatSession(
-                    model,
-                    additionalContext: ["enable_thinking": false]
+    func retryDownload() {
+        localLoadingTask?.cancel()
+        startLocalModelLoad()
+    }
+
+    private func startLocalModelLoad() {
+        downloadProgress = 0
+        downloadError = nil
+        fallbackError = nil
+        isLocalModelReady = false
+        if backend == nil {
+            state = .downloading
+        }
+
+        localLoadingTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                #if DEBUG && targetEnvironment(simulator)
+                try await self.runSimulatedDownload()
+                await self.simulatedDownloadCompleted()
+                #else
+                let model = try await #huggingFaceLoadModelContainer(
+                    configuration: LLMRegistry.qwen3_0_6b_4bit,
+                    progressHandler: { progress in
+                        let fraction = progress.fractionCompleted
+                        Task { @MainActor [weak self] in
+                            self?.updateDownloadProgress(fraction)
+                        }
+                    }
                 )
-            )
-            print("[ChatViewModel] Local backend created")
-            #endif
-            state = .ready
-        } catch {
-            state = .failed(error.localizedDescription)
+                let localBackend = LocalMLXChatBackend(
+                    session: ChatSession(
+                        model,
+                        additionalContext: ["enable_thinking": false]
+                    )
+                )
+                self.localDownloadCompleted(with: localBackend)
+                #endif
+            } catch is CancellationError {
+                return
+            } catch {
+                self.localDownloadFailed(error.localizedDescription)
+            }
         }
     }
+
+    private func updateDownloadProgress(_ fraction: Double) {
+        downloadProgress = max(downloadProgress, min(max(fraction, 0), 1))
+    }
+
+    private func localDownloadCompleted(with localBackend: any ChatBackend) {
+        downloadProgress = 1
+        isLocalModelReady = true
+        downloadError = nil
+
+        guard backend == nil else { return }
+        backend = localBackend
+        backendMode = .local
+        state = .ready
+    }
+
+    private func localDownloadFailed(_ message: String) {
+        downloadError = message
+        if backend == nil {
+            state = .failed(message)
+        }
+    }
+
+    private func connectHosted(isInitialLoad: Bool) async {
+        guard backend == nil else { return }
+        isConnectingToFallback = true
+        fallbackError = nil
+        if isInitialLoad {
+            state = .loading
+        }
+
+        do {
+            #if DEBUG && targetEnvironment(simulator)
+            let scenario = SimulatorDownloadScenario.selected
+            if scenario == .hostedFailure || scenario == .bothUnavailable {
+                throw ChatBackendError.apiError(statusCode: 503, message: "Simulated hosted fallback failure")
+            }
+            #endif
+            let token = try huggingFaceToken()
+            backend = HuggingFaceAPIChatBackend(token: token)
+            backendMode = .hosted
+            state = .ready
+        } catch {
+            fallbackError = error.localizedDescription
+            if isInitialLoad || downloadError != nil {
+                let message = downloadError.map { "\($0) Online fallback also failed: \(error.localizedDescription)" }
+                    ?? error.localizedDescription
+                state = .failed(message)
+            } else {
+                state = .downloading
+            }
+        }
+        isConnectingToFallback = false
+    }
+
+    #if DEBUG && targetEnvironment(simulator)
+    private func runSimulatedDownload() async throws {
+        let scenario = SimulatorDownloadScenario.selected
+        if scenario == .cached {
+            updateDownloadProgress(1)
+            return
+        }
+
+        let duration: Double = scenario == .slow ? 60 : 20
+        let steps = Int(duration * 5)
+        for step in 1...steps {
+            try Task.checkCancellation()
+            try await Task.sleep(for: .milliseconds(200))
+            let fraction = Double(step) / Double(steps)
+            updateDownloadProgress(fraction)
+
+            if (scenario == .localFailure || scenario == .bothUnavailable), fraction >= 0.45 {
+                throw ChatBackendError.apiError(
+                    statusCode: 500,
+                    message: "Simulated local model download failure"
+                )
+            }
+        }
+    }
+
+    private func simulatedDownloadCompleted() async {
+        downloadProgress = 1
+        isLocalModelReady = true
+        downloadError = nil
+
+        // MLX cannot run in Simulator, so completion only verifies the UI flow.
+        if backend == nil {
+            await connectHosted(isInitialLoad: true)
+        }
+    }
+    #endif
 
     func sendPrompt() async {
         let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -453,10 +634,10 @@ final class ChatViewModel {
 
 enum Secrets {
     static var hfToken: String {
-        guard let token = Bundle.main.object(forInfoDictionaryKey: "HFToken") as? String,
-              !token.isEmpty else {
-            fatalError("Missing HF_TOKEN — check Secrets.xcconfig and Info.plist")
+        guard let token = Bundle.main.object(forInfoDictionaryKey: "HFToken") as? String else {
+            return ""
         }
-        return token
+        let sanitized = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        return sanitized.hasPrefix("$(") ? "" : sanitized
     }
 }
