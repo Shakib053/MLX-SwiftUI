@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ChatView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var viewModel = ChatViewModel()
     @FocusState private var isComposerFocused: Bool
 
@@ -29,6 +30,7 @@ struct ChatView: View {
         .navigationTitle("New Conversation")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
         .task {
             await viewModel.start()
         }
@@ -36,59 +38,99 @@ struct ChatView: View {
 
     private var background: some View {
         LinearGradient(
-            colors: [
-                Color(red: 0.06, green: 0.07, blue: 0.11),
-                Color(red: 0.10, green: 0.12, blue: 0.18),
-                Color(red: 0.18, green: 0.10, blue: 0.16)
-            ],
+            colors: backgroundColors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
         .ignoresSafeArea()
     }
 
+    private var backgroundColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(red: 0.06, green: 0.07, blue: 0.11),
+                Color(red: 0.10, green: 0.12, blue: 0.18),
+                Color(red: 0.18, green: 0.10, blue: 0.16)
+            ]
+        }
+
+        return [
+            Color(red: 0.96, green: 0.97, blue: 1.00),
+            Color(red: 0.92, green: 0.94, blue: 1.00),
+            Color(red: 1.00, green: 0.94, blue: 0.97)
+        ]
+    }
+
+    private var panelFill: Color {
+        colorScheme == .dark ? .white.opacity(0.08) : .white.opacity(0.68)
+    }
+
+    private var elevatedFill: Color {
+        colorScheme == .dark ? .white.opacity(0.14) : .white.opacity(0.82)
+    }
+
+    private var subtleFill: Color {
+        colorScheme == .dark ? .white.opacity(0.05) : .white.opacity(0.36)
+    }
+
+    private var surfaceBorder: Color {
+        colorScheme == .dark ? .white.opacity(0.10) : .indigo.opacity(0.12)
+    }
+
+    private var assistantBubbleFill: Color {
+        colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.74)
+    }
+
+    private var userBubbleFill: Color {
+        colorScheme == .dark ? .indigo.opacity(0.38) : .indigo.opacity(0.14)
+    }
+
     private var loadingView: some View {
         VStack(spacing: 14) {
             ProgressView()
-                .tint(.white)
+                .tint(.indigo)
             Text(viewModel.loadingTitle)
                 .font(.system(.title2, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Text(viewModel.loadingMessage)
                 .font(.system(.footnote, design: .rounded))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(28)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(panelFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(surfaceBorder, lineWidth: 1)
+        }
     }
 
     private var downloadView: some View {
         VStack(spacing: 16) {
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(.white)
+                .foregroundStyle(.indigo)
 
             Text(viewModel.loadingTitle)
                 .font(.system(.title2, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
 
             ProgressView(value: viewModel.downloadProgress)
                 .tint(.orange)
 
             Text("\(Int(viewModel.downloadProgress * 100))%")
                 .font(.system(.headline, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
 
             Text(viewModel.loadingMessage)
                 .font(.system(.footnote, design: .rounded))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             if let fallbackError = viewModel.fallbackError {
                 Text(fallbackError)
                     .font(.system(.footnote, design: .rounded))
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(.orange)
                     .multilineTextAlignment(.center)
             }
 
@@ -97,7 +139,7 @@ struct ChatView: View {
             } label: {
                 if viewModel.isConnectingToFallback {
                     ProgressView()
-                        .tint(.white)
+                        .tint(.primary)
                 } else {
                     Label("Chat Online While Downloading", systemImage: "cloud.fill")
                 }
@@ -105,18 +147,26 @@ struct ChatView: View {
             .font(.system(.headline, design: .rounded, weight: .semibold))
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
-            .background(.white.opacity(0.14), in: Capsule())
-            .foregroundStyle(.white)
+            .background(elevatedFill, in: Capsule())
+            .foregroundStyle(.primary)
+            .overlay {
+                Capsule()
+                    .stroke(surfaceBorder, lineWidth: 1)
+            }
             .disabled(viewModel.isConnectingToFallback)
 
             Text("Online chat sends your prompts to the hosted Hugging Face service.")
                 .font(.system(.caption2, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(28)
         .frame(maxWidth: 420)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(panelFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(surfaceBorder, lineWidth: 1)
+        }
         .padding()
     }
 
@@ -124,13 +174,13 @@ struct ChatView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(.yellow)
+                .foregroundStyle(.orange)
             Text("Could not load model")
                 .font(.system(.title2, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Text(message)
                 .font(.system(.body, design: .rounded))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             Button("Try Again") {
@@ -139,14 +189,18 @@ struct ChatView: View {
             .font(.system(.headline, design: .rounded, weight: .semibold))
             .padding(.horizontal, 22)
             .padding(.vertical, 14)
-            .background(.white.opacity(0.14), in: Capsule())
-            .foregroundStyle(.white)
+            .background(elevatedFill, in: Capsule())
+            .foregroundStyle(.primary)
+            .overlay {
+                Capsule()
+                    .stroke(surfaceBorder, lineWidth: 1)
+            }
 
             Button("Chat Online Instead") {
                 Task { await viewModel.useHostedFallback() }
             }
             .font(.system(.subheadline, design: .rounded, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.85))
+            .foregroundStyle(.indigo)
         }
         .padding(28)
     }
@@ -188,22 +242,24 @@ struct ChatView: View {
     private var localModelStatusBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: viewModel.isLocalModelReady ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .foregroundStyle(viewModel.isLocalModelReady ? .green : .orange)
             Text(viewModel.isLocalModelReady
                  ? "Local model ready for your next chat"
                  : "Local model download failed")
                 .font(.system(.caption, design: .rounded, weight: .semibold))
+                .foregroundStyle(.primary)
             Spacer()
             if viewModel.downloadError != nil {
                 Button("Retry") {
                     viewModel.retryDownload()
                 }
                 .font(.system(.caption, design: .rounded, weight: .semibold))
+                .foregroundStyle(.primary)
             }
         }
-        .foregroundStyle(.white)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(viewModel.isLocalModelReady ? Color.green.opacity(0.25) : Color.orange.opacity(0.25))
+        .background(viewModel.isLocalModelReady ? Color.green.opacity(0.16) : Color.orange.opacity(0.16))
     }
 
     private var header: some View {
@@ -211,10 +267,10 @@ struct ChatView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Qwen 3")
                     .font(.system(.headline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Text(viewModel.headerSubtitle)
                     .font(.system(.caption, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -225,7 +281,7 @@ struct ChatView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(.white.opacity(0.05))
+        .background(subtleFill)
     }
 
     private var composer: some View {
@@ -234,8 +290,12 @@ struct ChatView: View {
                 .focused($isComposerFocused)
                 .lineLimit(1...5)
                 .padding(14)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .foregroundStyle(.white)
+                .background(panelFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .foregroundStyle(.primary)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(surfaceBorder, lineWidth: 1)
+                }
 
             Button {
                 Task {
@@ -260,7 +320,7 @@ struct ChatView: View {
             .opacity(viewModel.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSending ? 0.5 : 1)
         }
         .padding(16)
-        .background(.white.opacity(0.04))
+        .background(subtleFill)
     }
 
     private func bubble(for message: ChatMessage) -> some View {
@@ -278,9 +338,9 @@ struct ChatView: View {
     private func bubbleBody(_ message: ChatMessage) -> some View {
         Text(displayText(for: message))
             .font(.system(.body, design: .rounded))
-            .foregroundStyle(message.role == .user ? .black : .white)
+            .foregroundStyle(.primary)
             .padding(14)
-            .background(message.role == .user ? Color.white.opacity(0.9) : Color.white.opacity(0.1))
+            .background(message.role == .user ? userBubbleFill : assistantBubbleFill)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .frame(maxWidth: 320, alignment: .leading)
     }
@@ -302,8 +362,16 @@ struct ChatView: View {
     }
 }
 
-#Preview {
+#Preview("Light") {
     NavigationStack {
         ChatView()
     }
+    .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        ChatView()
+    }
+    .preferredColorScheme(.dark)
 }
