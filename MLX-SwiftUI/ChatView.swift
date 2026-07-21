@@ -10,6 +10,8 @@ import SwiftUI
 struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var viewModel = ChatViewModel()
+    @State private var composerText = ""
+    @State private var composerID = UUID()
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
@@ -286,7 +288,7 @@ struct ChatView: View {
 
     private var composer: some View {
         HStack(alignment: .bottom, spacing: 12) {
-            TextField("Ask Qwen anything...", text: $viewModel.draft, axis: .vertical)
+            TextField("Ask Qwen anything...", text: composerTextBinding, axis: .vertical)
                 .focused($isComposerFocused)
                 .lineLimit(1...5)
                 .padding(14)
@@ -296,12 +298,10 @@ struct ChatView: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(surfaceBorder, lineWidth: 1)
                 }
+                .disabled(viewModel.isSending)
 
             Button {
-                Task {
-                    await viewModel.sendPrompt()
-                }
-                isComposerFocused = true
+                sendCurrentPrompt()
             } label: {
                 Image(systemName: viewModel.isSending ? "hourglass" : "paperplane.fill")
                     .font(.system(size: 18, weight: .semibold))
@@ -316,11 +316,44 @@ struct ChatView: View {
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            .disabled(viewModel.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSending)
-            .opacity(viewModel.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSending ? 0.5 : 1)
+            .disabled(trimmedComposerText.isEmpty || viewModel.isSending)
+            .opacity(trimmedComposerText.isEmpty || viewModel.isSending ? 0.5 : 1)
         }
+        .id(composerID)
         .padding(16)
         .background(subtleFill)
+        .onChange(of: viewModel.isSending) { wasSending, isSending in
+            if wasSending && !isSending {
+                composerText = ""
+                composerID = UUID()
+                Task { @MainActor in
+                    await Task.yield()
+                    isComposerFocused = true
+                }
+            }
+        }
+    }
+
+    private var trimmedComposerText: String {
+        composerText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var composerTextBinding: Binding<String> {
+        Binding(
+            get: { composerText },
+            set: { newValue in
+                guard !viewModel.isSending else { return }
+                composerText = newValue
+            }
+        )
+    }
+
+    private func sendCurrentPrompt() {
+        guard viewModel.sendPrompt(trimmedComposerText) else { return }
+
+        isComposerFocused = false
+        composerText = ""
+        composerID = UUID()
     }
 
     private func bubble(for message: ChatMessage) -> some View {

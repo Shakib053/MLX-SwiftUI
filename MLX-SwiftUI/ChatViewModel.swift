@@ -364,7 +364,6 @@ struct ChatMessage: Identifiable, Equatable {
 final class ChatViewModel {
     var state: ChatState = .loading
     var messages: [ChatMessage] = []
-    var draft = ""
     var isSending = false
     var downloadProgress = 0.0
     var downloadError: String?
@@ -404,6 +403,7 @@ final class ChatViewModel {
     private var backend: (any ChatBackend)?
     private var didStartLoading = false
     private var localLoadingTask: Task<Void, Never>?
+    private var responseTask: Task<Void, Never>?
 
     func start() async {
         guard !didStartLoading else { return }
@@ -564,17 +564,30 @@ final class ChatViewModel {
     }
     #endif
 
-    func sendPrompt() async {
-        let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !prompt.isEmpty, !isSending else { return }
-        guard let backend else { return }
+    @discardableResult
+    func sendPrompt(_ text: String) -> Bool {
+        let prompt = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prompt.isEmpty, !isSending else { return false }
+        guard let backend else { return false }
 
+        isSending = true
         messages.append(ChatMessage(role: .user, text: prompt))
         messages.append(ChatMessage(role: .assistant, text: ""))
-        draft = ""
-        isSending = true
+
+        responseTask = Task { [weak self] in
+            await self?.generateResponse(for: prompt, using: backend)
+        }
+        return true
+    }
+
+    private func generateResponse(for prompt: String, using backend: any ChatBackend) async {
+        defer {
+            isSending = false
+            responseTask = nil
+        }
 
         do {
+            try Task.checkCancellation()
             let request = ChatRequest(prompt: prompt)
             var responseText = ""
             let stream = backend.streamResponse(for: request)
@@ -594,13 +607,10 @@ final class ChatViewModel {
                 }
                 messages[lastIndex].text = finalText
             }
-            isSending = false
         } catch {
             if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = "Error: \(error.localizedDescription)"
             }
-            isSending = false
-            state = .failed(error.localizedDescription)
         }
     }
 
