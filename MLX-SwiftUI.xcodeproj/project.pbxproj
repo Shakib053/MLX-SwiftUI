@@ -18,6 +18,7 @@
 /* Begin PBXFileReference section */
 		0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MLX-SwiftUI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C56506C300152A00079AABB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = .swiftlint.yml; sourceTree = "<group>"; };
 		4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -66,6 +67,7 @@
 		0C3B37A52FD1CF730062165A = {
 			isa = PBXGroup;
 			children = (
+				0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */,
 				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
 				4D1A100A3C1E4D2C8A0F0103 /* Config */,
@@ -97,6 +99,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0C3B37B92FD1CF740062165A /* Build configuration list for PBXNativeTarget "MLX-SwiftUI" */;
 			buildPhases = (
+				0C5E649C30111E5B00EF2A32 /* Run Swiftlint */,
 				0C3B37AA2FD1CF730062165A /* Sources */,
 				0C3B37AB2FD1CF730062165A /* Frameworks */,
 				0C3B37AC2FD1CF730062165A /* Resources */,
@@ -170,6 +173,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0C5E649C30111E5B00EF2A32 /* Run Swiftlint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Swiftlint";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\nif command -v swiftlint >/dev/null 2>&1;\nthen\n    cd \"$SRCROOT\"\n    swiftlint lint\nelse\n    echo \"warning: SwiftLint is not installed. Run: brew install swiftlint\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0C3B37AA2FD1CF730062165A /* Sources */ = {
@@ -311,6 +335,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GRW9NYZR4G;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
 				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
@@ -347,6 +372,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GRW9NYZR4G;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
 				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
