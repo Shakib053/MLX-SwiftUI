@@ -20,9 +20,21 @@ MLX-SwiftUI is a compact AI chat application built to demonstrate practical loca
 
 ```text
 MLX-SwiftUI
-├── MLX_SwiftUIApp.swift
-├── ContentView.swift
-└── ChatViewModel.swift
+├── App
+│   ├── MLXSwiftUIApp.swift
+│   ├── ContentView.swift
+│   ├── MainTabView.swift
+│   ├── AppState.swift
+│   └── AppTab.swift
+├── Core
+│   └── Models
+├── Features
+│   ├── Chats
+│   ├── Models
+│   ├── Onboarding
+│   └── Settings
+└── Shared
+    └── UI
 ```
 
 ## Tech Stack
@@ -37,9 +49,12 @@ MLX-SwiftUI
 
 ## Architecture
 
-- `MLX_SwiftUIApp` defines the app entry point and launches the main SwiftUI scene.
-- `ContentView` manages the visible UI states, chat layout, message bubbles, loading view, error view, and composer.
-- `ChatViewModel` selects the chat backend, handles model/API initialization, prompt submission, response updates, and chat state.
+- `MLXSwiftUIApp` defines the app entry point and launches the main SwiftUI scene.
+- `ContentView` owns application state, appearance, and onboarding presentation.
+- `MainTabView` owns type-safe navigation between Chats, Models, and Settings.
+- Each folder under `Features` owns its screens, state, and feature-specific components.
+- `ChatViewModel` selects the chat backend and coordinates model/API initialization, prompts, streaming responses, and chat state.
+- `Core/Models` contains application-wide domain models, while `Shared/UI` contains presentation primitives used by multiple features.
 
 
 ## Getting Started
