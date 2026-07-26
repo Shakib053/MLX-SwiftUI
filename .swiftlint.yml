@@ -8,8 +8,8 @@ strict: false
 type_body_length:
   warning: 600
 
-line_length_violation:
+line_length:
   warning: 200
 
-file_length_violation:
+file_length:
     warning: 1000
