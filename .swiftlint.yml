@@ -4,3 +4,12 @@ included:
   - MLX-SwiftUI
 
 strict: false
+
+type_body_length:
+  warning: 600
+
+line_length_violation:
+  warning: 200
+
+file_length_violation:
+    warning: 1000

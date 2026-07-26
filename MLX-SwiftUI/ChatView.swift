@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(AppState.self) private var appState
     @State private var viewModel = ChatViewModel()
     @State private var composerText = ""
     @State private var composerID = UUID()
+    @State private var showsModelPicker = false
+    @State private var showsDeleteConfirmation = false
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
@@ -33,6 +37,64 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text("New Conversation")
+                        .font(.headline)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(viewModel.backendMode == .hosted ? .blue : .green)
+                            .frame(width: 6, height: 6)
+                        Text(viewModel.backendMode == .hosted
+                             ? "Hugging Face • Online"
+                             : "\(appState.activeModel.shortName) • On device")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        print("Rename conversation tapped. Conversation persistence is not enabled.")
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    Button {
+                        print("Pin conversation tapped. Conversation persistence is not enabled.")
+                    } label: {
+                        Label("Pin", systemImage: "pin")
+                    }
+                    Button {
+                        print("Export conversation tapped. Add a document exporter after conversation persistence is enabled.")
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up")
+                    }
+                    Button(role: .destructive) {
+                        showsDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+                .accessibilityLabel("Conversation options")
+            }
+        }
+        .sheet(isPresented: $showsModelPicker) {
+            modelPicker
+        }
+        .alert("Delete this conversation?", isPresented: $showsDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                viewModel.messages.removeAll()
+                print("Deleted the in-memory conversation.")
+            }
+        } message: {
+            Text("This clears the current in-memory messages. No conversation history is stored.")
+        }
         .task {
             await viewModel.start()
         }
@@ -209,8 +271,6 @@ struct ChatView: View {
 
     private var chatView: some View {
         VStack(spacing: 0) {
-            header
-
             if viewModel.backendMode == .hosted,
                viewModel.isLocalModelReady || viewModel.downloadError != nil {
                 localModelStatusBanner
@@ -219,9 +279,17 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
+                        if viewModel.messages.isEmpty {
+                            conversationEmptyState
+                        }
                         ForEach(viewModel.messages) { message in
-                            bubble(for: message)
-                                .id(message.id)
+                            VStack(alignment: message.role == .assistant ? .leading : .trailing, spacing: 3) {
+                                bubble(for: message)
+                                if message.role == .assistant, !message.text.isEmpty {
+                                    messageTools(for: message)
+                                }
+                            }
+                            .id(message.id)
                         }
                     }
                     .padding(16)
@@ -239,6 +307,24 @@ struct ChatView: View {
         .onAppear {
             isComposerFocused = true
         }
+    }
+
+    private var conversationEmptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(.indigo)
+            Text("How can I help?")
+                .font(.title2.bold())
+            Text(viewModel.backendMode == .hosted
+                 ? "Messages are sent to the hosted Hugging Face model and are not saved by this app."
+                 : "Messages are processed by your selected local model and are not saved after leaving this conversation.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 80)
+        .frame(maxWidth: .infinity)
     }
 
     private var localModelStatusBanner: some View {
@@ -264,64 +350,71 @@ struct ChatView: View {
         .background(viewModel.isLocalModelReady ? Color.green.opacity(0.16) : Color.orange.opacity(0.16))
     }
 
-    private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Qwen 3")
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.primary)
-                Text(viewModel.headerSubtitle)
-                    .font(.system(.caption, design: .rounded))
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Circle()
-                .fill(.green)
-                .frame(width: 10, height: 10)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(subtleFill)
-    }
-
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            TextField("Ask Qwen anything...", text: composerTextBinding, axis: .vertical)
-                .focused($isComposerFocused)
-                .lineLimit(1...5)
-                .padding(14)
-                .background(panelFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .foregroundStyle(.primary)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(surfaceBorder, lineWidth: 1)
+        VStack(spacing: 9) {
+            HStack {
+                Button {
+                    showsModelPicker = true
+                } label: {
+                    Label(appState.activeModel.name, systemImage: "cpu")
+                        .font(.caption.weight(.semibold))
                 }
-                .disabled(viewModel.isSending)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
 
-            Button {
-                sendCurrentPrompt()
-            } label: {
-                Image(systemName: viewModel.isSending ? "hourglass" : "paperplane.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .frame(width: 52, height: 52)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.orange, Color.pink],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Spacer()
+
+                Label(
+                    viewModel.backendMode == .hosted ? "Online via Hugging Face" : "Private by default",
+                    systemImage: viewModel.backendMode == .hosted ? "cloud.fill" : "lock.fill"
+                )
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
             }
-            .disabled(trimmedComposerText.isEmpty || viewModel.isSending)
-            .opacity(trimmedComposerText.isEmpty || viewModel.isSending ? 0.5 : 1)
+
+            HStack(alignment: .bottom, spacing: 9) {
+                Button {
+                    print("Attach file tapped. ChatRequest currently accepts text only; connect a system fileImporter when multimodal context is supported.")
+                } label: {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 18, weight: .semibold))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Attach file")
+
+                TextField("Message MLX Chat", text: composerTextBinding, axis: .vertical)
+                    .focused($isComposerFocused)
+                    .lineLimit(1...5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .background(panelFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .foregroundStyle(.primary)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(surfaceBorder, lineWidth: 1)
+                    }
+                    .disabled(viewModel.isSending)
+
+                Button {
+                    sendCurrentPrompt()
+                } label: {
+                    Image(systemName: viewModel.isSending ? "hourglass" : "arrow.up")
+                        .font(.system(size: 18, weight: .bold))
+                        .frame(width: 44, height: 44)
+                        .background(.indigo)
+                        .foregroundStyle(.white)
+                        .clipShape(Circle())
+                }
+                .disabled(trimmedComposerText.isEmpty || viewModel.isSending)
+                .opacity(trimmedComposerText.isEmpty || viewModel.isSending ? 0.45 : 1)
+            }
         }
         .id(composerID)
-        .padding(16)
-        .background(subtleFill)
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(.ultraThinMaterial)
         .onChange(of: viewModel.isSending) { wasSending, isSending in
             if wasSending && !isSending {
                 composerText = ""
@@ -378,6 +471,77 @@ struct ChatView: View {
             .frame(maxWidth: 320, alignment: .leading)
     }
 
+    private func messageTools(for message: ChatMessage) -> some View {
+        HStack(spacing: 2) {
+            Button {
+                UIPasteboard.general.string = message.text
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .frame(width: 36, height: 32)
+            }
+            .accessibilityLabel("Copy response")
+
+            if message.id == viewModel.messages.last?.id {
+                Button {
+                    _ = viewModel.regenerateLastResponse()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .frame(width: 36, height: 32)
+                }
+                .disabled(viewModel.isSending)
+                .accessibilityLabel("Regenerate response")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .buttonStyle(.plain)
+    }
+
+    private var modelPicker: some View {
+        NavigationStack {
+            List {
+                ForEach(appState.downloadedModels) { model in
+                    Button {
+                        appState.activate(model)
+                        if model.id != LocalModel.qwen.id {
+                            print("\(model.name) selected in the UX. ChatViewModel currently loads Qwen; connect this selection to an MLX configuration before production.")
+                        }
+                        showsModelPicker = false
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(model.initials)
+                                .font(.caption.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 38, height: 38)
+                                .background(
+                                    LinearGradient(colors: model.colors, startPoint: .topLeading, endPoint: .bottomTrailing),
+                                    in: RoundedRectangle(cornerRadius: 11)
+                                )
+                            VStack(alignment: .leading) {
+                                Text(model.name).foregroundStyle(.primary)
+                                Text("\(model.focus) • \(model.sizeLabel)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if model.id == appState.activeModelID {
+                                Image(systemName: "checkmark").foregroundStyle(.indigo)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Choose Model")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showsModelPicker = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
     private func displayText(for message: ChatMessage) -> String {
         if message.text.isEmpty && message.role == .assistant && viewModel.isSending {
             return "Thinking..."
@@ -399,6 +563,7 @@ struct ChatView: View {
     NavigationStack {
         ChatView()
     }
+    .environment(AppState())
     .preferredColorScheme(.light)
 }
 
@@ -406,5 +571,6 @@ struct ChatView: View {
     NavigationStack {
         ChatView()
     }
+    .environment(AppState())
     .preferredColorScheme(.dark)
 }

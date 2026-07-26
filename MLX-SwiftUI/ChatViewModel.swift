@@ -323,7 +323,7 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .normal: "Normal download (20 seconds)"
+        case .normal: "Hosted Hugging Face chat"
         case .slow: "Slow download (60 seconds)"
         case .cached: "Cached model"
         case .localFailure: "Local download failure"
@@ -353,7 +353,7 @@ struct ChatMessage: Identifiable, Equatable {
     let role: Role
     var text: String
 
-    enum Role { 
+    enum Role: Equatable {
         case user
         case assistant
     }
@@ -409,7 +409,8 @@ final class ChatViewModel {
         guard !didStartLoading else { return }
         didStartLoading = true
         #if DEBUG && targetEnvironment(simulator)
-        if SimulatorDownloadScenario.selected == .hostedOnly {
+        if SimulatorDownloadScenario.selected == .normal ||
+            SimulatorDownloadScenario.selected == .hostedOnly {
             await connectHosted(isInitialLoad: true)
         } else {
             startLocalModelLoad()
@@ -580,6 +581,25 @@ final class ChatViewModel {
         return true
     }
 
+    @discardableResult
+    func regenerateLastResponse() -> Bool {
+        guard !isSending,
+              let lastUserMessage = messages.last(where: { $0.role == .user }),
+              let backend else {
+            return false
+        }
+
+        if messages.last?.role == .assistant {
+            messages.removeLast()
+        }
+        isSending = true
+        messages.append(ChatMessage(role: .assistant, text: ""))
+        responseTask = Task { [weak self] in
+            await self?.generateResponse(for: lastUserMessage.text, using: backend)
+        }
+        return true
+    }
+
     private func generateResponse(for prompt: String, using backend: any ChatBackend) async {
         defer {
             isSending = false
@@ -640,7 +660,6 @@ final class ChatViewModel {
         return token
     }
 }
-
 
 enum Secrets {
     static var hfToken: String {
