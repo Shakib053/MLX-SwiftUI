@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0C56506D300152A00079AABB /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 0C56506C300152A00079AABB /* README.md */; };
+		0C7892753016854700FD9307 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7892743016854700FD9307 /* WidgetKit.framework */; };
+		0C7892773016854700FD9307 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7892763016854700FD9307 /* SwiftUI.framework */; };
+		0C7892883016854900FD9307 /* MLX_SwiftUIWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0C7892723016854700FD9307 /* MLX_SwiftUIWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4D0C7B9A3C1E4D2C8A0F0001 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0001 /* MLXLLM */; };
 		4D0C7B9A3C1E4D2C8A0F0002 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0002 /* MLXLMCommon */; };
 		4D0C7B9A3C1E4D2C8A0F0003 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0003 /* MLXHuggingFace */; };
@@ -15,10 +18,37 @@
 		4D0C7B9A3C1E4D2C8A0F0005 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0005 /* Tokenizers */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0C7892863016854900FD9307 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0C3B37A62FD1CF730062165A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0C7892713016854700FD9307;
+			remoteInfo = MLX_SwiftUIWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0C7892893016854900FD9307 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				0C7892883016854900FD9307 /* MLX_SwiftUIWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MLX-SwiftUI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C56506C300152A00079AABB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = .swiftlint.yml; sourceTree = "<group>"; };
+		0C7892723016854700FD9307 /* MLX_SwiftUIWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MLX_SwiftUIWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C7892743016854700FD9307 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		0C7892763016854700FD9307 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -30,6 +60,13 @@
 			);
 			target = 0C3B37AD2FD1CF730062165A /* MLX-SwiftUI */;
 		};
+		0C78928D3016854900FD9307 /* Exceptions for "MLX_SwiftUIWidget" folder in "MLX_SwiftUIWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0C7892713016854700FD9307 /* MLX_SwiftUIWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +76,14 @@
 				0C35EDE22FFD5F160004A005 /* Exceptions for "MLX-SwiftUI" folder in "MLX-SwiftUI" target */,
 			);
 			path = "MLX-SwiftUI";
+			sourceTree = "<group>";
+		};
+		0C7892783016854700FD9307 /* MLX_SwiftUIWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0C78928D3016854900FD9307 /* Exceptions for "MLX_SwiftUIWidget" folder in "MLX_SwiftUIWidgetExtension" target */,
+			);
+			path = MLX_SwiftUIWidget;
 			sourceTree = "<group>";
 		};
 		0CAA868E3007F8DE003D8F7F /* .github */ = {
@@ -61,6 +106,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0C78926F3016854700FD9307 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C7892773016854700FD9307 /* SwiftUI.framework in Frameworks */,
+				0C7892753016854700FD9307 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -72,6 +126,8 @@
 				0C56506C300152A00079AABB /* README.md */,
 				4D1A100A3C1E4D2C8A0F0103 /* Config */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
+				0C7892783016854700FD9307 /* MLX_SwiftUIWidget */,
+				0C7892733016854700FD9307 /* Frameworks */,
 				0C3B37AF2FD1CF730062165A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -80,8 +136,18 @@
 			isa = PBXGroup;
 			children = (
 				0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */,
+				0C7892723016854700FD9307 /* MLX_SwiftUIWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		0C7892733016854700FD9307 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0C7892743016854700FD9307 /* WidgetKit.framework */,
+				0C7892763016854700FD9307 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		4D1A100A3C1E4D2C8A0F0103 /* Config */ = {
@@ -103,10 +169,12 @@
 				0C3B37AA2FD1CF730062165A /* Sources */,
 				0C3B37AB2FD1CF730062165A /* Frameworks */,
 				0C3B37AC2FD1CF730062165A /* Resources */,
+				0C7892893016854900FD9307 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				0C7892873016854900FD9307 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
@@ -124,6 +192,28 @@
 			productReference = 0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0C7892713016854700FD9307 /* MLX_SwiftUIWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C78928C3016854900FD9307 /* Build configuration list for PBXNativeTarget "MLX_SwiftUIWidgetExtension" */;
+			buildPhases = (
+				0C78926E3016854700FD9307 /* Sources */,
+				0C78926F3016854700FD9307 /* Frameworks */,
+				0C7892703016854700FD9307 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0C7892783016854700FD9307 /* MLX_SwiftUIWidget */,
+			);
+			name = MLX_SwiftUIWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = MLX_SwiftUIWidgetExtension;
+			productReference = 0C7892723016854700FD9307 /* MLX_SwiftUIWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -135,6 +225,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					0C3B37AD2FD1CF730062165A = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					0C7892713016854700FD9307 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
@@ -159,6 +252,7 @@
 			projectRoot = "";
 			targets = (
 				0C3B37AD2FD1CF730062165A /* MLX-SwiftUI */,
+				0C7892713016854700FD9307 /* MLX_SwiftUIWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -169,6 +263,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C56506D300152A00079AABB /* README.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0C7892703016854700FD9307 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,7 +304,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0C78926E3016854700FD9307 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0C7892873016854900FD9307 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0C7892713016854700FD9307 /* MLX_SwiftUIWidgetExtension */;
+			targetProxy = 0C7892863016854900FD9307 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0C3B37B72FD1CF740062165A /* Debug */ = {
@@ -399,6 +515,66 @@
 			};
 			name = Release;
 		};
+		0C78928A3016854900FD9307 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GRW9NYZR4G;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MLX_SwiftUIWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MLX_SwiftUIWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Shakib053.MLX-SwiftUI.MLX-SwiftUIWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0C78928B3016854900FD9307 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GRW9NYZR4G;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MLX_SwiftUIWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MLX_SwiftUIWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Shakib053.MLX-SwiftUI.MLX-SwiftUIWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -416,6 +592,15 @@
 			buildConfigurations = (
 				0C3B37BA2FD1CF740062165A /* Debug */,
 				0C3B37BB2FD1CF740062165A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C78928C3016854900FD9307 /* Build configuration list for PBXNativeTarget "MLX_SwiftUIWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C78928A3016854900FD9307 /* Debug */,
+				0C78928B3016854900FD9307 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
