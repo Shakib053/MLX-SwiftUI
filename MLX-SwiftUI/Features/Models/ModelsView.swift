@@ -69,6 +69,17 @@ struct ModelsView: View {
                 ModelDetailView(model: model)
                     .environment(appState)
             }
+            .alert(
+                "Model download failed",
+                isPresented: Binding(
+                    get: { appState.downloadError != nil },
+                    set: { if !$0 { appState.dismissDownloadError() } }
+                )
+            ) {
+                Button("OK", role: .cancel) { appState.dismissDownloadError() }
+            } message: {
+                Text(appState.downloadError ?? "The model could not be downloaded.")
+            }
             .confirmationDialog(
                 "Model limit reached",
                 isPresented: replacementDialogBinding,

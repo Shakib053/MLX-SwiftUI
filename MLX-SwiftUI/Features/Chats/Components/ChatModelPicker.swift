@@ -51,12 +51,6 @@ struct ChatModelPicker: View {
 
     private func select(_ model: LocalModel) {
         appState.activate(model)
-        if model.id != LocalModel.qwen.id {
-            print(
-                "\(model.name) selected in the UX. ChatViewModel currently loads Qwen; " +
-                "connect this selection to an MLX configuration before production."
-            )
-        }
         isPresented = false
     }
 }

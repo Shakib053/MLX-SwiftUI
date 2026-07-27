@@ -7,9 +7,11 @@
 
 import Foundation
 import Observation
+import HuggingFace
 import MLXHuggingFace
 import MLXLMCommon
 import MLXLLM
+import Tokenizers
 
 @MainActor
 @Observable
@@ -23,16 +25,20 @@ final class ChatViewModel {
     var isConnectingToFallback = false
     var isLocalModelReady = false
     var backendMode: ChatBackendMode?
+    private(set) var loadedModelID: String?
 
     var loadingTitle: String {
-        state == .downloading ? "Downloading Qwen for offline chat" : "Preparing Qwen..."
+        let modelName = LocalModel.catalog.first { $0.id == currentModelID }?.shortName ?? "model"
+        return state == .downloading
+            ? "Downloading \(modelName) for offline chat"
+            : "Preparing \(modelName)..."
     }
 
     var loadingMessage: String {
         #if DEBUG && targetEnvironment(simulator)
-        "Simulator is reproducing the device download flow. No MLX model is being downloaded."
+        "Simulator uses the hosted fallback. Local MLX models run on a physical iPhone."
         #else
-        "The model downloads once and is reused from the device cache on later launches."
+        "The selected model downloads once and is reused from the device cache on later launches."
         #endif
     }
 
@@ -56,19 +62,44 @@ final class ChatViewModel {
     private var didStartLoading = false
     private var localLoadingTask: Task<Void, Never>?
     private var responseTask: Task<Void, Never>?
+    private var currentModelID = LocalModel.qwen.id
 
-    func start() async {
+    func start(model: LocalModel) async {
         guard !didStartLoading else { return }
         didStartLoading = true
+        currentModelID = model.id
         #if DEBUG && targetEnvironment(simulator)
         if SimulatorDownloadScenario.selected == .normal ||
             SimulatorDownloadScenario.selected == .hostedOnly {
             await connectHosted(isInitialLoad: true)
         } else {
-            startLocalModelLoad()
+            startLocalModelLoad(for: model)
         }
         #else
-        startLocalModelLoad()
+        startLocalModelLoad(for: model)
+        #endif
+    }
+
+    func switchModel(to model: LocalModel) {
+        guard model.id != currentModelID else { return }
+
+        currentModelID = model.id
+        localLoadingTask?.cancel()
+        responseTask?.cancel()
+        backend = nil
+        backendMode = nil
+        isLocalModelReady = false
+        downloadError = nil
+        fallbackError = nil
+        #if DEBUG && targetEnvironment(simulator)
+        if SimulatorDownloadScenario.selected == .normal ||
+            SimulatorDownloadScenario.selected == .hostedOnly {
+            Task { await connectHosted(isInitialLoad: true) }
+        } else {
+            startLocalModelLoad(for: model)
+        }
+        #else
+        startLocalModelLoad(for: model)
         #endif
     }
 
@@ -82,10 +113,11 @@ final class ChatViewModel {
 
     func retryDownload() {
         localLoadingTask?.cancel()
-        startLocalModelLoad()
+        let model = LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
+        startLocalModelLoad(for: model)
     }
 
-    private func startLocalModelLoad() {
+    private func startLocalModelLoad(for model: LocalModel) {
         downloadProgress = 0
         downloadError = nil
         fallbackError = nil
@@ -101,8 +133,8 @@ final class ChatViewModel {
                 try await self.runSimulatedDownload()
                 await self.simulatedDownloadCompleted()
                 #else
-                let model = try await #huggingFaceLoadModelContainer(
-                    configuration: LLMRegistry.qwen3_0_6b_4bit,
+                let container = try await #huggingFaceLoadModelContainer(
+                    configuration: model.configuration,
                     progressHandler: { progress in
                         let fraction = progress.fractionCompleted
                         Task { @MainActor [weak self] in
@@ -112,11 +144,11 @@ final class ChatViewModel {
                 )
                 let localBackend = LocalMLXChatBackend(
                     session: ChatSession(
-                        model,
+                        container,
                         additionalContext: ["enable_thinking": false]
                     )
                 )
-                self.localDownloadCompleted(with: localBackend)
+                self.localDownloadCompleted(with: localBackend, modelID: model.id)
                 #endif
             } catch is CancellationError {
                 return
@@ -130,10 +162,12 @@ final class ChatViewModel {
         downloadProgress = max(downloadProgress, min(max(fraction, 0), 1))
     }
 
-    private func localDownloadCompleted(with localBackend: any ChatBackend) {
+    private func localDownloadCompleted(with localBackend: any ChatBackend, modelID: String) {
+        guard modelID == currentModelID else { return }
         downloadProgress = 1
         isLocalModelReady = true
         downloadError = nil
+        loadedModelID = modelID
 
         guard backend == nil else { return }
         backend = localBackend

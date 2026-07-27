@@ -1,4 +1,6 @@
 import SwiftUI
+import MLXLLM
+import MLXLMCommon
 
 struct LocalModel: Identifiable, Equatable {
     let id: String
@@ -13,6 +15,14 @@ struct LocalModel: Identifiable, Equatable {
     let summary: String
     let license: String
     let colors: [Color]
+    let configuration: ModelConfiguration
+
+    var repositoryID: String {
+        if case .id(let id, _) = configuration.id {
+            return id
+        }
+        return configuration.name
+    }
 
     static let qwen = LocalModel(
         id: "qwen",
@@ -25,40 +35,42 @@ struct LocalModel: Identifiable, Equatable {
         focus: "Fast",
         provider: "Qwen / MLX Community",
         summary: "A compact general-purpose model suited to quick questions, summaries, and lightweight coding help.",
-        license: "Apache 2.0. Production builds should include the exact model repository, " +
-            "revision, conversion source, and full notices.",
-        colors: [.indigo, .purple]
+        license: "Apache 2.0. The MLX Community conversion is based on Qwen3.",
+        colors: [.indigo, .purple],
+        configuration: LLMRegistry.qwen3_0_6b_4bit
     )
 
     static let smol = LocalModel(
         id: "smol",
-        name: "SmolLM2 1.7B",
-        shortName: "SmolLM2",
+        name: "SmolLM 135M",
+        shortName: "SmolLM",
         initials: "SL",
-        sizeGB: 1.10,
-        sizeLabel: "1.10 GB",
+        sizeGB: 0.08,
+        sizeLabel: "76 MB",
         quantization: "4-bit",
-        focus: "Balanced writing",
+        focus: "Ultra light",
         provider: "Hugging Face / MLX Community",
-        summary: "A small writing-oriented assistant with more capacity for drafting and rewriting.",
-        license: "Apache 2.0. Verify and ship the complete notices from the exact downloaded model revision.",
-        colors: [.green, .teal]
+        summary: "An ultra-light assistant for short answers, simple summaries, and basic offline chat.",
+        license: "Apache 2.0. The MLX Community conversion is based on Hugging Face TB SmolLM.",
+        colors: [.green, .teal],
+        configuration: LLMRegistry.smolLM_135M_4bit
     )
 
-    static let coder = LocalModel(
-        id: "coder",
-        name: "Tiny Coder 1.1B",
-        shortName: "Tiny Coder",
-        initials: "TC",
-        sizeGB: 0.76,
-        sizeLabel: "0.76 GB",
+    static let llama = LocalModel(
+        id: "llama",
+        name: "Llama 3.2 1B",
+        shortName: "Llama 3.2",
+        initials: "L3",
+        sizeGB: 0.70,
+        sizeLabel: "695 MB",
         quantization: "4-bit",
-        focus: "Code",
-        provider: "Prototype catalog",
-        summary: "A catalog preview for a compact code-focused model.",
-        license: "Placeholder catalog metadata. Confirm the source model and license before enabling a real download.",
-        colors: [.orange, .pink]
+        focus: "Quality",
+        provider: "Meta / MLX Community",
+        summary: "A stronger multilingual assistant for writing, summaries, retrieval, and general conversation.",
+        license: "Llama 3.2 Community License. Include the required Llama attribution and usage notice.",
+        colors: [.orange, .pink],
+        configuration: LLMRegistry.llama3_2_1B_4bit
     )
 
-    static let catalog = [qwen, smol, coder]
+    static let catalog = [qwen, smol, llama]
 }
