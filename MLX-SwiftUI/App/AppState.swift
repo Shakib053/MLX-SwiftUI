@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WidgetKit
 
 @MainActor
 @Observable
@@ -21,6 +22,7 @@ final class AppState {
     init() {
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
+        updateWidget()
     }
 
     var downloadedModels: [LocalModel] {
@@ -40,6 +42,7 @@ final class AppState {
     func activate(_ model: LocalModel) {
         guard downloadedModelIDs.contains(model.id) else { return }
         activeModelID = model.id
+        updateWidget()
         print("Activated model: \(model.name)")
     }
 
@@ -69,6 +72,7 @@ final class AppState {
             "Prototype model download completed: \(model.name). " +
             "Wire this catalog entry to the MLX downloader for production."
         )
+        updateWidget()
     }
 
     func remove(_ model: LocalModel) {
@@ -81,5 +85,16 @@ final class AppState {
             activeModelID = downloadedModelIDs[0]
         }
         print("Removed model from prototype library: \(model.name)")
+        updateWidget()
+    }
+    
+    private func updateWidget() {
+        SharedWidgetData.save(activeModelName: activeModel.name)
+
+        print("APP wrote model:", SharedWidgetData.activeModelName)
+
+        WidgetCenter.shared.reloadTimelines(
+            ofKind: "MLX_SwiftUIWidget"
+        )
     }
 }

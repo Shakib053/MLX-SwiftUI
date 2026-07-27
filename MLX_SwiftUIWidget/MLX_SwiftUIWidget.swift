@@ -10,48 +10,80 @@ import SwiftUI
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+        SimpleEntry(
+            date: .now,
+            configuration: ConfigurationAppIntent(),
+            activeModelName: "Qwen"
+        )
     }
 
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
-    }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
+    func snapshot(
+        for configuration: ConfigurationAppIntent,
+        in context: Context
+    ) async -> SimpleEntry {
+        let modelName = SharedWidgetData.activeModelName
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
+        print("WIDGET read model:", modelName)
 
-        return Timeline(entries: entries, policy: .atEnd)
+        return SimpleEntry(
+            date: .now,
+            configuration: configuration,
+            activeModelName: modelName
+        )
     }
 
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    func timeline(
+        for configuration: ConfigurationAppIntent,
+        in context: Context
+    ) async -> Timeline<SimpleEntry> {
+        let modelName = SharedWidgetData.activeModelName
+
+        print("WIDGET read model:", modelName)
+
+        let entry = SimpleEntry(
+            date: .now,
+            configuration: configuration,
+            activeModelName: modelName
+        )
+
+        return Timeline(
+            entries: [entry],
+            policy: .after(Date().addingTimeInterval(15 * 60))
+        )
+    }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
+    let activeModelName: String
 }
 
-struct MLX_SwiftUIWidgetEntryView : View {
-    var entry: Provider.Entry
+struct MLX_SwiftUIWidgetEntryView: View {
+    let entry: Provider.Entry
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "cpu")
+                .font(.title2)
+                .foregroundStyle(.blue)
 
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+            Text("Active model")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(entry.activeModelName)
+                .font(.headline)
+                .lineLimit(2)
+
+            Spacer()
         }
+        .frame(
+            maxWidth: .infinity,
+            maxHeight: .infinity,
+            alignment: .topLeading
+        )
+        .padding()
     }
 }
 
@@ -59,30 +91,33 @@ struct MLX_SwiftUIWidget: Widget {
     let kind: String = "MLX_SwiftUIWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: ConfigurationAppIntent.self,
+            provider: Provider()
+        ) { entry in
             MLX_SwiftUIWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+//                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) {
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.01, green: 0.18, blue: 0.22),
+                            Color(red: 0.00, green: 0.38, blue: 0.32)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
         }
-    }
-}
-
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
     }
 }
 
 #Preview(as: .systemSmall) {
     MLX_SwiftUIWidget()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
+    SimpleEntry(
+        date: .now,
+        configuration: ConfigurationAppIntent(),
+        activeModelName: "Qwen"
+    )
 }
