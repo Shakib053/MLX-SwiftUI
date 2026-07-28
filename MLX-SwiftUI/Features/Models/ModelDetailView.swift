@@ -32,8 +32,8 @@ struct ModelDetailView: View {
                     detailSection("License", text: model.license)
                     detailSection(
                         "Production requirement",
-                        text: "Display the exact source repository, model revision, conversion author, " +
-                            "license text, and all required notices."
+                        text: "The app downloads the MLX Community checkpoint for \(model.repositoryID). " +
+                            "Display the exact model revision, license text, and required notices."
                     )
 
                     if appState.downloadedModelIDs.contains(model.id) {

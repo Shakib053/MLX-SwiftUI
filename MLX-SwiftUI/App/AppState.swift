@@ -1,6 +1,8 @@
 import Foundation
 import Observation
 import WidgetKit
+import HuggingFace
+import MLXLMCommon
 
 @MainActor
 @Observable
@@ -14,14 +16,31 @@ final class AppState {
         }
     }
     var hapticsEnabled = true
-    var downloadedModelIDs: [String] = [LocalModel.qwen.id]
-    var activeModelID = LocalModel.qwen.id
+    var downloadedModelIDs: [String]
+    var activeModelID: String
     var downloadingModelID: String?
     var downloadProgress = 0.0
+    var downloadError: String?
+
+    private let downloadedModelsKey = "downloadedModelIDs"
+    private let activeModelKey = "activeModelID"
 
     init() {
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
+
+        let savedIDs = UserDefaults.standard.stringArray(forKey: downloadedModelsKey) ?? []
+        let validIDs = savedIDs.filter { savedID in
+            LocalModel.catalog.contains { model in model.id == savedID }
+        }
+        let initialDownloadedIDs = validIDs.isEmpty ? [LocalModel.qwen.id] : validIDs
+        downloadedModelIDs = initialDownloadedIDs
+
+        let savedActiveID = UserDefaults.standard.string(forKey: activeModelKey)
+        activeModelID = initialDownloadedIDs.contains(savedActiveID ?? "")
+            ? savedActiveID!
+            : initialDownloadedIDs[0]
+
         updateWidget()
     }
 
@@ -42,6 +61,7 @@ final class AppState {
     func activate(_ model: LocalModel) {
         guard downloadedModelIDs.contains(model.id) else { return }
         activeModelID = model.id
+        persistModelState()
         updateWidget()
         print("Activated model: \(model.name)")
     }
@@ -55,24 +75,45 @@ final class AppState {
 
         downloadingModelID = model.id
         downloadProgress = 0
-        print("Prototype model download started: \(model.name)")
-
-        for step in 1...20 {
-            guard !Task.isCancelled else { break }
-            try? await Task.sleep(for: .milliseconds(90))
-            downloadProgress = Double(step) / 20
+        downloadError = nil
+        defer {
+            downloadingModelID = nil
+            downloadProgress = 0
         }
 
-        if !downloadedModelIDs.contains(model.id) {
+        #if targetEnvironment(simulator)
+        downloadError = "Local model downloads are available on a physical iPhone."
+        return
+        #else
+        do {
+            _ = try await MLXModelLoader.load(
+                configuration: model.configuration,
+                progressHandler: { [weak self] progress in
+                    Task { @MainActor [weak self] in
+                        self?.downloadProgress = max(
+                            self?.downloadProgress ?? 0,
+                            min(max(progress.fractionCompleted, 0), 1)
+                        )
+                    }
+                }
+            )
+
+            guard !Task.isCancelled else { return }
             downloadedModelIDs.append(model.id)
+            persistModelState()
+            updateWidget()
+        } catch is CancellationError {
+            return
+        } catch {
+            downloadError = error.localizedDescription
+            print("Model download failed: \(model.name): \(error.localizedDescription)")
         }
-        downloadingModelID = nil
-        downloadProgress = 0
-        print(
-            "Prototype model download completed: \(model.name). " +
-            "Wire this catalog entry to the MLX downloader for production."
-        )
-        updateWidget()
+        #endif
+
+    }
+
+    func dismissDownloadError() {
+        downloadError = nil
     }
 
     func remove(_ model: LocalModel) {
@@ -84,10 +125,34 @@ final class AppState {
         if activeModelID == model.id {
             activeModelID = downloadedModelIDs[0]
         }
-        print("Removed model from prototype library: \(model.name)")
+        persistModelState()
+        removeCachedFiles(for: model)
+        print("Removed model: \(model.name)")
         updateWidget()
     }
-    
+
+    private func persistModelState() {
+        UserDefaults.standard.set(downloadedModelIDs, forKey: downloadedModelsKey)
+        UserDefaults.standard.set(activeModelID, forKey: activeModelKey)
+    }
+
+    private func removeCachedFiles(for model: LocalModel) {
+        let components = model.repositoryID.split(separator: "/", maxSplits: 1).map(String.init)
+        guard components.count == 2 else { return }
+
+        let repo = Repo.ID(namespace: components[0], name: components[1])
+        let cache = HubCache.default
+        let paths = [
+            cache.repoDirectory(repo: repo, kind: .model),
+            cache.metadataDirectory(repo: repo, kind: .model),
+            cache.lockPath(for: cache.repoDirectory(repo: repo, kind: .model))
+        ]
+
+        for path in paths where FileManager.default.fileExists(atPath: path.path) {
+            try? FileManager.default.removeItem(at: path)
+        }
+    }
+
     private func updateWidget() {
         SharedWidgetData.save(activeModelName: activeModel.name)
 

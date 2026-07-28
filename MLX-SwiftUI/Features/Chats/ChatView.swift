@@ -67,7 +67,11 @@ struct ChatView: View {
             Text("This clears the current in-memory messages. No conversation history is stored.")
         }
         .task {
-            await viewModel.start()
+            await viewModel.start(model: appState.activeModel)
+        }
+        .onChange(of: appState.activeModelID) { _, newModelID in
+            guard let model = LocalModel.catalog.first(where: { $0.id == newModelID }) else { return }
+            viewModel.switchModel(to: model)
         }
     }
 
