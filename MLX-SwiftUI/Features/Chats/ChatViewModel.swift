@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import SwiftData
 import HuggingFace
 import MLXHuggingFace
 import MLXLMCommon
@@ -25,6 +26,8 @@ final class ChatViewModel {
     var isConnectingToFallback = false
     var isLocalModelReady = false
     var backendMode: ChatBackendMode?
+    var isRenaming = false
+    var renameText = ""
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
@@ -63,10 +66,37 @@ final class ChatViewModel {
     private var localLoadingTask: Task<Void, Never>?
     private var responseTask: Task<Void, Never>?
     private var currentModelID = LocalModel.qwen.id
+    private var modelContext: SwiftData.ModelContext?
+    private let conversationID: UUID?
+    private var conversation: Conversation?
 
-    func start(model: LocalModel) async {
+    init(conversationID: UUID? = nil) {
+        self.conversationID = conversationID
+    }
+
+    var conversationTitle: String {
+        conversation?.title ?? "New Conversation"
+    }
+
+    var isPinned: Bool {
+        conversation?.isPinned ?? false
+    }
+
+    func start(model: LocalModel, context: SwiftData.ModelContext) async {
         guard !didStartLoading else { return }
         didStartLoading = true
+        modelContext = context
+
+        if let conversationID,
+           let savedConversation = try? context.fetch(FetchDescriptor<Conversation>()).first(where: {
+               $0.id == conversationID
+           }) {
+            conversation = savedConversation
+            messages = savedConversation.orderedMessages.map {
+                ChatMessage(id: $0.id, role: $0.role, text: $0.text)
+            }
+        }
+
         currentModelID = model.id
         #if DEBUG && targetEnvironment(simulator)
         if SimulatorDownloadScenario.selected == .normal ||
@@ -261,6 +291,9 @@ final class ChatViewModel {
         messages.append(ChatMessage(role: .user, text: prompt))
         messages.append(ChatMessage(role: .assistant, text: ""))
 
+        ensureConversation()
+        persistMessages()
+
         responseTask = Task { [weak self] in
             await self?.generateResponse(for: prompt, using: backend)
         }
@@ -280,6 +313,7 @@ final class ChatViewModel {
         }
         isSending = true
         messages.append(ChatMessage(role: .assistant, text: ""))
+        persistMessages()
         responseTask = Task { [weak self] in
             await self?.generateResponse(for: lastUserMessage.text, using: backend)
         }
@@ -303,6 +337,7 @@ final class ChatViewModel {
 
                 if let lastIndex = messages.indices.last {
                     messages[lastIndex].text = responseText
+                    persistMessages()
                 }
             }
 
@@ -312,11 +347,99 @@ final class ChatViewModel {
                     throw ChatBackendError.emptyResponse
                 }
                 messages[lastIndex].text = finalText
+                persistMessages()
             }
         } catch {
             if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = "Error: \(error.localizedDescription)"
+                persistMessages()
             }
+        }
+    }
+
+    func renameConversation(to title: String) {
+        let cleanedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedTitle.isEmpty, let conversation else { return }
+        conversation.title = cleanedTitle
+        conversation.updatedAt = .now
+        saveContext()
+    }
+
+    func togglePin() {
+        guard let conversation else { return }
+        conversation.isPinned.toggle()
+        saveContext()
+    }
+
+    func beginRenaming() {
+        guard let conversation else { return }
+        renameText = conversation.title
+        isRenaming = true
+    }
+
+    func cancelRenaming() {
+        isRenaming = false
+    }
+
+    func saveRenamedConversation() {
+        renameConversation(to: renameText)
+        isRenaming = false
+    }
+
+    func deleteConversation() {
+        guard let conversation, let modelContext else { return }
+        modelContext.delete(conversation)
+        saveContext()
+        self.conversation = nil
+    }
+
+    private func ensureConversation() {
+        guard conversation == nil, let modelContext else { return }
+        let firstPrompt = messages.first(where: { $0.role == .user })?.text ?? "New Conversation"
+        let newConversation = Conversation(
+            title: firstPrompt.truncated(to: 60),
+            modelID: currentModelID,
+            backendMode: backendMode
+        )
+        modelContext.insert(newConversation)
+        conversation = newConversation
+    }
+
+    private func persistMessages() {
+        guard let conversation else { return }
+        conversation.modelID = currentModelID
+        conversation.backendMode = backendMode
+        conversation.updatedAt = .now
+
+        let currentIDs = Set(messages.map(\.id))
+        for persistedMessage in conversation.messages where !currentIDs.contains(persistedMessage.id) {
+            modelContext?.delete(persistedMessage)
+        }
+
+        for (index, message) in messages.enumerated() {
+            if let persistedMessage = conversation.messages.first(where: { $0.id == message.id }) {
+                persistedMessage.text = message.text
+                persistedMessage.orderIndex = index
+            } else {
+                conversation.messages.append(
+                    PersistedMessage(
+                        id: message.id,
+                        role: message.role,
+                        text: message.text,
+                        orderIndex: index,
+                        conversation: conversation
+                    )
+                )
+            }
+        }
+        saveContext()
+    }
+
+    private func saveContext() {
+        do {
+            try modelContext?.save()
+        } catch {
+            print("Failed to persist conversation history: \(error.localizedDescription)")
         }
     }
 

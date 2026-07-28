@@ -1,14 +1,23 @@
 import SwiftUI
+import SwiftData
 
 struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AppState.self) private var appState
-    @State private var viewModel = ChatViewModel()
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var viewModel: ChatViewModel
     @State private var composerText = ""
     @State private var composerID = UUID()
     @State private var showsModelPicker = false
     @State private var showsDeleteConfirmation = false
     @FocusState private var isComposerFocused: Bool
+    private let viewID: UUID
+
+    init(conversationID: UUID? = nil, viewID: UUID = UUID()) {
+        self.viewID = viewID
+        _viewModel = State(initialValue: ChatViewModel(conversationID: conversationID))
+    }
 
     private var style: ChatVisualStyle {
         ChatVisualStyle(colorScheme: colorScheme)
@@ -46,7 +55,7 @@ struct ChatView: View {
                 }
             }
         }
-        .navigationTitle("New Conversation")
+        .navigationTitle(viewModel.conversationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
@@ -60,26 +69,38 @@ struct ChatView: View {
         .alert("Delete this conversation?", isPresented: $showsDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
-                viewModel.messages.removeAll()
-                print("Deleted the in-memory conversation.")
+                viewModel.deleteConversation()
+                dismiss()
             }
         } message: {
-            Text("This clears the current in-memory messages. No conversation history is stored.")
+            Text("This permanently deletes the conversation and its messages from this device.")
+        }
+        .alert("Rename Conversation", isPresented: Binding(
+            get: { viewModel.isRenaming },
+            set: { viewModel.isRenaming = $0 }
+        )) {
+            TextField("Conversation title", text: Binding(
+                get: { viewModel.renameText },
+                set: { viewModel.renameText = $0 }
+            ))
+            Button("Cancel", role: .cancel) { viewModel.cancelRenaming() }
+            Button("Save") { viewModel.saveRenamedConversation() }
         }
         .task {
-            await viewModel.start(model: appState.activeModel)
+            await viewModel.start(model: appState.activeModel, context: modelContext)
         }
         .onChange(of: appState.activeModelID) { _, newModelID in
             guard let model = LocalModel.catalog.first(where: { $0.id == newModelID }) else { return }
             viewModel.switchModel(to: model)
         }
+        .id(viewID)
     }
 
     @ToolbarContentBuilder
     private var conversationToolbar: some ToolbarContent {
         ToolbarItem(placement: .principal) {
             VStack(spacing: 1) {
-                Text("New Conversation")
+                Text(viewModel.conversationTitle)
                     .font(.headline)
                 HStack(spacing: 4) {
                     Circle()
@@ -97,23 +118,19 @@ struct ChatView: View {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Button {
-                    print("Rename conversation tapped. Conversation persistence is not enabled.")
+                    viewModel.beginRenaming()
                 } label: {
                     Label("Rename", systemImage: "pencil")
                 }
                 Button {
-                    print("Pin conversation tapped. Conversation persistence is not enabled.")
+                    viewModel.togglePin()
                 } label: {
-                    Label("Pin", systemImage: "pin")
-                }
-                Button {
-                    print(
-                        "Export conversation tapped. " +
-                        "Add a document exporter after conversation persistence is enabled."
+                    Label(
+                        viewModel.isPinned ? "Unpin" : "Pin",
+                        systemImage: viewModel.isPinned ? "pin.slash" : "pin"
                     )
-                } label: {
-                    Label("Export", systemImage: "square.and.arrow.up")
                 }
+                .disabled(viewModel.conversationTitle == "New Conversation")
                 Button(role: .destructive) {
                     showsDeleteConfirmation = true
                 } label: {

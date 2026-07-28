@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct MLXSwiftUIApp: App {
@@ -13,5 +14,6 @@ struct MLXSwiftUIApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [Conversation.self, PersistedMessage.self])
     }
 }

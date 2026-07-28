@@ -77,12 +77,25 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
 #endif
 
 struct ChatMessage: Identifiable, Equatable {
-    let id = UUID()
+    let id: UUID
     let role: Role
     var text: String
+
+    init(id: UUID = UUID(), role: Role, text: String) {
+        self.id = id
+        self.role = role
+        self.text = text
+    }
 
     enum Role: Equatable {
         case user
         case assistant
+    }
+}
+
+extension String {
+    func truncated(to length: Int) -> String {
+        guard count > length else { return self }
+        return String(prefix(length - 1)) + "…"
     }
 }
