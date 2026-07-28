@@ -86,6 +86,14 @@ struct ChatView: View {
             Button("Cancel", role: .cancel) { viewModel.cancelRenaming() }
             Button("Save") { viewModel.saveRenamedConversation() }
         }
+        .alert("Couldn’t save conversation", isPresented: Binding(
+            get: { viewModel.persistenceError != nil },
+            set: { if !$0 { viewModel.persistenceError = nil } }
+        )) {
+            Button("OK", role: .cancel) { viewModel.persistenceError = nil }
+        } message: {
+            Text(viewModel.persistenceError ?? "Please try again.")
+        }
         .task {
             await viewModel.start(model: appState.activeModel, context: modelContext)
         }
@@ -153,6 +161,17 @@ struct ChatView: View {
                 ) {
                     viewModel.retryDownload()
                 }
+            }
+
+            if viewModel.historyLimitReached {
+                Label(
+                    "Older messages were removed to keep this chat within the device limit.",
+                    systemImage: "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
 
             ScrollViewReader { proxy in

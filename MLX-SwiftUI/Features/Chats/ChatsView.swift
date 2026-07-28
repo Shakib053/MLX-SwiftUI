@@ -7,6 +7,7 @@ struct ChatsView: View {
     @Query(sort: \Conversation.updatedAt, order: .reverse) private var conversations: [Conversation]
     @State private var searchText = ""
     @State private var conversationToDelete: Conversation?
+    @State private var persistenceError: String?
 
     private var filteredConversations: [Conversation] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -63,12 +64,20 @@ struct ChatsView: View {
                 Button("Delete", role: .destructive) {
                     if let conversationToDelete {
                         modelContext.delete(conversationToDelete)
-                        try? modelContext.save()
+                        saveChanges()
                     }
                     self.conversationToDelete = nil
                 }
             } message: {
                 Text("This permanently deletes the conversation and its messages from this device.")
+            }
+            .alert("Couldn’t update conversations", isPresented: Binding(
+                get: { persistenceError != nil },
+                set: { if !$0 { persistenceError = nil } }
+            )) {
+                Button("OK", role: .cancel) { persistenceError = nil }
+            } message: {
+                Text(persistenceError ?? "Please try again.")
             }
         }
     }
@@ -99,7 +108,7 @@ struct ChatsView: View {
                     for conversation in recentConversations {
                         modelContext.delete(conversation)
                     }
-                    try? modelContext.save()
+                    saveChanges()
                 }
                 .font(.subheadline)
                 .foregroundStyle(.indigo)
@@ -109,7 +118,7 @@ struct ChatsView: View {
     }
 
     private func conversationList(_ items: [Conversation]) -> some View {
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
             ForEach(items) { conversation in
                 NavigationLink {
                     ChatView(conversationID: conversation.id)
@@ -143,7 +152,15 @@ struct ChatsView: View {
 
     private func delete(_ conversation: Conversation) {
         modelContext.delete(conversation)
-        try? modelContext.save()
+        saveChanges()
+    }
+
+    private func saveChanges() {
+        do {
+            try modelContext.save()
+        } catch {
+            persistenceError = error.localizedDescription
+        }
     }
 
     private var searchField: some View {

@@ -28,6 +28,8 @@ final class ChatViewModel {
     var backendMode: ChatBackendMode?
     var isRenaming = false
     var renameText = ""
+    var persistenceError: String?
+    var historyLimitReached = false
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
@@ -65,6 +67,7 @@ final class ChatViewModel {
     private var didStartLoading = false
     private var localLoadingTask: Task<Void, Never>?
     private var responseTask: Task<Void, Never>?
+    private var lastPersistenceDate = Date.distantPast
     private var currentModelID = LocalModel.qwen.id
     private var modelContext: SwiftData.ModelContext?
     private let conversationID: UUID?
@@ -87,13 +90,23 @@ final class ChatViewModel {
         didStartLoading = true
         modelContext = context
 
-        if let conversationID,
-           let savedConversation = try? context.fetch(FetchDescriptor<Conversation>()).first(where: {
-               $0.id == conversationID
-           }) {
-            conversation = savedConversation
-            messages = savedConversation.orderedMessages.map {
-                ChatMessage(id: $0.id, role: $0.role, text: $0.text)
+        if let conversationID {
+            var descriptor = FetchDescriptor<Conversation>(
+                predicate: #Predicate { $0.id == conversationID }
+            )
+            descriptor.fetchLimit = 1
+
+            do {
+                if let savedConversation = try context.fetch(descriptor).first {
+                    conversation = savedConversation
+                    let loadedMessages = savedConversation.orderedMessages.map {
+                        ChatMessage(id: $0.id, role: $0.role, text: $0.text)
+                    }
+                    messages = ChatHistoryPolicy.storedMessages(loadedMessages)
+                    historyLimitReached = messages != loadedMessages
+                }
+            } catch {
+                persistenceError = "Could not load this conversation: \(error.localizedDescription)"
             }
         }
 
@@ -172,11 +185,19 @@ final class ChatViewModel {
                         }
                     }
                 )
+                let localHistory = ChatHistoryPolicy.modelMessages(self.messages)
+                    .filter { !$0.text.isEmpty }
+                    .map { message in
+                        switch message.role {
+                        case .user: Chat.Message.user(message.text)
+                        case .assistant: Chat.Message.assistant(message.text)
+                        }
+                    }
                 let localBackend = LocalMLXChatBackend(
-                    session: ChatSession(
-                        container,
-                        additionalContext: ["enable_thinking": false]
-                    )
+                    model: container,
+                    history: localHistory,
+                    instructions: ChatRequest.defaultSystemPrompt,
+                    additionalContext: ["enable_thinking": false]
                 )
                 self.localDownloadCompleted(with: localBackend, modelID: model.id)
                 #endif
@@ -283,16 +304,19 @@ final class ChatViewModel {
 
     @discardableResult
     func sendPrompt(_ text: String) -> Bool {
-        let prompt = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prompt = text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .truncated(to: ChatHistoryPolicy.maxMessageCharacters)
         guard !prompt.isEmpty, !isSending else { return false }
         guard let backend else { return false }
 
         isSending = true
         messages.append(ChatMessage(role: .user, text: prompt))
         messages.append(ChatMessage(role: .assistant, text: ""))
+        applyHistoryLimit()
 
         ensureConversation()
-        persistMessages()
+        persistMessages(force: true)
 
         responseTask = Task { [weak self] in
             await self?.generateResponse(for: prompt, using: backend)
@@ -313,14 +337,23 @@ final class ChatViewModel {
         }
         isSending = true
         messages.append(ChatMessage(role: .assistant, text: ""))
-        persistMessages()
+        applyHistoryLimit()
+        persistMessages(force: true)
         responseTask = Task { [weak self] in
-            await self?.generateResponse(for: lastUserMessage.text, using: backend)
+            await self?.generateResponse(
+                for: lastUserMessage.text,
+                using: backend,
+                rebuildLocalSession: true
+            )
         }
         return true
     }
 
-    private func generateResponse(for prompt: String, using backend: any ChatBackend) async {
+    private func generateResponse(
+        for prompt: String,
+        using backend: any ChatBackend,
+        rebuildLocalSession: Bool = false
+    ) async {
         defer {
             isSending = false
             responseTask = nil
@@ -328,12 +361,19 @@ final class ChatViewModel {
 
         do {
             try Task.checkCancellation()
-            let request = ChatRequest(prompt: prompt)
+            let request = ChatRequest(
+                prompt: prompt,
+                history: ChatHistoryPolicy.modelMessages(Array(messages.dropLast(2))),
+                rebuildLocalSession: rebuildLocalSession
+            )
             var responseText = ""
             let stream = backend.streamResponse(for: request)
 
             for try await chunk in stream {
-                responseText += chunk
+                if responseText.count < ChatHistoryPolicy.maxMessageCharacters {
+                    responseText.append(contentsOf: chunk)
+                    responseText = responseText.truncated(to: ChatHistoryPolicy.maxMessageCharacters)
+                }
 
                 if let lastIndex = messages.indices.last {
                     messages[lastIndex].text = responseText
@@ -347,12 +387,12 @@ final class ChatViewModel {
                     throw ChatBackendError.emptyResponse
                 }
                 messages[lastIndex].text = finalText
-                persistMessages()
+                persistMessages(force: true)
             }
         } catch {
             if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = "Error: \(error.localizedDescription)"
-                persistMessages()
+                persistMessages(force: true)
             }
         }
     }
@@ -360,15 +400,21 @@ final class ChatViewModel {
     func renameConversation(to title: String) {
         let cleanedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedTitle.isEmpty, let conversation else { return }
+        let oldTitle = conversation.title
         conversation.title = cleanedTitle
         conversation.updatedAt = .now
-        saveContext()
+        if !saveContext() {
+            conversation.title = oldTitle
+        }
     }
 
     func togglePin() {
         guard let conversation else { return }
+        let oldValue = conversation.isPinned
         conversation.isPinned.toggle()
-        saveContext()
+        if !saveContext() {
+            conversation.isPinned = oldValue
+        }
     }
 
     func beginRenaming() {
@@ -389,7 +435,7 @@ final class ChatViewModel {
     func deleteConversation() {
         guard let conversation, let modelContext else { return }
         modelContext.delete(conversation)
-        saveContext()
+        _ = saveContext()
         self.conversation = nil
     }
 
@@ -405,8 +451,13 @@ final class ChatViewModel {
         conversation = newConversation
     }
 
-    private func persistMessages() {
+    private func persistMessages(force: Bool = false) {
         guard let conversation else { return }
+        let limitedMessages = ChatHistoryPolicy.storedMessages(messages)
+        if limitedMessages != messages {
+            historyLimitReached = true
+            messages = limitedMessages
+        }
         conversation.modelID = currentModelID
         conversation.backendMode = backendMode
         conversation.updatedAt = .now
@@ -416,30 +467,52 @@ final class ChatViewModel {
             modelContext?.delete(persistedMessage)
         }
 
+        var persistedByID = Dictionary(uniqueKeysWithValues: conversation.messages.map { ($0.id, $0) })
         for (index, message) in messages.enumerated() {
-            if let persistedMessage = conversation.messages.first(where: { $0.id == message.id }) {
+            if let persistedMessage = persistedByID[message.id] {
                 persistedMessage.text = message.text
                 persistedMessage.orderIndex = index
             } else {
-                conversation.messages.append(
-                    PersistedMessage(
-                        id: message.id,
-                        role: message.role,
-                        text: message.text,
-                        orderIndex: index,
-                        conversation: conversation
-                    )
+                let persistedMessage = PersistedMessage(
+                    id: message.id,
+                    role: message.role,
+                    text: message.text,
+                    orderIndex: index,
+                    conversation: conversation
                 )
+                conversation.messages.append(persistedMessage)
+                persistedByID[message.id] = persistedMessage
             }
         }
-        saveContext()
+        let shouldSave = force || Date.now.timeIntervalSince(lastPersistenceDate) >= 0.25
+        if shouldSave {
+            _ = saveContext()
+        }
     }
 
-    private func saveContext() {
+    @discardableResult
+    private func saveContext() -> Bool {
+        guard let modelContext else {
+            persistenceError = "Could not save conversation history because storage is unavailable."
+            return false
+        }
         do {
-            try modelContext?.save()
+            try modelContext.save()
+            lastPersistenceDate = .now
+            persistenceError = nil
+            return true
         } catch {
-            print("Failed to persist conversation history: \(error.localizedDescription)")
+            persistenceError = "Could not save conversation history: \(error.localizedDescription)"
+            print(persistenceError ?? "Failed to persist conversation history")
+            return false
+        }
+    }
+
+    private func applyHistoryLimit() {
+        let limitedMessages = ChatHistoryPolicy.storedMessages(messages)
+        if limitedMessages != messages {
+            messages = limitedMessages
+            historyLimitReached = true
         }
     }
 

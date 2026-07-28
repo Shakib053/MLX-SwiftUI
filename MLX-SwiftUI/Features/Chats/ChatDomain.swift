@@ -95,7 +95,62 @@ struct ChatMessage: Identifiable, Equatable {
 
 extension String {
     func truncated(to length: Int) -> String {
+        guard length > 0 else { return "" }
         guard count > length else { return self }
         return String(prefix(length - 1)) + "…"
+    }
+}
+
+enum ChatHistoryPolicy {
+    // These limits keep the SwiftData store and the chat list bounded on device.
+    static let maxStoredMessages = 200
+    static let maxMessageCharacters = 20_000
+    static let maxStoredCharacters = 500_000
+
+    // Rehydrating the entire store into an LLM context can exceed a model's context
+    // window even when the store itself is healthy.
+    static let maxModelMessages = 60
+    static let maxModelCharacters = 120_000
+
+    static func normalized(_ messages: [ChatMessage]) -> [ChatMessage] {
+        messages.map { message in
+            ChatMessage(
+                id: message.id,
+                role: message.role,
+                text: message.text.truncated(to: maxMessageCharacters)
+            )
+        }
+    }
+
+    static func storedMessages(_ messages: [ChatMessage]) -> [ChatMessage] {
+        trim(normalized(messages), maxMessages: maxStoredMessages, maxCharacters: maxStoredCharacters)
+    }
+
+    static func modelMessages(_ messages: [ChatMessage]) -> [ChatMessage] {
+        trim(normalized(messages), maxMessages: maxModelMessages, maxCharacters: maxModelCharacters)
+    }
+
+    private static func trim(
+        _ messages: [ChatMessage],
+        maxMessages: Int,
+        maxCharacters: Int
+    ) -> [ChatMessage] {
+        guard !messages.isEmpty else { return [] }
+
+        var result: [ChatMessage] = []
+        var characterCount = 0
+        for message in messages.reversed() {
+            guard result.count < maxMessages else { break }
+            let nextCount = characterCount + message.text.count
+            guard nextCount <= maxCharacters || result.isEmpty else { break }
+            result.append(message)
+            characterCount = nextCount
+        }
+
+        result.reverse()
+        while result.first?.role == .assistant {
+            result.removeFirst()
+        }
+        return result
     }
 }
