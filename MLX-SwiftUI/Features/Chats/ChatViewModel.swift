@@ -81,6 +81,10 @@ final class ChatViewModel {
         conversation?.title ?? "New Conversation"
     }
 
+    var hasConversation: Bool {
+        conversation != nil
+    }
+
     var isPinned: Bool {
         conversation?.isPinned ?? false
     }
