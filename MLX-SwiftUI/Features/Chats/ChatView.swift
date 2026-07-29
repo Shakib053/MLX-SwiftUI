@@ -123,31 +123,33 @@ struct ChatView: View {
             }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button {
-                    viewModel.beginRenaming()
+        if viewModel.hasConversation {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        viewModel.beginRenaming()
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    Button {
+                        viewModel.togglePin()
+                    } label: {
+                        Label(
+                            viewModel.isPinned ? "Unpin" : "Pin",
+                            systemImage: viewModel.isPinned ? "pin.slash" : "pin"
+                        )
+                    }
+                    .disabled(viewModel.conversationTitle == "New Conversation")
+                    Button(role: .destructive) {
+                        showsDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 } label: {
-                    Label("Rename", systemImage: "pencil")
+                    Image(systemName: "ellipsis")
                 }
-                Button {
-                    viewModel.togglePin()
-                } label: {
-                    Label(
-                        viewModel.isPinned ? "Unpin" : "Pin",
-                        systemImage: viewModel.isPinned ? "pin.slash" : "pin"
-                    )
-                }
-                .disabled(viewModel.conversationTitle == "New Conversation")
-                Button(role: .destructive) {
-                    showsDeleteConfirmation = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            } label: {
-                Image(systemName: "ellipsis")
+                .accessibilityLabel("Conversation options")
             }
-            .accessibilityLabel("Conversation options")
         }
     }
 
