@@ -35,6 +35,18 @@ enum ChatBackendMode: Equatable {
     case hosted
 }
 
+enum ChatEnvironment {
+    /// The hosted Hugging Face chat fallback is only offered in the simulator,
+    /// where MLX cannot run. Physical devices always use the on-device MLX model.
+    static var supportsHostedChat: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+}
+
 #if DEBUG
 enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
     case normal

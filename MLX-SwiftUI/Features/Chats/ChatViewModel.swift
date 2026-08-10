@@ -155,6 +155,7 @@ final class ChatViewModel {
     }
 
     func useHostedFallback() async {
+        guard ChatEnvironment.supportsHostedChat else { return }
         await connectHosted(isInitialLoad: false)
     }
 
@@ -238,6 +239,7 @@ final class ChatViewModel {
     }
 
     private func connectHosted(isInitialLoad: Bool) async {
+        guard ChatEnvironment.supportsHostedChat else { return }
         guard backend == nil else { return }
         isConnectingToFallback = true
         fallbackError = nil

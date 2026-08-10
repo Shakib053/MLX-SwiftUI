@@ -32,6 +32,7 @@ struct ChatDownloadView: View {
     let progress: Double
     let fallbackError: String?
     let isConnecting: Bool
+    let showsHostedOption: Bool
     let style: ChatVisualStyle
     let useHostedFallback: () -> Void
 
@@ -60,27 +61,29 @@ struct ChatDownloadView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Button(action: useHostedFallback) {
-                if isConnecting {
-                    ProgressView().tint(.primary)
-                } else {
-                    Label("Chat Online While Downloading", systemImage: "cloud.fill")
+            if showsHostedOption {
+                Button(action: useHostedFallback) {
+                    if isConnecting {
+                        ProgressView().tint(.primary)
+                    } else {
+                        Label("Chat Online While Downloading", systemImage: "cloud.fill")
+                    }
                 }
-            }
-            .font(.system(.headline, design: .rounded, weight: .semibold))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .background(style.elevatedFill, in: Capsule())
-            .foregroundStyle(.primary)
-            .overlay {
-                Capsule().stroke(style.surfaceBorder, lineWidth: 1)
-            }
-            .disabled(isConnecting)
+                .font(.system(.headline, design: .rounded, weight: .semibold))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(style.elevatedFill, in: Capsule())
+                .foregroundStyle(.primary)
+                .overlay {
+                    Capsule().stroke(style.surfaceBorder, lineWidth: 1)
+                }
+                .disabled(isConnecting)
 
-            Text("Online chat sends your prompts to the hosted Hugging Face service.")
-                .font(.system(.caption2, design: .rounded))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text("Online chat sends your prompts to the hosted Hugging Face service.")
+                    .font(.system(.caption2, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(28)
         .frame(maxWidth: 420)
@@ -95,6 +98,7 @@ struct ChatDownloadView: View {
 
 struct ChatErrorView: View {
     let message: String
+    let showsHostedOption: Bool
     let style: ChatVisualStyle
     let retry: () -> Void
     let useHostedFallback: () -> Void
@@ -121,9 +125,11 @@ struct ChatErrorView: View {
                 .overlay {
                     Capsule().stroke(style.surfaceBorder, lineWidth: 1)
                 }
-            Button("Chat Online Instead", action: useHostedFallback)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(.indigo)
+            if showsHostedOption {
+                Button("Chat Online Instead", action: useHostedFallback)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.indigo)
+            }
         }
         .padding(28)
     }

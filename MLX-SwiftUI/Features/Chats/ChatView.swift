@@ -41,6 +41,7 @@ struct ChatView: View {
                     progress: viewModel.downloadProgress,
                     fallbackError: viewModel.fallbackError,
                     isConnecting: viewModel.isConnectingToFallback,
+                    showsHostedOption: ChatEnvironment.supportsHostedChat,
                     style: style
                 ) {
                     Task { await viewModel.useHostedFallback() }
@@ -48,7 +49,11 @@ struct ChatView: View {
             case .ready:
                 conversationView
             case .failed(let message):
-                ChatErrorView(message: message, style: style) {
+                ChatErrorView(
+                    message: message,
+                    showsHostedOption: ChatEnvironment.supportsHostedChat,
+                    style: style
+                ) {
                     viewModel.retryDownload()
                 } useHostedFallback: {
                     Task { await viewModel.useHostedFallback() }
