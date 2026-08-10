@@ -40,20 +40,20 @@ struct LocalModel: Identifiable, Equatable {
         configuration: LLMRegistry.qwen3_0_6b_4bit
     )
 
-    static let smol = LocalModel(
-        id: "smol",
-        name: "SmolLM 135M",
-        shortName: "SmolLM",
-        initials: "SL",
-        sizeGB: 0.08,
-        sizeLabel: "76 MB",
+    static let gemma = LocalModel(
+        id: "gemma",
+        name: "Gemma 3 1B",
+        shortName: "Gemma 3",
+        initials: "G3",
+        sizeGB: 0.68,
+        sizeLabel: "698 MB",
         quantization: "4-bit",
-        focus: "Ultra light",
-        provider: "Hugging Face / MLX Community",
-        summary: "An ultra-light assistant for short answers, simple summaries, and basic offline chat.",
-        license: "Apache 2.0. The MLX Community conversion is based on Hugging Face TB SmolLM.",
-        colors: [.green, .teal],
-        configuration: LLMRegistry.smolLM_135M_4bit
+        focus: "Light",
+        provider: "Google / MLX Community",
+        summary: "A compact QAT-quantized assistant from Google for writing help, summaries, and general conversation.",
+        license: "Gemma Terms of Use. The MLX Community conversion is based on Google Gemma 3.",
+        colors: [.blue, .cyan],
+        configuration: LLMRegistry.gemma3_1B_qat_4bit
     )
 
     static let llama = LocalModel(
@@ -72,5 +72,5 @@ struct LocalModel: Identifiable, Equatable {
         configuration: LLMRegistry.llama3_2_1B_4bit
     )
 
-    static let catalog = [qwen, smol, llama]
+    static let catalog = [qwen, gemma, llama]
 }

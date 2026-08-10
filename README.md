@@ -4,13 +4,13 @@ Native iOS chat app that runs a local LLM experience with SwiftUI, Apple MLX, ML
 
 ## Overview
 
-MLX-SwiftUI is a compact AI chat application built to demonstrate practical local language model integration on iOS. On physical devices, the app can load Qwen3 0.6B 4-bit, SmolLM 135M 4-bit, or Llama 3.2 1B 4-bit through MLX/Hugging Face. On iOS Simulator, it skips local MLX model loading and uses Hugging Face Inference Providers through a hosted API fallback.
+MLX-SwiftUI is a compact AI chat application built to demonstrate practical local language model integration on iOS. On physical devices, the app can load Qwen3 0.6B 4-bit, Gemma 3 1B 4-bit, or Llama 3.2 1B 4-bit through MLX/Hugging Face. On iOS Simulator, it skips local MLX model loading and uses Hugging Face Inference Providers through a hosted API fallback.
 
 ## Features
 
 - On-device chat interface built with SwiftUI.
 - Qwen3 0.6B 4-bit model loading through MLX and Hugging Face.
-- SmolLM 135M 4-bit and Llama 3.2 1B 4-bit model downloads.
+- Gemma 3 1B QAT 4-bit and Llama 3.2 1B 4-bit model downloads.
 - Persistent model selection with up to two locally cached models.
 - Simulator-only Hugging Face API fallback using `openai/gpt-oss-120b:cerebras` that avoids local model downloads.
 - Async model initialization and prompt handling.
