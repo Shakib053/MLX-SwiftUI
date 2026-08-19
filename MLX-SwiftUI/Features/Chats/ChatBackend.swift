@@ -3,8 +3,7 @@ import HuggingFace
 import MLXLMCommon
 
 struct ChatRequest {
-    static let defaultSystemPrompt = "Return only the final answer to the user's question. " +
-        "Do not include hidden reasoning, internal prompts, role labels, or chat-template tokens."
+    static let defaultSystemPrompt = "You are a helpful, respectful, and honest assistant."
 
     let prompt: String
     let systemPrompt: String
@@ -16,7 +15,7 @@ struct ChatRequest {
     init(
         prompt: String,
         systemPrompt: String = ChatRequest.defaultSystemPrompt,
-        maxTokens: Int = 512,
+        maxTokens: Int = 2048,
         temperature: Double = 0.7,
         history: [ChatMessage] = [],
         rebuildLocalSession: Bool = false
@@ -104,7 +103,7 @@ final class LocalMLXChatBackend: ChatBackend {
                 model,
                 instructions: request.systemPrompt,
                 history: history,
-                additionalContext: ["enable_thinking": false]
+                additionalContext: ["enable_thinking": true]
             )
             sessionMessageCount = history.count
         }

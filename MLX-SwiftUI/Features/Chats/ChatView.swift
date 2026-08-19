@@ -202,10 +202,10 @@ struct ChatView: View {
                     .padding(16)
                 }
                 .onChange(of: viewModel.messages.count) { _, _ in
-                    scrollToLatestMessage(with: proxy)
+                    scrollToLatestMessage(with: proxy, animated: true)
                 }
                 .onChange(of: viewModel.messages.last?.text) { _, _ in
-                    scrollToLatestMessage(with: proxy)
+                    scrollToLatestMessage(with: proxy, animated: false)
                 }
             }
 
@@ -249,10 +249,14 @@ struct ChatView: View {
         }
     }
 
-    private func scrollToLatestMessage(with proxy: ScrollViewProxy) {
+    private func scrollToLatestMessage(with proxy: ScrollViewProxy, animated: Bool) {
         guard let lastID = viewModel.messages.last?.id else { return }
 
-        withAnimation(.easeOut(duration: 0.2)) {
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(lastID, anchor: .bottom)
+            }
+        } else {
             proxy.scrollTo(lastID, anchor: .bottom)
         }
     }

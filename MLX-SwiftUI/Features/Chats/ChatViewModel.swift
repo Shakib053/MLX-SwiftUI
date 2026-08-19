@@ -202,7 +202,7 @@ final class ChatViewModel {
                     model: container,
                     history: localHistory,
                     instructions: ChatRequest.defaultSystemPrompt,
-                    additionalContext: ["enable_thinking": false]
+                    additionalContext: ["enable_thinking": true]
                 )
                 self.localDownloadCompleted(with: localBackend, modelID: model.id)
                 #endif
