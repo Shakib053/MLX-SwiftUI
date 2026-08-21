@@ -5,6 +5,9 @@ struct ChatComposer: View {
     let activeModel: LocalModel
     let backendMode: ChatBackendMode?
     let isSending: Bool
+    /// True while a model is loading (e.g. after a mid-chat switch); input is
+    /// blocked so sends cannot be silently dropped.
+    let isSwitchingModel: Bool
     let isFocused: FocusState<Bool>.Binding
     let style: ChatVisualStyle
     let showModelPicker: () -> Void
@@ -14,11 +17,15 @@ struct ChatComposer: View {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var isInputBlocked: Bool {
+        isSending || isSwitchingModel
+    }
+
     private var textBinding: Binding<String> {
         Binding(
             get: { text },
             set: { newValue in
-                guard !isSending else { return }
+                guard !isInputBlocked else { return }
                 text = newValue
             }
         )
@@ -28,8 +35,16 @@ struct ChatComposer: View {
         VStack(spacing: 9) {
             HStack {
                 Button(action: showModelPicker) {
-                    Label(activeModel.name, systemImage: "cpu")
-                        .font(.caption.weight(.semibold))
+                    HStack(spacing: 6) {
+                        if isSwitchingModel {
+                            ProgressView()
+                                .controlSize(.mini)
+                        } else {
+                            Image(systemName: "cpu")
+                        }
+                        Text(activeModel.name)
+                    }
+                    .font(.caption.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
@@ -69,7 +84,7 @@ struct ChatComposer: View {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(style.surfaceBorder, lineWidth: 1)
                     }
-                    .disabled(isSending)
+                    .disabled(isInputBlocked)
 
                 Button(action: send) {
                     Image(systemName: isSending ? "hourglass" : "arrow.up")
@@ -79,8 +94,8 @@ struct ChatComposer: View {
                         .foregroundStyle(.white)
                         .clipShape(Circle())
                 }
-                .disabled(trimmedText.isEmpty || isSending)
-                .opacity(trimmedText.isEmpty || isSending ? 0.45 : 1)
+                .disabled(trimmedText.isEmpty || isInputBlocked)
+                .opacity(trimmedText.isEmpty || isInputBlocked ? 0.45 : 1)
             }
         }
         .padding(.horizontal, 12)
