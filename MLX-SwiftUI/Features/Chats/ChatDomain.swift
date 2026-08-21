@@ -33,6 +33,10 @@ enum ChatState: Equatable {
 enum ChatBackendMode: Equatable {
     case local
     case hosted
+
+    /// Identifier recorded on assistant messages produced by the hosted
+    /// Hugging Face fallback rather than an on-device model.
+    static let hostedModelID = "hosted"
 }
 
 enum ChatEnvironment {
@@ -92,16 +96,38 @@ struct ChatMessage: Identifiable, Equatable {
     let id: UUID
     let role: Role
     var text: String
+    var modelID: String
+    var isInterrupted: Bool
 
-    init(id: UUID = UUID(), role: Role, text: String) {
+    init(
+        id: UUID = UUID(),
+        role: Role,
+        text: String,
+        modelID: String = "",
+        isInterrupted: Bool = false
+    ) {
         self.id = id
         self.role = role
         self.text = text
+        self.modelID = modelID
+        self.isInterrupted = isInterrupted
     }
 
     enum Role: Equatable {
         case user
         case assistant
+    }
+}
+
+extension ChatMessage {
+    /// Short label naming the model that produced this assistant message.
+    /// Nil for user messages and legacy messages with no recorded model.
+    var modelDisplayName: String? {
+        guard role == .assistant, !modelID.isEmpty else { return nil }
+        if modelID == ChatBackendMode.hostedModelID {
+            return "Hugging Face"
+        }
+        return LocalModel.catalog.first { $0.id == modelID }?.shortName ?? modelID
     }
 }
 
@@ -129,7 +155,9 @@ enum ChatHistoryPolicy {
             ChatMessage(
                 id: message.id,
                 role: message.role,
-                text: message.text.truncated(to: maxMessageCharacters)
+                text: message.text.truncated(to: maxMessageCharacters),
+                modelID: message.modelID,
+                isInterrupted: message.isInterrupted
             )
         }
     }
@@ -140,6 +168,18 @@ enum ChatHistoryPolicy {
 
     static func modelMessages(_ messages: [ChatMessage]) -> [ChatMessage] {
         trim(normalized(messages), maxMessages: maxModelMessages, maxCharacters: maxModelCharacters)
+    }
+
+    /// History seeded into a freshly loaded model. Trailing empty or interrupted
+    /// assistant turns are dropped so a model switch never replays a cancelled
+    /// partial reply to the next model as if it were a complete answer.
+    static func modelSeed(_ messages: [ChatMessage]) -> [ChatMessage] {
+        var seeded = modelMessages(messages)
+        while let last = seeded.last,
+              last.text.isEmpty || (last.role == .assistant && last.isInterrupted) {
+            seeded.removeLast()
+        }
+        return seeded
     }
 
     private static func trim(

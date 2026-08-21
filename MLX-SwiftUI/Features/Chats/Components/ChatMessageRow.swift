@@ -5,6 +5,9 @@ struct ChatMessageRow: View {
     let message: ChatMessage
     let isSending: Bool
     let isLastMessage: Bool
+    /// Set when the conversation mixes replies from more than one model;
+    /// assistant bubbles then show which model produced them.
+    let showsModelLabel: Bool
     let style: ChatVisualStyle
     let regenerate: () -> Void
 
@@ -22,6 +25,19 @@ struct ChatMessageRow: View {
 
             if message.role == .assistant, !message.text.isEmpty {
                 responseTools
+            }
+
+            if message.role == .assistant, message.isInterrupted {
+                Label("Response stopped — regenerate to continue", systemImage: "stop.circle.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            if message.role == .assistant, showsModelLabel,
+               let modelName = message.modelDisplayName {
+                Text(modelName)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.tertiary)
             }
         }
     }

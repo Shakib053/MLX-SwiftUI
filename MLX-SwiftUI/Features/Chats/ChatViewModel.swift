@@ -9,6 +9,7 @@ import Foundation
 import Observation
 import SwiftData
 import HuggingFace
+import MLX
 import MLXHuggingFace
 import MLXLMCommon
 import MLXLLM
@@ -92,10 +93,31 @@ final class ChatViewModel {
         conversation?.isPinned ?? false
     }
 
-    func start(model: LocalModel, context: SwiftData.ModelContext) async {
+    /// The model this chat session is using, which may differ from the app-wide
+    /// active model while an existing conversation restores its recorded model.
+    var currentModel: LocalModel {
+        LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
+    }
+
+    /// Identifier recorded on assistant messages produced by the current backend.
+    private var assistantModelID: String {
+        backendMode == .hosted ? ChatBackendMode.hostedModelID : currentModelID
+    }
+
+    func start(
+        activeModel: LocalModel,
+        downloadedModelIDs: [String],
+        context: SwiftData.ModelContext
+    ) async {
         guard !didStartLoading else { return }
         didStartLoading = true
         modelContext = context
+
+        #if !targetEnvironment(simulator)
+        // Cap MLX's allocator cache so freed model weights are returned to the
+        // system instead of lingering between model switches.
+        MLX.Memory.cacheLimit = 20 * 1024 * 1024
+        #endif
 
         if let conversationID {
             var descriptor = FetchDescriptor<Conversation>(
@@ -107,7 +129,13 @@ final class ChatViewModel {
                 if let savedConversation = try context.fetch(descriptor).first {
                     conversation = savedConversation
                     let loadedMessages = savedConversation.orderedMessages.map {
-                        ChatMessage(id: $0.id, role: $0.role, text: $0.text)
+                        ChatMessage(
+                            id: $0.id,
+                            role: $0.role,
+                            text: $0.text,
+                            modelID: $0.modelID,
+                            isInterrupted: $0.isInterrupted
+                        )
                     }
                     messages = ChatHistoryPolicy.storedMessages(loadedMessages)
                     historyLimitReached = messages != loadedMessages
@@ -117,7 +145,18 @@ final class ChatViewModel {
             }
         }
 
-        currentModelID = model.id
+        // Continue a stored conversation on the model it was started with when
+        // that model is still on the device; otherwise use the app-wide choice.
+        let savedModelID = conversation?.modelID
+        if let savedModelID,
+           LocalModel.catalog.contains(where: { $0.id == savedModelID }),
+           downloadedModelIDs.contains(savedModelID) {
+            currentModelID = savedModelID
+        } else {
+            currentModelID = activeModel.id
+        }
+
+        let model = currentModel
         #if DEBUG && targetEnvironment(simulator)
         if SimulatorDownloadScenario.selected == .normal ||
             SimulatorDownloadScenario.selected == .hostedOnly {
@@ -137,6 +176,11 @@ final class ChatViewModel {
         localLoadingTask?.cancel()
         responseTask?.cancel()
         backend = nil
+        #if !targetEnvironment(simulator)
+        // The old container was just released; drop its cached GPU allocations
+        // so the incoming model starts with a clean memory budget.
+        MLX.Memory.clearCache()
+        #endif
         backendMode = nil
         isLocalModelReady = false
         downloadError = nil
@@ -193,12 +237,12 @@ final class ChatViewModel {
                         }
                     }
                 )
-                let localHistory = ChatHistoryPolicy.modelMessages(self.messages)
-                    .filter { !$0.text.isEmpty }
-                    .map { message in
+                let localHistory = ChatHistoryPolicy.modelSeed(self.messages)
+                    .compactMap { message -> Chat.Message? in
+                        guard !message.text.isEmpty else { return nil }
                         switch message.role {
-                        case .user: Chat.Message.user(message.text)
-                        case .assistant: Chat.Message.assistant(message.text)
+                        case .user: return .user(message.text)
+                        case .assistant: return .assistant(message.text)
                         }
                     }
                 let localBackend = LocalMLXChatBackend(
@@ -321,7 +365,7 @@ final class ChatViewModel {
 
         isSending = true
         messages.append(ChatMessage(role: .user, text: prompt))
-        messages.append(ChatMessage(role: .assistant, text: ""))
+        messages.append(ChatMessage(role: .assistant, text: "", modelID: assistantModelID))
         applyHistoryLimit()
 
         ensureConversation()
@@ -345,7 +389,7 @@ final class ChatViewModel {
             messages.removeLast()
         }
         isSending = true
-        messages.append(ChatMessage(role: .assistant, text: ""))
+        messages.append(ChatMessage(role: .assistant, text: "", modelID: assistantModelID))
         applyHistoryLimit()
         persistMessages(force: true)
         responseTask = Task { [weak self] in
@@ -391,9 +435,25 @@ final class ChatViewModel {
             }
         } catch {
             cancelPendingStreamFlush()
-            if let lastIndex = messages.indices.last {
+            if error is CancellationError || Task.isCancelled {
+                handleStreamCancellation()
+            } else if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = "Error: \(error.localizedDescription)"
             }
+        }
+    }
+
+    /// A cancelled stream (e.g. the user switching models mid-generation) keeps
+    /// whatever partial text already arrived, marked as interrupted so the UI can
+    /// offer regeneration. An empty placeholder is dropped instead of persisted.
+    private func handleStreamCancellation() {
+        flushStreamedTextNow()
+        guard let lastIndex = messages.indices.last,
+              messages[lastIndex].role == .assistant else { return }
+        if messages[lastIndex].text.isEmpty {
+            messages.removeLast()
+        } else {
+            messages[lastIndex].isInterrupted = true
         }
     }
 
@@ -517,12 +577,16 @@ final class ChatViewModel {
             if let persistedMessage = persistedByID[message.id] {
                 persistedMessage.text = message.text
                 persistedMessage.orderIndex = index
+                persistedMessage.modelID = message.modelID
+                persistedMessage.isInterrupted = message.isInterrupted
             } else {
                 let persistedMessage = PersistedMessage(
                     id: message.id,
                     role: message.role,
                     text: message.text,
                     orderIndex: index,
+                    modelID: message.modelID,
+                    isInterrupted: message.isInterrupted,
                     conversation: conversation
                 )
                 conversation.messages.append(persistedMessage)

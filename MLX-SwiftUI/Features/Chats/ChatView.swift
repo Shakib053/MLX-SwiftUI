@@ -29,36 +29,43 @@ struct ChatView: View {
         ZStack {
             style.background
 
-            switch viewModel.state {
-            case .loading:
-                ChatLoadingView(
-                    title: viewModel.loadingTitle,
-                    message: viewModel.loadingMessage,
-                    style: style
-                )
-            case .downloading:
-                ChatDownloadView(
-                    title: viewModel.loadingTitle,
-                    message: viewModel.loadingMessage,
-                    progress: viewModel.downloadProgress,
-                    fallbackError: viewModel.fallbackError,
-                    isConnecting: viewModel.isConnectingToFallback,
-                    showsHostedOption: ChatEnvironment.supportsHostedChat,
-                    style: style
-                ) {
-                    Task { await viewModel.useHostedFallback() }
-                }
-            case .ready:
+            if viewModel.state == .ready || !viewModel.messages.isEmpty {
+                // An in-progress conversation keeps its transcript visible while
+                // a model loads (initial open or mid-chat switch); the inline
+                // status strip in `conversationView` surfaces the progress.
                 conversationView
-            case .failed(let message):
-                ChatErrorView(
-                    message: message,
-                    showsHostedOption: ChatEnvironment.supportsHostedChat,
-                    style: style
-                ) {
-                    viewModel.retryDownload()
-                } useHostedFallback: {
-                    Task { await viewModel.useHostedFallback() }
+            } else {
+                switch viewModel.state {
+                case .loading:
+                    ChatLoadingView(
+                        title: viewModel.loadingTitle,
+                        message: viewModel.loadingMessage,
+                        style: style
+                    )
+                case .downloading:
+                    ChatDownloadView(
+                        title: viewModel.loadingTitle,
+                        message: viewModel.loadingMessage,
+                        progress: viewModel.downloadProgress,
+                        fallbackError: viewModel.fallbackError,
+                        isConnecting: viewModel.isConnectingToFallback,
+                        showsHostedOption: ChatEnvironment.supportsHostedChat,
+                        style: style
+                    ) {
+                        Task { await viewModel.useHostedFallback() }
+                    }
+                case .failed(let message):
+                    ChatErrorView(
+                        message: message,
+                        showsHostedOption: ChatEnvironment.supportsHostedChat,
+                        style: style
+                    ) {
+                        viewModel.retryDownload()
+                    } useHostedFallback: {
+                        Task { await viewModel.useHostedFallback() }
+                    }
+                case .ready:
+                    EmptyView()
                 }
             }
         }
@@ -102,7 +109,17 @@ struct ChatView: View {
             Text(viewModel.persistenceError ?? "Please try again.")
         }
         .task {
-            await viewModel.start(model: appState.activeModel, context: modelContext)
+            await viewModel.start(
+                activeModel: appState.activeModel,
+                downloadedModelIDs: appState.downloadedModelIDs,
+                context: modelContext
+            )
+            if appState.activeModelID != viewModel.currentModel.id {
+                // The conversation restored its own model; sync the global
+                // selection so the picker and UserDefaults agree. The change
+                // observer no-ops because the view model already uses it.
+                appState.activate(viewModel.currentModel)
+            }
         }
         .onChange(of: appState.activeModelID) { _, newModelID in
             guard let model = LocalModel.catalog.first(where: { $0.id == newModelID }) else { return }
@@ -123,7 +140,7 @@ struct ChatView: View {
                         .frame(width: 6, height: 6)
                     Text(viewModel.backendMode == .hosted
                          ? "Hugging Face • Online"
-                         : "\(appState.activeModel.shortName) • On device")
+                         : "\(viewModel.currentModel.shortName) • On device")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -194,6 +211,7 @@ struct ChatView: View {
                                 message: message,
                                 isSending: viewModel.isSending,
                                 isLastMessage: message.id == viewModel.messages.last?.id,
+                                showsModelLabel: showsModelLabels,
                                 style: style
                             ) {
                                 _ = viewModel.regenerateLastResponse()
@@ -239,11 +257,26 @@ struct ChatView: View {
                 }
             }
 
+            if isSwitchingModel {
+                ChatModelSwitchStatusView(
+                    state: viewModel.state,
+                    modelName: viewModel.currentModel.shortName,
+                    progress: viewModel.downloadProgress,
+                    retry: {
+                        viewModel.retryDownload()
+                    },
+                    useHostedFallback: {
+                        Task { await viewModel.useHostedFallback() }
+                    }
+                )
+            }
+
             ChatComposer(
                 text: $composerText,
-                activeModel: appState.activeModel,
+                activeModel: viewModel.currentModel,
                 backendMode: viewModel.backendMode,
                 isSending: viewModel.isSending,
+                isSwitchingModel: viewModel.state != .ready,
                 isFocused: $isComposerFocused,
                 style: style,
                 showModelPicker: { showsModelPicker = true },
@@ -254,6 +287,22 @@ struct ChatView: View {
         .onAppear {
             isComposerFocused = true
         }
+    }
+
+    private var isSwitchingModel: Bool {
+        viewModel.state != .ready && !viewModel.messages.isEmpty
+    }
+
+    /// Model labels appear on assistant bubbles only once a conversation mixes
+    /// replies from more than one recorded model.
+    private var showsModelLabels: Bool {
+        let recordedModelIDs = Set(
+            viewModel.messages
+                .filter { $0.role == .assistant }
+                .map(\.modelID)
+                .filter { !$0.isEmpty }
+        )
+        return recordedModelIDs.count > 1
     }
 
     private func sendCurrentPrompt() {
@@ -284,6 +333,56 @@ struct ChatView: View {
         } else {
             proxy.scrollTo(lastID, anchor: .bottom)
         }
+    }
+}
+
+/// Compact strip shown above the composer while a conversation keeps its
+/// transcript visible during a model load or mid-chat model switch.
+private struct ChatModelSwitchStatusView: View {
+    let state: ChatState
+    let modelName: String
+    let progress: Double
+    let retry: () -> Void
+    let useHostedFallback: () -> Void
+
+    private var hasFailed: Bool {
+        if case .failed = state { return true }
+        return false
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if hasFailed {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                Text("\(modelName) could not load")
+                    .font(.caption)
+                Spacer()
+                Button("Retry", action: retry)
+                    .font(.caption.weight(.semibold))
+            } else {
+                if state == .downloading, progress > 0 {
+                    ProgressView(value: progress)
+                        .frame(width: 120)
+                } else {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text(state == .downloading ? "Downloading \(modelName)…" : "Loading \(modelName)…")
+                    .font(.caption)
+                Spacer()
+            }
+
+            // Preserve the hosted-fallback escape hatch the full-screen
+            // download/error views offer (simulator only).
+            if ChatEnvironment.supportsHostedChat {
+                Button("Chat Online", action: useHostedFallback)
+                    .font(.caption.weight(.semibold))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
     }
 }
 

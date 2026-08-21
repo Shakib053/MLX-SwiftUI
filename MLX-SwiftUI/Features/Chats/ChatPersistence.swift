@@ -55,6 +55,12 @@ final class PersistedMessage {
     var text: String
     var createdAt: Date
     var orderIndex: Int
+    /// Model that produced this message (LocalModel id, or "hosted" for the
+    /// online fallback). Empty for messages written before this field existed.
+    var modelID: String = ""
+    /// True when generation was cancelled (e.g. a mid-chat model switch)
+    /// and the stored text is only a partial reply.
+    var isInterrupted: Bool = false
     var conversation: Conversation?
 
     init(
@@ -63,6 +69,8 @@ final class PersistedMessage {
         text: String,
         createdAt: Date = .now,
         orderIndex: Int,
+        modelID: String = "",
+        isInterrupted: Bool = false,
         conversation: Conversation? = nil
     ) {
         self.id = id
@@ -70,6 +78,8 @@ final class PersistedMessage {
         self.text = text
         self.createdAt = createdAt
         self.orderIndex = orderIndex
+        self.modelID = modelID
+        self.isInterrupted = isInterrupted
         self.conversation = conversation
     }
 
