@@ -69,6 +69,9 @@ final class ChatViewModel {
     private var responseTask: Task<Void, Never>?
     private var lastPersistenceDate = Date.distantPast
     private var currentModelID = LocalModel.qwen.id
+    private var streamedResponseText = ""
+    private var streamedCharacterCount = 0
+    private var pendingStreamFlushTask: Task<Void, Never>?
     private var modelContext: SwiftData.ModelContext?
     private let conversationID: UUID?
     private var conversation: Conversation?
@@ -360,10 +363,7 @@ final class ChatViewModel {
         using backend: any ChatBackend,
         rebuildLocalSession: Bool = false
     ) async {
-        defer {
-            isSending = false
-            responseTask = nil
-        }
+        defer { finishStreaming() }
 
         do {
             try Task.checkCancellation()
@@ -372,35 +372,74 @@ final class ChatViewModel {
                 history: ChatHistoryPolicy.modelMessages(Array(messages.dropLast(2))),
                 rebuildLocalSession: rebuildLocalSession
             )
-            var responseText = ""
+            streamedResponseText = ""
+            streamedCharacterCount = 0
             let stream = backend.streamResponse(for: request)
 
             for try await chunk in stream {
-                if responseText.count < ChatHistoryPolicy.maxMessageCharacters {
-                    responseText.append(contentsOf: chunk)
-                    responseText = responseText.truncated(to: ChatHistoryPolicy.maxMessageCharacters)
-                }
-
-                if let lastIndex = messages.indices.last {
-                    messages[lastIndex].text = responseText
-                    persistMessages()
-                }
+                appendStreamedChunk(chunk)
+                scheduleStreamedTextFlush()
             }
 
+            cancelPendingStreamFlush()
             if let lastIndex = messages.indices.last {
-                let finalText = ChatResponseSanitizer.clean(responseText)
+                let finalText = ChatResponseSanitizer.clean(streamedResponseText)
                 guard !finalText.isEmpty else {
                     throw ChatBackendError.emptyResponse
                 }
                 messages[lastIndex].text = finalText
-                persistMessages(force: true)
             }
         } catch {
+            cancelPendingStreamFlush()
             if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = "Error: \(error.localizedDescription)"
-                persistMessages(force: true)
             }
         }
+    }
+
+    /// Tokens arrive faster than the UI can re-layout comfortably; pushing each one
+    /// straight into `messages` thrashes SwiftUI and SwiftData. Batching updates to
+    /// ~20 per second keeps streaming smooth instead of flickering.
+    private func appendStreamedChunk(_ chunk: String) {
+        let remainingCapacity = ChatHistoryPolicy.maxMessageCharacters - streamedCharacterCount
+        guard remainingCapacity > 0 else { return }
+        if chunk.count <= remainingCapacity {
+            streamedResponseText += chunk
+            streamedCharacterCount += chunk.count
+        } else {
+            streamedResponseText += chunk.prefix(remainingCapacity)
+            streamedCharacterCount = ChatHistoryPolicy.maxMessageCharacters
+        }
+    }
+
+    private func scheduleStreamedTextFlush() {
+        guard pendingStreamFlushTask == nil else { return }
+        pendingStreamFlushTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(50))
+            guard let self, !Task.isCancelled else { return }
+            self.flushStreamedTextNow()
+        }
+    }
+
+    private func flushStreamedTextNow() {
+        cancelPendingStreamFlush()
+        guard let lastIndex = messages.indices.last,
+              messages[lastIndex].text != streamedResponseText else { return }
+        messages[lastIndex].text = streamedResponseText
+    }
+
+    private func cancelPendingStreamFlush() {
+        pendingStreamFlushTask?.cancel()
+        pendingStreamFlushTask = nil
+    }
+
+    private func finishStreaming() {
+        cancelPendingStreamFlush()
+        streamedResponseText = ""
+        streamedCharacterCount = 0
+        isSending = false
+        responseTask = nil
+        persistMessages(force: true)
     }
 
     func renameConversation(to title: String) {

@@ -11,6 +11,8 @@ struct ChatView: View {
     @State private var composerID = UUID()
     @State private var showsModelPicker = false
     @State private var showsDeleteConfirmation = false
+    @State private var isFollowingBottom = true
+    @State private var scrollPhase: ScrollPhase = .idle
     @FocusState private var isComposerFocused: Bool
     private let viewID: UUID
 
@@ -201,11 +203,39 @@ struct ChatView: View {
                     }
                     .padding(16)
                 }
+                .onAppear {
+                    guard !viewModel.messages.isEmpty else { return }
+                    scrollToLatestMessage(with: proxy, animated: false)
+                }
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.isNearBottom
+                } action: { _, isNearBottom in
+                    if isNearBottom {
+                        isFollowingBottom = true
+                    } else if scrollPhase != .idle && scrollPhase != .animating {
+                        // Content growing between updates briefly leaves the bottom;
+                        // only a user-driven scroll should abandon the response.
+                        isFollowingBottom = false
+                    }
+                }
+                .onScrollPhaseChange { _, newPhase in
+                    scrollPhase = newPhase
+                }
                 .onChange(of: viewModel.messages.count) { _, _ in
+                    guard viewModel.isSending else { return }
+                    isFollowingBottom = true
                     scrollToLatestMessage(with: proxy, animated: true)
                 }
                 .onChange(of: viewModel.messages.last?.text) { _, _ in
+                    guard isFollowingBottom else { return }
                     scrollToLatestMessage(with: proxy, animated: false)
+                }
+                .onChange(of: viewModel.isSending) { wasSending, isSending in
+                    guard wasSending, !isSending else { return }
+                    resetComposerAndFocus()
+                    if isFollowingBottom {
+                        scrollToLatestMessage(with: proxy, animated: true)
+                    }
                 }
             }
 
@@ -220,11 +250,6 @@ struct ChatView: View {
                 send: sendCurrentPrompt
             )
             .id(composerID)
-            .onChange(of: viewModel.isSending) { wasSending, isSending in
-                if wasSending && !isSending {
-                    resetComposerAndFocus()
-                }
-            }
         }
         .onAppear {
             isComposerFocused = true
@@ -259,6 +284,16 @@ struct ChatView: View {
         } else {
             proxy.scrollTo(lastID, anchor: .bottom)
         }
+    }
+}
+
+private extension ScrollGeometry {
+    var isNearBottom: Bool {
+        let distanceFromBottom = contentSize.height
+            - contentOffset.y
+            - visibleRect.height
+            + contentInsets.bottom
+        return distanceFromBottom <= 120
     }
 }
 
