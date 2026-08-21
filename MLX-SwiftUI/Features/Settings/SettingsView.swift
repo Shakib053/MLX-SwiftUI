@@ -64,10 +64,6 @@ struct SettingsView: View {
                     }
 
                     LabeledContent("Version", value: appVersion)
-
-                    Button("Replay Onboarding") {
-                        showOnboarding()
-                    }
                 }
 
                 #if DEBUG && targetEnvironment(simulator)
