@@ -27,6 +27,12 @@ struct ChatMessageRow: View {
                 responseTools
             }
 
+            if message.isSafetyResponse {
+                Label("Safety filter", systemImage: "shield.fill")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+
             if message.role == .assistant, message.isInterrupted {
                 Label("Response stopped — regenerate to continue", systemImage: "stop.circle.fill")
                     .font(.caption2)
@@ -62,7 +68,7 @@ struct ChatMessageRow: View {
             }
             .accessibilityLabel("Copy response")
 
-            if isLastMessage {
+            if isLastMessage, !message.isSafetyResponse {
                 Button(action: regenerate) {
                     Image(systemName: "arrow.clockwise")
                         .frame(width: 36, height: 32)

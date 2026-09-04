@@ -93,6 +93,8 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
 #endif
 
 struct ChatMessage: Identifiable, Equatable {
+    static let safetyModelID = "safety-filter"
+
     let id: UUID
     let role: Role
     var text: String
@@ -124,10 +126,17 @@ extension ChatMessage {
     /// Nil for user messages and legacy messages with no recorded model.
     var modelDisplayName: String? {
         guard role == .assistant, !modelID.isEmpty else { return nil }
+        if modelID == Self.safetyModelID {
+            return "Safety filter"
+        }
         if modelID == ChatBackendMode.hostedModelID {
             return "Hugging Face"
         }
         return LocalModel.catalog.first { $0.id == modelID }?.shortName ?? modelID
+    }
+
+    var isSafetyResponse: Bool {
+        modelID == Self.safetyModelID
     }
 }
 

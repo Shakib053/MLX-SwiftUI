@@ -240,7 +240,7 @@ struct ChatView: View {
                     scrollPhase = newPhase
                 }
                 .onChange(of: viewModel.messages.count) { _, _ in
-                    guard viewModel.isSending else { return }
+                    guard viewModel.isSending || viewModel.messages.last?.isSafetyResponse == true else { return }
                     isFollowingBottom = true
                     scrollToLatestMessage(with: proxy, animated: true)
                 }
@@ -299,6 +299,7 @@ struct ChatView: View {
         let recordedModelIDs = Set(
             viewModel.messages
                 .filter { $0.role == .assistant }
+                .filter { !$0.isSafetyResponse }
                 .map(\.modelID)
                 .filter { !$0.isEmpty }
         )

@@ -361,6 +361,12 @@ final class ChatViewModel {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .truncated(to: ChatHistoryPolicy.maxMessageCharacters)
         guard !prompt.isEmpty, !isSending else { return false }
+
+        if case .blocked(let category) = ChatSafetyGate.evaluate(prompt) {
+            appendSafetyResponse(for: prompt, category: category)
+            return true
+        }
+
         guard let backend else { return false }
 
         isSending = true
@@ -377,12 +383,42 @@ final class ChatViewModel {
         return true
     }
 
+    private func appendSafetyResponse(for prompt: String, category: ChatSafetyCategory) {
+        messages.append(ChatMessage(role: .user, text: prompt))
+        messages.append(
+            ChatMessage(
+                role: .assistant,
+                text: category.refusalMessage,
+                modelID: ChatMessage.safetyModelID
+            )
+        )
+        applyHistoryLimit()
+        ensureConversation()
+        persistMessages(force: true)
+    }
+
     @discardableResult
     func regenerateLastResponse() -> Bool {
         guard !isSending,
               let lastUserMessage = messages.last(where: { $0.role == .user }),
               let backend else {
             return false
+        }
+
+        if case .blocked(let category) = ChatSafetyGate.evaluate(lastUserMessage.text) {
+            if messages.last?.role == .assistant {
+                messages.removeLast()
+            }
+            messages.append(
+                ChatMessage(
+                    role: .assistant,
+                    text: category.refusalMessage,
+                    modelID: ChatMessage.safetyModelID
+                )
+            )
+            applyHistoryLimit()
+            persistMessages(force: true)
+            return true
         }
 
         if messages.last?.role == .assistant {
