@@ -118,10 +118,22 @@ final class LocalMLXChatBackend: ChatBackend {
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
+                    let promptTokens = try await self.model.perform { _, tokenizer in
+                        tokenizer.encode(text: request.prompt).count
+                    }
+                    var fullResponseText = ""
                     let stream = session.streamResponse(to: request.prompt)
                     for try await chunk in stream {
+                        fullResponseText += chunk
                         continuation.yield(.chunk(chunk))
                     }
+                    let completionTokens = try await self.model.perform { _, tokenizer in
+                        tokenizer.encode(text: fullResponseText).count
+                    }
+                    continuation.yield(.usage(
+                        promptTokens: promptTokens,
+                        completionTokens: completionTokens
+                    ))
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
