@@ -29,7 +29,12 @@ struct ChatRequest {
     }
 }
 
-typealias ChatTextStream = AsyncThrowingStream<String, Error>
+enum ChatResponseStreamEvent {
+    case chunk(String)
+    case usage(promptTokens: Int, completionTokens: Int)
+}
+
+typealias ChatTextStream = AsyncThrowingStream<ChatResponseStreamEvent, Error>
 
 protocol ChatBackend {
     func streamResponse(for request: ChatRequest) -> ChatTextStream
@@ -53,7 +58,7 @@ private enum ChatStreamAdapter {
                         guard let chunk = text(event), !chunk.isEmpty else {
                             continue
                         }
-                        continuation.yield(chunk)
+                        continuation.yield(.chunk(chunk))
                     }
                     continuation.finish()
                 } catch {
@@ -109,7 +114,23 @@ final class LocalMLXChatBackend: ChatBackend {
         }
 
         sessionMessageCount += 2
-        return session.streamResponse(to: request.prompt)
+
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let stream = session.streamResponse(to: request.prompt)
+                    for try await chunk in stream {
+                        continuation.yield(.chunk(chunk))
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
     }
 }
 
@@ -147,8 +168,28 @@ struct HuggingFaceAPIChatBackend: ChatBackend {
             maxTokens: request.maxTokens
         )
 
-        return ChatStreamAdapter.textStream(from: stream) { chunk in
-            chunk.choices.first?.message.content?.plainText
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await chunk in stream {
+                        if let content = chunk.choices.first?.message.content?.plainText, !content.isEmpty {
+                            continuation.yield(.chunk(content))
+                        }
+                        if let usage = chunk.usage {
+                            continuation.yield(.usage(
+                                promptTokens: usage.promptTokens,
+                                completionTokens: usage.completionTokens
+                            ))
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
         }
     }
 }

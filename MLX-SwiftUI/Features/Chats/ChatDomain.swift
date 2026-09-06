@@ -100,19 +100,30 @@ struct ChatMessage: Identifiable, Equatable {
     var text: String
     var modelID: String
     var isInterrupted: Bool
+    var promptTokens: Int?
+    var completionTokens: Int?
+
+    var totalTokens: Int? {
+        guard let promptCount = promptTokens, let completionCount = completionTokens else { return nil }
+        return promptCount + completionCount
+    }
 
     init(
         id: UUID = UUID(),
         role: Role,
         text: String,
         modelID: String = "",
-        isInterrupted: Bool = false
+        isInterrupted: Bool = false,
+        promptTokens: Int? = nil,
+        completionTokens: Int? = nil
     ) {
         self.id = id
         self.role = role
         self.text = text
         self.modelID = modelID
         self.isInterrupted = isInterrupted
+        self.promptTokens = promptTokens
+        self.completionTokens = completionTokens
     }
 
     enum Role: Equatable {

@@ -17,6 +17,8 @@ struct LocalModel: Identifiable, Equatable {
     let colors: [Color]
     let configuration: ModelConfiguration
 
+    let contextWindowTokens: Int
+
     var repositoryID: String {
         if case .id(let id, _) = configuration.id {
             return id
@@ -37,7 +39,8 @@ struct LocalModel: Identifiable, Equatable {
         summary: "A compact general-purpose model suited to quick questions, summaries, and lightweight coding help.",
         license: "Apache 2.0. The MLX Community conversion is based on Qwen3.",
         colors: [.indigo, .purple],
-        configuration: LLMRegistry.qwen3_0_6b_4bit
+        configuration: LLMRegistry.qwen3_0_6b_4bit,
+        contextWindowTokens: 32768
     )
 
     static let gemma = LocalModel(
@@ -53,7 +56,8 @@ struct LocalModel: Identifiable, Equatable {
         summary: "A compact QAT-quantized assistant from Google for writing help, summaries, and general conversation.",
         license: "Gemma Terms of Use. The MLX Community conversion is based on Google Gemma 3.",
         colors: [.blue, .cyan],
-        configuration: LLMRegistry.gemma3_1B_qat_4bit
+        configuration: LLMRegistry.gemma3_1B_qat_4bit,
+        contextWindowTokens: 8192
     )
 
     static let llama = LocalModel(
@@ -69,7 +73,8 @@ struct LocalModel: Identifiable, Equatable {
         summary: "A stronger multilingual assistant for writing, summaries, retrieval, and general conversation.",
         license: "Llama 3.2 Community License. Include the required Llama attribution and usage notice.",
         colors: [.orange, .pink],
-        configuration: LLMRegistry.llama3_2_1B_4bit
+        configuration: LLMRegistry.llama3_2_1B_4bit,
+        contextWindowTokens: 131072
     )
 
     static let catalog = [qwen, gemma, llama]

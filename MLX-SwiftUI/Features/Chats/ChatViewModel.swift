@@ -119,31 +119,7 @@ final class ChatViewModel {
         MLX.Memory.cacheLimit = 20 * 1024 * 1024
         #endif
 
-        if let conversationID {
-            var descriptor = FetchDescriptor<Conversation>(
-                predicate: #Predicate { $0.id == conversationID }
-            )
-            descriptor.fetchLimit = 1
-
-            do {
-                if let savedConversation = try context.fetch(descriptor).first {
-                    conversation = savedConversation
-                    let loadedMessages = savedConversation.orderedMessages.map {
-                        ChatMessage(
-                            id: $0.id,
-                            role: $0.role,
-                            text: $0.text,
-                            modelID: $0.modelID,
-                            isInterrupted: $0.isInterrupted
-                        )
-                    }
-                    messages = ChatHistoryPolicy.storedMessages(loadedMessages)
-                    historyLimitReached = messages != loadedMessages
-                }
-            } catch {
-                persistenceError = "Could not load this conversation: \(error.localizedDescription)"
-            }
-        }
+        loadConversationIfPresent(context: context)
 
         // Continue a stored conversation on the model it was started with when
         // that model is still on the device; otherwise use the app-wide choice.
@@ -456,9 +432,18 @@ final class ChatViewModel {
             streamedCharacterCount = 0
             let stream = backend.streamResponse(for: request)
 
-            for try await chunk in stream {
-                appendStreamedChunk(chunk)
-                scheduleStreamedTextFlush()
+            var receivedPromptTokens: Int?
+            var receivedCompletionTokens: Int?
+
+            for try await event in stream {
+                switch event {
+                case .chunk(let chunk):
+                    appendStreamedChunk(chunk)
+                    scheduleStreamedTextFlush()
+                case .usage(let promptTokens, let completionTokens):
+                    receivedPromptTokens = promptTokens
+                    receivedCompletionTokens = completionTokens
+                }
             }
 
             cancelPendingStreamFlush()
@@ -468,6 +453,17 @@ final class ChatViewModel {
                     throw ChatBackendError.emptyResponse
                 }
                 messages[lastIndex].text = finalText
+                if let promptCount = receivedPromptTokens, let completionCount = receivedCompletionTokens {
+                    messages[lastIndex].promptTokens = promptCount
+                    messages[lastIndex].completionTokens = completionCount
+                    print(
+                        "📊 [MLX-SwiftUI] Token Consumption — Model: \(currentModel.name) | " +
+                        "Prompt: \(promptCount) | Completion: \(completionCount) | " +
+                        "Total: \(promptCount + completionCount) | Context Window: \(currentModel.contextWindowTokens) tokens"
+                    )
+                } else {
+                    print("📊 [MLX-SwiftUI] Model Loaded: \(currentModel.name) | Context Window: \(currentModel.contextWindowTokens) tokens")
+                }
             }
         } catch {
             cancelPendingStreamFlush()
@@ -484,6 +480,7 @@ final class ChatViewModel {
     /// offer regeneration. An empty placeholder is dropped instead of persisted.
     private func handleStreamCancellation() {
         flushStreamedTextNow()
+        cancelPendingStreamFlush()
         guard let lastIndex = messages.indices.last,
               messages[lastIndex].role == .assistant else { return }
         if messages[lastIndex].text.isEmpty {
@@ -492,11 +489,13 @@ final class ChatViewModel {
             messages[lastIndex].isInterrupted = true
         }
     }
+}
 
+private extension ChatViewModel {
     /// Tokens arrive faster than the UI can re-layout comfortably; pushing each one
     /// straight into `messages` thrashes SwiftUI and SwiftData. Batching updates to
     /// ~20 per second keeps streaming smooth instead of flickering.
-    private func appendStreamedChunk(_ chunk: String) {
+    func appendStreamedChunk(_ chunk: String) {
         let remainingCapacity = ChatHistoryPolicy.maxMessageCharacters - streamedCharacterCount
         guard remainingCapacity > 0 else { return }
         if chunk.count <= remainingCapacity {
@@ -508,7 +507,7 @@ final class ChatViewModel {
         }
     }
 
-    private func scheduleStreamedTextFlush() {
+    func scheduleStreamedTextFlush() {
         guard pendingStreamFlushTask == nil else { return }
         pendingStreamFlushTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(50))
@@ -517,19 +516,19 @@ final class ChatViewModel {
         }
     }
 
-    private func flushStreamedTextNow() {
+    func flushStreamedTextNow() {
         cancelPendingStreamFlush()
         guard let lastIndex = messages.indices.last,
               messages[lastIndex].text != streamedResponseText else { return }
         messages[lastIndex].text = streamedResponseText
     }
 
-    private func cancelPendingStreamFlush() {
+    func cancelPendingStreamFlush() {
         pendingStreamFlushTask?.cancel()
         pendingStreamFlushTask = nil
     }
 
-    private func finishStreaming() {
+    func finishStreaming() {
         cancelPendingStreamFlush()
         streamedResponseText = ""
         streamedCharacterCount = 0
@@ -537,7 +536,9 @@ final class ChatViewModel {
         responseTask = nil
         persistMessages(force: true)
     }
+}
 
+extension ChatViewModel {
     func renameConversation(to title: String) {
         let cleanedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedTitle.isEmpty, let conversation else { return }
@@ -615,6 +616,8 @@ final class ChatViewModel {
                 persistedMessage.orderIndex = index
                 persistedMessage.modelID = message.modelID
                 persistedMessage.isInterrupted = message.isInterrupted
+                persistedMessage.promptTokens = message.promptTokens
+                persistedMessage.completionTokens = message.completionTokens
             } else {
                 let persistedMessage = PersistedMessage(
                     id: message.id,
@@ -623,6 +626,8 @@ final class ChatViewModel {
                     orderIndex: index,
                     modelID: message.modelID,
                     isInterrupted: message.isInterrupted,
+                    promptTokens: message.promptTokens,
+                    completionTokens: message.completionTokens,
                     conversation: conversation
                 )
                 conversation.messages.append(persistedMessage)
@@ -658,6 +663,35 @@ final class ChatViewModel {
         if limitedMessages != messages {
             messages = limitedMessages
             historyLimitReached = true
+        }
+    }
+
+    private func loadConversationIfPresent(context: SwiftData.ModelContext) {
+        guard let conversationID else { return }
+        var descriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.id == conversationID }
+        )
+        descriptor.fetchLimit = 1
+
+        do {
+            if let savedConversation = try context.fetch(descriptor).first {
+                conversation = savedConversation
+                let loadedMessages = savedConversation.orderedMessages.map {
+                    ChatMessage(
+                        id: $0.id,
+                        role: $0.role,
+                        text: $0.text,
+                        modelID: $0.modelID,
+                        isInterrupted: $0.isInterrupted,
+                        promptTokens: $0.promptTokens,
+                        completionTokens: $0.completionTokens
+                    )
+                }
+                messages = ChatHistoryPolicy.storedMessages(loadedMessages)
+                historyLimitReached = messages != loadedMessages
+            }
+        } catch {
+            persistenceError = "Could not load this conversation: \(error.localizedDescription)"
         }
     }
 

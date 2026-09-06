@@ -61,6 +61,8 @@ final class PersistedMessage {
     /// True when generation was cancelled (e.g. a mid-chat model switch)
     /// and the stored text is only a partial reply.
     var isInterrupted: Bool = false
+    var promptTokens: Int?
+    var completionTokens: Int?
     var conversation: Conversation?
 
     init(
@@ -71,6 +73,8 @@ final class PersistedMessage {
         orderIndex: Int,
         modelID: String = "",
         isInterrupted: Bool = false,
+        promptTokens: Int? = nil,
+        completionTokens: Int? = nil,
         conversation: Conversation? = nil
     ) {
         self.id = id
@@ -80,6 +84,8 @@ final class PersistedMessage {
         self.orderIndex = orderIndex
         self.modelID = modelID
         self.isInterrupted = isInterrupted
+        self.promptTokens = promptTokens
+        self.completionTokens = completionTokens
         self.conversation = conversation
     }
 

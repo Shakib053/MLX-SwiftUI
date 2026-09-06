@@ -39,6 +39,17 @@ struct ChatMessageRow: View {
                     .foregroundStyle(.secondary)
             }
 
+            if message.role == .assistant, let promptTokens = message.promptTokens, let completionTokens = message.completionTokens {
+                HStack(spacing: 6) {
+                    Label("\(promptTokens) in / \(completionTokens) out", systemImage: "gauge.with.dots.needle.bottom.50percent")
+                    if let totalTokens = message.totalTokens {
+                        Text("• \(totalTokens) tokens total")
+                    }
+                }
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.tertiary)
+            }
+
             if message.role == .assistant, showsModelLabel,
                let modelName = message.modelDisplayName {
                 Text(modelName)
