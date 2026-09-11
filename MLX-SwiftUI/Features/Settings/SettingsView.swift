@@ -2,8 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
-    @State private var showsFeedback = false
-    @State private var showsLicenses = false
     let showOnboarding: () -> Void
 
     var body: some View {
@@ -45,8 +43,8 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    Button {
-                        showsFeedback = true
+                    NavigationLink {
+                        FeedbackView()
                     } label: {
                         Label("Send Feedback", systemImage: "bubble.left")
                     }
@@ -57,8 +55,9 @@ struct SettingsView: View {
                         Label("Rate MLX Chat", systemImage: "star")
                     }
 
-                    Button {
-                        showsLicenses = true
+                    NavigationLink {
+                        LicensesView()
+                            .environment(appState)
                     } label: {
                         Label("Model Licenses", systemImage: "doc.text")
                     }
@@ -71,13 +70,6 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showsFeedback) {
-                FeedbackView()
-            }
-            .sheet(isPresented: $showsLicenses) {
-                LicensesView()
-                    .environment(appState)
-            }
         }
     }
 

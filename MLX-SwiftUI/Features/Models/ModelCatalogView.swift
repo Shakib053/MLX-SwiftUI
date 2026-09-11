@@ -1,11 +1,9 @@
 import SwiftUI
 
 struct ModelCatalogView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     @Binding var replacementTarget: LocalModel?
     @State private var searchText = ""
-    @State private var detailModel: LocalModel?
 
     private var filteredModels: [LocalModel] {
         guard !searchText.isEmpty else { return LocalModel.catalog }
@@ -16,29 +14,19 @@ struct ModelCatalogView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 14) {
-                    ForEach(filteredModels) { model in
-                        modelCard(model)
-                    }
-                }
-                .padding(20)
-            }
-            .background(AppBackground())
-            .navigationTitle("Model Catalog")
-            .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $searchText, prompt: "Search supported models")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+        ScrollView {
+            LazyVStack(spacing: 14) {
+                ForEach(filteredModels) { model in
+                    modelCard(model)
                 }
             }
-            .sheet(item: $detailModel) { model in
-                ModelDetailView(model: model)
-                    .environment(appState)
-            }
+            .padding(20)
         }
+        .background(AppBackground())
+        .navigationTitle("Model Catalog")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, prompt: "Search supported models")
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private func modelCard(_ model: LocalModel) -> some View {
@@ -57,7 +45,12 @@ struct ModelCatalogView: View {
                     .foregroundStyle(.green)
             }
             HStack {
-                Button("Details") { detailModel = model }
+                NavigationLink {
+                    ModelDetailView(model: model)
+                        .environment(appState)
+                } label: {
+                    Text("Details")
+                }
                     .buttonStyle(.bordered)
                 Button(appState.downloadedModelIDs.contains(model.id) ? "Installed" : "Download") {
                     beginDownload(model)
