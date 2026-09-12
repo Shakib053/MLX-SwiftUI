@@ -3,7 +3,6 @@ import SwiftUI
 struct ModelsView: View {
     @Environment(AppState.self) private var appState
     @State private var showsCatalog = false
-    @State private var detailModel: LocalModel?
     @State private var replacementTarget: LocalModel?
 
     var body: some View {
@@ -53,20 +52,17 @@ struct ModelsView: View {
             .navigationTitle("Models")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showsCatalog = true
+                    NavigationLink {
+                        ModelCatalogView(replacementTarget: $replacementTarget)
+                            .environment(appState)
                     } label: {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Add model")
                 }
             }
-            .sheet(isPresented: $showsCatalog) {
+            .navigationDestination(isPresented: $showsCatalog) {
                 ModelCatalogView(replacementTarget: $replacementTarget)
-                    .environment(appState)
-            }
-            .sheet(item: $detailModel) { model in
-                ModelDetailView(model: model)
                     .environment(appState)
             }
             .alert(
@@ -169,7 +165,12 @@ struct ModelsView: View {
             }
             Divider()
             HStack {
-                Button("Details") { detailModel = model }
+                NavigationLink {
+                    ModelDetailView(model: model)
+                        .environment(appState)
+                } label: {
+                    Text("Details")
+                }
                 Spacer()
                 Button("Remove", role: .destructive) { appState.remove(model) }
                     .disabled(appState.downloadedModels.count == 1)
@@ -204,7 +205,12 @@ struct ModelsView: View {
                     .tint(.indigo)
             } else {
                 HStack {
-                    Button("Details") { detailModel = model }
+                    NavigationLink {
+                        ModelDetailView(model: model)
+                            .environment(appState)
+                    } label: {
+                        Text("Details")
+                    }
                         .buttonStyle(.bordered)
                     Button("Download") { beginDownload(model) }
                         .buttonStyle(.borderedProminent)

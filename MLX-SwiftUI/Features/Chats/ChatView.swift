@@ -71,6 +71,7 @@ struct ChatView: View {
         }
         .navigationTitle(viewModel.conversationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
         .toolbar {
