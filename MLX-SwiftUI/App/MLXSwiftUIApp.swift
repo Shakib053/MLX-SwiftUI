@@ -14,6 +14,6 @@ struct MLXSwiftUIApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [Conversation.self, PersistedMessage.self])
+        .modelContainer(for: [Conversation.self, PersistedMessage.self, SavedTaskResult.self])
     }
 }

@@ -25,7 +25,11 @@ enum HomeContentExtractor {
         let text: String
         if url.pathExtension.lowercased() == "pdf" {
             guard let document = PDFDocument(data: data) else { throw HomeImportError.unreadableFile }
-            text = document.string ?? ""
+            text = (0..<document.pageCount).compactMap { index in
+                guard let pageText = document.page(at: index)?.string,
+                      !pageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+                return "Page \(index + 1):\n\(pageText)"
+            }.joined(separator: "\n\n")
         } else {
             guard let decoded = String(data: data, encoding: .utf8) else {
                 throw HomeImportError.unreadableFile
