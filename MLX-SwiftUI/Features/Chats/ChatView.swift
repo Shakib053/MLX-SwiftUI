@@ -15,9 +15,11 @@ struct ChatView: View {
     @State private var scrollPhase: ScrollPhase = .idle
     @FocusState private var isComposerFocused: Bool
     private let viewID: UUID
+    private let initialPrompt: String
 
-    init(conversationID: UUID? = nil, viewID: UUID = UUID()) {
+    init(conversationID: UUID? = nil, viewID: UUID = UUID(), initialPrompt: String = "") {
         self.viewID = viewID
+        self.initialPrompt = initialPrompt
         _viewModel = State(initialValue: ChatViewModel(conversationID: conversationID))
     }
 
@@ -60,7 +62,11 @@ struct ChatView: View {
                         showsHostedOption: ChatEnvironment.supportsHostedChat,
                         style: style
                     ) {
-                        viewModel.retryDownload()
+                        if appState.prefersFoundationModel {
+                            viewModel.switchToFoundationModel()
+                        } else {
+                            viewModel.retryDownload()
+                        }
                     } useHostedFallback: {
                         Task { await viewModel.useHostedFallback() }
                     }
@@ -78,7 +84,11 @@ struct ChatView: View {
             conversationToolbar
         }
         .sheet(isPresented: $showsModelPicker) {
-            ChatModelPicker(isPresented: $showsModelPicker)
+            ChatModelPicker(
+                isPresented: $showsModelPicker,
+                selectedBackend: viewModel.backendMode,
+                selectedModelID: viewModel.currentModel.id
+            )
                 .environment(appState)
         }
         .alert("Delete this conversation?", isPresented: $showsDeleteConfirmation) {
@@ -110,21 +120,25 @@ struct ChatView: View {
             Text(viewModel.persistenceError ?? "Please try again.")
         }
         .task {
+            if !initialPrompt.isEmpty { composerText = initialPrompt }
             await viewModel.start(
                 activeModel: appState.activeModel,
                 downloadedModelIDs: appState.downloadedModelIDs,
+                prefersFoundationModel: appState.prefersFoundationModel,
                 context: modelContext
             )
-            if appState.activeModelID != viewModel.currentModel.id {
-                // The conversation restored its own model; sync the global
-                // selection so the picker and UserDefaults agree. The change
-                // observer no-ops because the view model already uses it.
-                appState.activate(viewModel.currentModel)
-            }
         }
         .onChange(of: appState.activeModelID) { _, newModelID in
+            guard !appState.prefersFoundationModel else { return }
             guard let model = LocalModel.catalog.first(where: { $0.id == newModelID }) else { return }
             viewModel.switchModel(to: model)
+        }
+        .onChange(of: appState.prefersFoundationModel) { _, prefersFoundation in
+            if prefersFoundation {
+                viewModel.switchToFoundationModel()
+            } else {
+                viewModel.switchModel(to: appState.activeModel)
+            }
         }
         .id(viewID)
     }
@@ -141,6 +155,8 @@ struct ChatView: View {
                         .frame(width: 6, height: 6)
                     Text(viewModel.backendMode == .hosted
                          ? "Hugging Face • Online"
+                         : viewModel.backendMode == .foundation
+                         ? "Apple Foundation Models • On device"
                          : "\(viewModel.currentModel.shortName) • On device")
                 }
                 .font(.caption2)

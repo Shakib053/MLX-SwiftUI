@@ -1,12 +1,34 @@
 import SwiftUI
+import FoundationModels
 
 struct ChatModelPicker: View {
     @Environment(AppState.self) private var appState
     @Binding var isPresented: Bool
+    let selectedBackend: ChatBackendMode?
+    let selectedModelID: String
 
     var body: some View {
         NavigationStack {
             List {
+                Button {
+                    appState.prefersFoundationModel = true
+                    isPresented = false
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Label("Apple Foundation Models", systemImage: "sparkles")
+                            if !SystemLanguageModel.default.isAvailable {
+                                Text("Uses the available fallback for now")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        if selectedBackend == .foundation {
+                            Image(systemName: "checkmark").foregroundStyle(.indigo)
+                        }
+                    }
+                }
                 ForEach(appState.downloadedModels) { model in
                     Button {
                         select(model)
@@ -31,7 +53,7 @@ struct ChatModelPicker: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            if model.id == appState.activeModelID {
+                            if model.id == selectedModelID && selectedBackend == .local {
                                 Image(systemName: "checkmark").foregroundStyle(.indigo)
                             }
                         }

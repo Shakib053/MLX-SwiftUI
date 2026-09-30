@@ -45,7 +45,7 @@ struct ChatsView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(AppBackground())
-            .navigationTitle("Chats")
+            .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -211,7 +211,7 @@ struct ChatsView: View {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle(radius: 14))
             .tint(.indigo)
-            .accessibilityHint("Opens a new chat using \(appState.activeModel.name)")
+            .accessibilityHint("Opens a new chat using your preferred model")
 
             Label("\(appState.activeModel.shortName) • On device", systemImage: "lock.fill")
                 .font(.caption.weight(.medium))

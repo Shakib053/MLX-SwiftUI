@@ -7,18 +7,18 @@ struct OnboardingView: View {
     private let pages = [
         (
             "lock.fill",
-            "Private AI, on your iPhone",
-            "Chat with compact language models that run locally, even when you are offline."
+            "Start with on-device AI",
+            "Apple Foundation Models runs on your device when available. Chat shows which model is in use."
         ),
         (
             "cpu",
-            "Download up to two models",
-            "Keep one fast model and one specialized model. Only the selected model runs at a time."
+            "Choose your model",
+            "Foundation Models is the default. You can also choose an MLX model and keep up to two downloaded models."
         ),
         (
             "checkmark.shield.fill",
-            "Designed for local use",
-            "Switch between downloaded models and keep prompts on device without cloud routing."
+            "Know where chat runs",
+            "When the system model is unavailable, chat uses MLX on iPhone or the hosted fallback in Simulator."
         )
     ]
 

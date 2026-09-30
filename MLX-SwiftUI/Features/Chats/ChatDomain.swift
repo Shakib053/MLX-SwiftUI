@@ -31,19 +31,21 @@ enum ChatState: Equatable {
 }
 
 enum ChatBackendMode: Equatable {
+    case foundation
     case local
     case hosted
 
     /// Identifier recorded on assistant messages produced by the hosted
     /// Hugging Face fallback rather than an on-device model.
     static let hostedModelID = "hosted"
+    static let foundationModelID = "foundation"
 }
 
 enum ChatEnvironment {
-    /// The hosted Hugging Face chat fallback is only offered in the simulator,
-    /// where MLX cannot run. Physical devices always use the on-device MLX model.
+    /// The hosted Hugging Face fallback is offered in the simulator when the
+    /// system foundation model is unavailable. Devices use on-device models.
     static var supportsHostedChat: Bool {
-        #if DEBUG && targetEnvironment(simulator)
+        #if targetEnvironment(simulator)
         return true
         #else
         return false
@@ -142,6 +144,9 @@ extension ChatMessage {
         }
         if modelID == ChatBackendMode.hostedModelID {
             return "Hugging Face"
+        }
+        if modelID == ChatBackendMode.foundationModelID {
+            return "Apple Foundation Models"
         }
         return LocalModel.catalog.first { $0.id == modelID }?.shortName ?? modelID
     }

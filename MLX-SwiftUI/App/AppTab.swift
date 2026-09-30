@@ -1,5 +1,5 @@
 enum AppTab: Hashable {
-    case chats
-    case models
+    case home
+    case history
     case settings
 }
