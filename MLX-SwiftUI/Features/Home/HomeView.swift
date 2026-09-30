@@ -142,11 +142,19 @@ struct HomeView: View {
     private var samples: some View {
         VStack(spacing: 0) {
             sample("From screenshot to next steps", subtitle: "Find the dates and what needs doing", symbol: "photo") {
-                path.append("Extract dates and action items from this screenshot text:\n\nMeeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.")
+                path.append("""
+                Extract dates and action items from this screenshot text:
+
+                Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.
+                """)
             }
             Divider()
             sample("Make sense of meeting notes", subtitle: "Decisions, owners and action items", symbol: "note.text") {
-                path.append("Summarize these meeting notes into decisions, owners, and action items:\n\nWe agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.")
+                path.append("""
+                Summarize these meeting notes into decisions, owners, and action items:
+
+                We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.
+                """)
             }
         }
         .padding(.horizontal, 13)
