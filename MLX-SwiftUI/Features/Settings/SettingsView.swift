@@ -10,6 +10,11 @@ struct SettingsView: View {
 
         NavigationStack {
             Form {
+                Section("Private tools") {
+                    Label("Summarize, Rewrite, Extract, Read Image Text, and Analyze Document run only with an available on-device model.", systemImage: "lock.shield")
+                    Text("Results are saved only when you tap Save. Saved results and their source appear in History.")
+                    Text("Ask AI continues to use chat, which may use the labeled online fallback in Simulator.")
+                }
                 Section {
                     Picker("Appearance", selection: $appState.appearance) {
                         ForEach(AppAppearance.allCases) { appearance in

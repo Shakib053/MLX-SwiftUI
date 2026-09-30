@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct HomeView: View {
     @Environment(AppState.self) private var appState
     @State private var path = NavigationPath()
+    @State private var workspace: WorkspaceInput?
     @State private var content = ""
     @State private var pendingAction: HomeAction?
     @State private var showsContentSheet = false
@@ -13,6 +14,8 @@ struct HomeView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var errorMessage: String?
     @State private var isImporting = false
+    @State private var sourceKind: WorkspaceSourceKind = .text
+    @State private var sourceTitle = "Text"
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -43,6 +46,9 @@ struct HomeView: View {
             .navigationDestination(for: String.self) { prompt in
                 ChatView(initialPrompt: prompt)
             }
+            .navigationDestination(item: $workspace) { input in
+                TaskWorkspaceView(input: input)
+            }
             .sheet(isPresented: $showsContentSheet) { contentSheet }
             .onChange(of: selectedPhoto) { _, photo in
                 guard let photo else { return }
@@ -53,6 +59,8 @@ struct HomeView: View {
                             throw HomeImportError.noText
                         }
                         content = try await HomeContentExtractor.image(from: data)
+                        sourceKind = .image
+                        sourceTitle = "Selected image"
                         finishImport()
                     } catch {
                         errorMessage = error.localizedDescription
@@ -142,19 +150,11 @@ struct HomeView: View {
     private var samples: some View {
         VStack(spacing: 0) {
             sample("From screenshot to next steps", subtitle: "Find the dates and what needs doing", symbol: "photo") {
-                path.append("""
-                Extract dates and action items from this screenshot text:
-
-                Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.
-                """)
+                workspace = WorkspaceInput(action: .extract, kind: .image, title: "Sample screenshot", text: "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.")
             }
             Divider()
             sample("Make sense of meeting notes", subtitle: "Decisions, owners and action items", symbol: "note.text") {
-                path.append("""
-                Summarize these meeting notes into decisions, owners, and action items:
-
-                We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.
-                """)
+                workspace = WorkspaceInput(action: .extract, kind: .text, title: "Sample meeting notes", text: "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.")
             }
         }
         .padding(.horizontal, 13)
@@ -184,7 +184,16 @@ struct HomeView: View {
         NavigationStack {
             Form {
                 Section("Paste or type") {
-                    TextEditor(text: $content)
+                    TextEditor(text: Binding(
+                        get: { content },
+                        set: { newValue in
+                            content = newValue
+                            if !isImporting {
+                                sourceKind = .text
+                                sourceTitle = "Text"
+                            }
+                        }
+                    ))
                         .frame(minHeight: 130)
                     if content.count > 10_000 {
                         Text("Shorten to 10,000 characters before continuing.")
@@ -220,7 +229,10 @@ struct HomeView: View {
             isImporting = true
             Task {
                 do {
-                    content = try await HomeContentExtractor.document(from: result.get())
+                    let url = try result.get()
+                    content = try await HomeContentExtractor.document(from: url)
+                    sourceKind = .document
+                    sourceTitle = url.lastPathComponent
                     finishImport()
                 } catch {
                     if !((error as NSError).domain == NSCocoaErrorDomain &&
@@ -243,14 +255,11 @@ struct HomeView: View {
     private func open(_ action: HomeAction) {
         if action == .askAI {
             path.append("")
-        } else if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            pendingAction = action
-            showsContentSheet = true
         } else if content.count > 10_000 {
             pendingAction = action
             showsContentSheet = true
-        } else {
-            path.append(action.prompt(for: content))
+        } else if let workspaceAction = action.workspaceAction {
+            workspace = WorkspaceInput(action: workspaceAction, kind: sourceKind, title: sourceTitle, text: content)
         }
     }
 
@@ -264,8 +273,8 @@ struct HomeView: View {
             return
         }
         showsContentSheet = false
-        if let pendingAction {
-            path.append(pendingAction.prompt(for: content))
+        if let pendingAction, let workspaceAction = pendingAction.workspaceAction {
+            workspace = WorkspaceInput(action: workspaceAction, kind: sourceKind, title: sourceTitle, text: content)
             self.pendingAction = nil
         }
     }
@@ -305,16 +314,7 @@ private enum HomeAction: String, CaseIterable, Identifiable {
         case .askAI: "bubble.left"
         }
     }
-    func prompt(for content: String) -> String {
-        let instruction: String
-        switch self {
-        case .summarize: instruction = "Summarize the essential points in this content:"
-        case .rewrite: instruction = "Rewrite this clearly while preserving its meaning:"
-        case .extract: instruction = "Extract dates, important details, and action items from this content:"
-        case .understandImage: instruction = "Explain the visible text extracted from this image:"
-        case .analyzeDocument: instruction = "Analyze this document text and explain its key points:"
-        case .askAI: instruction = ""
-        }
-        return "\(instruction)\n\n\(content)"
+    var workspaceAction: WorkspaceAction? {
+        WorkspaceAction(rawValue: rawValue)
     }
 }

@@ -5,9 +5,21 @@ struct ChatsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Conversation.updatedAt, order: .reverse) private var conversations: [Conversation]
+    @Query(sort: \SavedTaskResult.createdAt, order: .reverse) private var savedResults: [SavedTaskResult]
     @State private var searchText = ""
     @State private var conversationToDelete: Conversation?
     @State private var persistenceError: String?
+    @State private var resultToDelete: SavedTaskResult?
+
+    private var filteredResults: [SavedTaskResult] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return savedResults }
+        return savedResults.filter {
+            $0.title.localizedCaseInsensitiveContains(query) ||
+            $0.resultText.localizedCaseInsensitiveContains(query) ||
+            $0.sourceText.localizedCaseInsensitiveContains(query)
+        }
+    }
 
     private var filteredConversations: [Conversation] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -34,9 +46,10 @@ struct ChatsView: View {
                 VStack(spacing: 20) {
                     searchField
 
-                    if filteredConversations.isEmpty {
+                    if filteredConversations.isEmpty && filteredResults.isEmpty {
                         emptyState
                     } else {
+                        if !filteredResults.isEmpty { savedResultSection }
                         conversationSections
                     }
                 }
@@ -78,6 +91,46 @@ struct ChatsView: View {
                 Button("OK", role: .cancel) { persistenceError = nil }
             } message: {
                 Text(persistenceError ?? "Please try again.")
+            }
+            .alert("Delete Saved Result?", isPresented: Binding(
+                get: { resultToDelete != nil },
+                set: { if !$0 { resultToDelete = nil } }
+            )) {
+                Button("Cancel", role: .cancel) { resultToDelete = nil }
+                Button("Delete", role: .destructive) {
+                    if let resultToDelete { modelContext.delete(resultToDelete); saveChanges() }
+                    resultToDelete = nil
+                }
+            } message: {
+                Text("This removes the saved result and its source from this device.")
+            }
+        }
+    }
+
+    private var savedResultSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("SAVED RESULTS")
+            ForEach(filteredResults) { item in
+                NavigationLink {
+                    SavedTaskResultView(item: item)
+                } label: {
+                    HStack {
+                        Image(systemName: "bookmark")
+                        VStack(alignment: .leading) {
+                            Text(item.title).font(.headline)
+                            Text(WorkspaceAction(rawValue: item.actionRawValue)?.title ?? "Result")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Delete", role: .destructive) { resultToDelete = item }
+                }
             }
         }
     }
@@ -167,7 +220,7 @@ struct ChatsView: View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search conversations", text: $searchText)
+            TextField("Search history", text: $searchText)
                 .textInputAutocapitalization(.never)
                 .submitLabel(.search)
         }
@@ -192,11 +245,11 @@ struct ChatsView: View {
             }
 
             VStack(spacing: 7) {
-                Text(searchText.isEmpty ? "No Conversations" : "No Results")
+                Text(searchText.isEmpty ? "No History" : "No Results")
                     .font(.title2.weight(.bold))
                 Text(searchText.isEmpty
-                     ? "Start a private conversation with a model that runs on this device."
-                     : "There are no saved conversations matching “\(searchText)”.")
+                     ? "Saved results and conversations will appear here."
+                     : "There are no saved results or conversations matching “\(searchText)”.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

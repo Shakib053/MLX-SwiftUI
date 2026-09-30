@@ -8,7 +8,7 @@ struct OnboardingView: View {
         (
             "lock.fill",
             "Start with on-device AI",
-            "Apple Foundation Models runs on your device when available. Chat shows which model is in use."
+            "Private tools use an available on-device model. Ask AI opens chat, which shows which model is in use."
         ),
         (
             "cpu",
@@ -18,7 +18,7 @@ struct OnboardingView: View {
         (
             "checkmark.shield.fill",
             "Know where chat runs",
-            "When the system model is unavailable, chat uses MLX on iPhone or the hosted fallback in Simulator."
+            "Private tool results are saved only when you choose Save. Chat uses MLX on iPhone or the labeled hosted fallback in Simulator when the system model is unavailable."
         )
     ]
 
