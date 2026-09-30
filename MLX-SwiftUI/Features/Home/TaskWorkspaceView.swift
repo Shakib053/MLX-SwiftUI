@@ -79,9 +79,7 @@ struct TaskWorkspaceView: View {
                     .foregroundStyle(.green)
                 Text(input.action.title).font(.largeTitle.bold())
 
-                if !result.isEmpty { resultSection }
-                else if isWorking { workingSection }
-                else { inputSection }
+                if !result.isEmpty { resultSection } else if isWorking { workingSection } else { inputSection }
             }
             .padding(20)
             .frame(maxWidth: 650, alignment: .leading)

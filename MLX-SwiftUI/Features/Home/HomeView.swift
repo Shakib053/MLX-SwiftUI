@@ -150,11 +150,21 @@ struct HomeView: View {
     private var samples: some View {
         VStack(spacing: 0) {
             sample("From screenshot to next steps", subtitle: "Find the dates and what needs doing", symbol: "photo") {
-                workspace = WorkspaceInput(action: .extract, kind: .image, title: "Sample screenshot", text: "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.")
+                workspace = WorkspaceInput(
+                    action: .extract,
+                    kind: .image,
+                    title: "Sample screenshot",
+                    text: "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting."
+                )
             }
             Divider()
             sample("Make sense of meeting notes", subtitle: "Decisions, owners and action items", symbol: "note.text") {
-                workspace = WorkspaceInput(action: .extract, kind: .text, title: "Sample meeting notes", text: "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.")
+                workspace = WorkspaceInput(
+                    action: .extract,
+                    kind: .text,
+                    title: "Sample meeting notes",
+                    text: "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in."
+                )
             }
         }
         .padding(.horizontal, 13)
