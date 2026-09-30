@@ -12,6 +12,10 @@ struct MainTabView: View {
                 HomeView()
             }
 
+            Tab("Models", systemImage: "cpu", value: AppTab.models) {
+                ModelsView()
+            }
+
             Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) {
                 ChatsView()
             }
