@@ -97,6 +97,7 @@ final class PersistedMessage {
 extension ChatBackendMode {
     var rawValue: String {
         switch self {
+        case .foundation: "foundation"
         case .local: "local"
         case .hosted: "hosted"
         }
@@ -104,6 +105,7 @@ extension ChatBackendMode {
 
     init?(rawValue: String) {
         switch rawValue {
+        case "foundation": self = .foundation
         case "local": self = .local
         case "hosted": self = .hosted
         default: return nil

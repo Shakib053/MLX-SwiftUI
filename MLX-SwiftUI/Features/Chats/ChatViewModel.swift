@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FoundationModels
 import Observation
 import SwiftData
 import HuggingFace
@@ -34,6 +35,7 @@ final class ChatViewModel {
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
+        if isConnectingToFallback { return "Connecting to Hugging Face…" }
         let modelName = LocalModel.catalog.first { $0.id == currentModelID }?.shortName ?? "model"
         return state == .downloading
             ? "Downloading \(modelName) for offline chat"
@@ -41,14 +43,20 @@ final class ChatViewModel {
     }
 
     var loadingMessage: String {
+        if isConnectingToFallback {
+            return "The system model is unavailable, so this chat is connecting to the simulator fallback."
+        }
         #if DEBUG && targetEnvironment(simulator)
-        "Simulator uses the hosted fallback. Local MLX models run on a physical iPhone."
+        return "Simulator uses the hosted fallback. Local MLX models run on a physical iPhone."
         #else
-        "The selected model downloads once and is reused from the device cache on later launches."
+        return "The selected model downloads once and is reused from the device cache on later launches."
         #endif
     }
 
     var headerSubtitle: String {
+        if backendMode == .foundation {
+            return "Apple Foundation Models • On device"
+        }
         if backendMode == .local {
             return "Private on-device chat"
         }
@@ -101,12 +109,17 @@ final class ChatViewModel {
 
     /// Identifier recorded on assistant messages produced by the current backend.
     private var assistantModelID: String {
-        backendMode == .hosted ? ChatBackendMode.hostedModelID : currentModelID
+        switch backendMode {
+        case .foundation: ChatBackendMode.foundationModelID
+        case .hosted: ChatBackendMode.hostedModelID
+        default: currentModelID
+        }
     }
 
     func start(
         activeModel: LocalModel,
         downloadedModelIDs: [String],
+        prefersFoundationModel: Bool,
         context: SwiftData.ModelContext
     ) async {
         guard !didStartLoading else { return }
@@ -132,8 +145,14 @@ final class ChatViewModel {
             currentModelID = activeModel.id
         }
 
+        if conversation?.backendMode == .foundation ||
+            (conversation == nil && prefersFoundationModel) {
+            if startFoundationModel() { return }
+        }
+
         let model = currentModel
-        #if DEBUG && targetEnvironment(simulator)
+        #if targetEnvironment(simulator)
+        #if DEBUG
         if SimulatorDownloadScenario.selected == .normal ||
             SimulatorDownloadScenario.selected == .hostedOnly {
             await connectHosted(isInitialLoad: true)
@@ -141,12 +160,15 @@ final class ChatViewModel {
             startLocalModelLoad(for: model)
         }
         #else
+        await connectHosted(isInitialLoad: true)
+        #endif
+        #else
         startLocalModelLoad(for: model)
         #endif
     }
 
     func switchModel(to model: LocalModel) {
-        guard model.id != currentModelID else { return }
+        guard model.id != currentModelID || backendMode != .local else { return }
 
         currentModelID = model.id
         localLoadingTask?.cancel()
@@ -161,7 +183,8 @@ final class ChatViewModel {
         isLocalModelReady = false
         downloadError = nil
         fallbackError = nil
-        #if DEBUG && targetEnvironment(simulator)
+        #if targetEnvironment(simulator)
+        #if DEBUG
         if SimulatorDownloadScenario.selected == .normal ||
             SimulatorDownloadScenario.selected == .hostedOnly {
             Task { await connectHosted(isInitialLoad: true) }
@@ -169,8 +192,40 @@ final class ChatViewModel {
             startLocalModelLoad(for: model)
         }
         #else
+        Task { await connectHosted(isInitialLoad: true) }
+        #endif
+        #else
         startLocalModelLoad(for: model)
         #endif
+    }
+
+    func switchToFoundationModel() {
+        localLoadingTask?.cancel()
+        responseTask?.cancel()
+        backend = nil
+        backendMode = nil
+        #if !targetEnvironment(simulator)
+        MLX.Memory.clearCache()
+        #endif
+        isLocalModelReady = false
+        downloadError = nil
+        fallbackError = nil
+        downloadProgress = 0
+        if !startFoundationModel() {
+            #if targetEnvironment(simulator)
+            Task { await connectHosted(isInitialLoad: true) }
+            #else
+            startLocalModelLoad(for: currentModel)
+            #endif
+        }
+    }
+
+    private func startFoundationModel() -> Bool {
+        guard SystemLanguageModel.default.isAvailable else { return false }
+        backend = FoundationChatBackend()
+        backendMode = .foundation
+        state = .ready
+        return true
     }
 
     func loadModel() async {
@@ -184,8 +239,12 @@ final class ChatViewModel {
 
     func retryDownload() {
         localLoadingTask?.cancel()
+        #if targetEnvironment(simulator) && !DEBUG
+        Task { await connectHosted(isInitialLoad: true) }
+        #else
         let model = LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
         startLocalModelLoad(for: model)
+        #endif
     }
 
     private func startLocalModelLoad(for model: LocalModel) {

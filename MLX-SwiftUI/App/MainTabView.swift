@@ -8,12 +8,12 @@ struct MainTabView: View {
         @Bindable var appState = appState
 
         TabView(selection: $appState.selectedTab) {
-            Tab("Chats", systemImage: "bubble.left.and.bubble.right", value: AppTab.chats) {
-                ChatsView()
+            Tab("Home", systemImage: "house", value: AppTab.home) {
+                HomeView()
             }
 
-            Tab("Models", systemImage: "cpu", value: AppTab.models) {
-                ModelsView()
+            Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) {
+                ChatsView()
             }
 
             Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {

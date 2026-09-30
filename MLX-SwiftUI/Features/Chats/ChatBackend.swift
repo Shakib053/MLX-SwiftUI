@@ -1,4 +1,5 @@
 import Foundation
+import FoundationModels
 import HuggingFace
 import MLXLMCommon
 
@@ -38,6 +39,33 @@ typealias ChatTextStream = AsyncThrowingStream<ChatResponseStreamEvent, Error>
 
 protocol ChatBackend {
     func streamResponse(for request: ChatRequest) -> ChatTextStream
+}
+
+struct FoundationChatBackend: ChatBackend {
+    func streamResponse(for request: ChatRequest) -> ChatTextStream {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let session = LanguageModelSession(instructions: request.systemPrompt)
+                    let history = request.history.map { message in
+                        "\(message.role == .user ? "User" : "Assistant"): \(message.text)"
+                    }.joined(separator: "\n")
+                    let prompt = history.isEmpty ? request.prompt : "\(history)\nUser: \(request.prompt)"
+                    var previous = ""
+                    for try await partial in session.streamResponse(to: prompt) {
+                        let content = partial.content
+                        let delta = String(content.dropFirst(previous.count))
+                        if !delta.isEmpty { continuation.yield(.chunk(delta)) }
+                        previous = content
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 }
 
 extension ChatBackend {

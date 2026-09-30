@@ -147,9 +147,8 @@ struct ChatConversationEmptyState: View {
                 .font(.title2.bold())
             Text(
                 backendMode == .hosted
-                    ? "Messages are sent to the hosted Hugging Face model and are not saved by this app."
-                    : "Messages are processed by your selected local model " +
-                        "and are not saved after leaving this conversation."
+                    ? "Messages are sent to the hosted Hugging Face model. Your chat history is saved on this device."
+                    : "Messages are processed on this device and saved in your local history."
             )
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

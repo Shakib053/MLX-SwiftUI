@@ -9,7 +9,10 @@ import MLXLMCommon
 final class AppState {
     static let modelLimit = 2
 
-    var selectedTab: AppTab = .chats
+    var selectedTab: AppTab = .home
+    var prefersFoundationModel: Bool {
+        didSet { UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel") }
+    }
     var appearance: AppAppearance {
         didSet {
             UserDefaults.standard.set(appearance.rawValue, forKey: "appAppearance")
@@ -26,6 +29,7 @@ final class AppState {
     private let activeModelKey = "activeModelID"
 
     init() {
+        prefersFoundationModel = UserDefaults.standard.object(forKey: "prefersFoundationModel") as? Bool ?? true
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
 
@@ -61,6 +65,7 @@ final class AppState {
     func activate(_ model: LocalModel) {
         guard downloadedModelIDs.contains(model.id) else { return }
         activeModelID = model.id
+        prefersFoundationModel = false
         persistModelState()
         updateWidget()
         print("Activated model: \(model.name)")

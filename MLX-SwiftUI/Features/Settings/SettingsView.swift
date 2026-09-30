@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    @State private var showsModels = false
     let showOnboarding: () -> Void
 
     var body: some View {
@@ -25,14 +26,14 @@ struct SettingsView: View {
 
                 Section("General") {
                     Button {
-                        appState.selectedTab = .models
+                        showsModels = true
                     } label: {
                         SettingsRow(
                             icon: "cpu",
                             color: .purple,
                             title: "Default model",
                             subtitle: "Used for new chats",
-                            value: appState.activeModel.name
+                            value: appState.prefersFoundationModel ? "Apple Foundation Models" : appState.activeModel.name
                         )
                     }
                     .foregroundStyle(.primary)
@@ -70,6 +71,9 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $showsModels) {
+                ModelsView()
+            }
         }
     }
 

@@ -127,7 +127,11 @@ struct ModelsView: View {
             }
 
             HStack {
-                ModelStat(icon: "sparkles", label: "Active", value: appState.activeModel.shortName)
+                ModelStat(
+                    icon: "sparkles",
+                    label: appState.prefersFoundationModel ? "MLX fallback" : "Active",
+                    value: appState.activeModel.shortName
+                )
                 Divider().frame(height: 36)
                 ModelStat(
                     icon: "arrow.down.circle",
@@ -154,7 +158,7 @@ struct ModelsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                if model.id == appState.activeModelID {
+                if model.id == appState.activeModelID && !appState.prefersFoundationModel {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
                         .foregroundStyle(.indigo)

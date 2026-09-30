@@ -36,13 +36,14 @@ struct ModelDetailView: View {
                 )
 
                 if appState.downloadedModelIDs.contains(model.id) {
-                    Button(model.id == appState.activeModelID ? "Currently Active" : "Use This Model") {
+                    Button(model.id == appState.activeModelID && !appState.prefersFoundationModel
+                           ? "Currently Active" : "Use This Model") {
                         appState.activate(model)
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
-                    .disabled(model.id == appState.activeModelID)
+                    .disabled(model.id == appState.activeModelID && !appState.prefersFoundationModel)
                 }
             }
             .padding(20)

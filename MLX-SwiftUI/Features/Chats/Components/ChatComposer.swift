@@ -42,7 +42,9 @@ struct ChatComposer: View {
                         } else {
                             Image(systemName: "cpu")
                         }
-                        Text(activeModel.name)
+                        Text(backendMode == .foundation
+                             ? "Apple Foundation Models"
+                             : backendMode == .hosted ? "Hugging Face" : activeModel.name)
                     }
                     .font(.caption.weight(.semibold))
                 }
