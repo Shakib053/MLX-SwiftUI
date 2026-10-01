@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
-    @State private var showsModels = false
     let showOnboarding: () -> Void
 
     var body: some View {
@@ -31,7 +30,7 @@ struct SettingsView: View {
 
                 Section("General") {
                     Button {
-                        showsModels = true
+                        appState.selectedTab = .models
                     } label: {
                         SettingsRow(
                             icon: "cpu",
@@ -76,9 +75,6 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showsModels) {
-                ModelsView()
-            }
         }
     }
 
