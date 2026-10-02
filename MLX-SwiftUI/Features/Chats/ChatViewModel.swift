@@ -81,6 +81,7 @@ final class ChatViewModel {
     private var streamedResponseText = ""
     private var streamedCharacterCount = 0
     private var pendingStreamFlushTask: Task<Void, Never>?
+    private var responseStreamFilter = ChatResponseSanitizer.StreamFilter()
     private var modelContext: SwiftData.ModelContext?
     private let conversationID: UUID?
     private var conversation: Conversation?
@@ -489,41 +490,10 @@ final class ChatViewModel {
             )
             streamedResponseText = ""
             streamedCharacterCount = 0
+            responseStreamFilter = ChatResponseSanitizer.StreamFilter()
             let stream = backend.streamResponse(for: request)
-
-            var receivedPromptTokens: Int?
-            var receivedCompletionTokens: Int?
-
-            for try await event in stream {
-                switch event {
-                case .chunk(let chunk):
-                    appendStreamedChunk(chunk)
-                    scheduleStreamedTextFlush()
-                case .usage(let promptTokens, let completionTokens):
-                    receivedPromptTokens = promptTokens
-                    receivedCompletionTokens = completionTokens
-                }
-            }
-
-            cancelPendingStreamFlush()
-            if let lastIndex = messages.indices.last {
-                let finalText = ChatResponseSanitizer.clean(streamedResponseText)
-                guard !finalText.isEmpty else {
-                    throw ChatBackendError.emptyResponse
-                }
-                messages[lastIndex].text = finalText
-                if let promptCount = receivedPromptTokens, let completionCount = receivedCompletionTokens {
-                    messages[lastIndex].promptTokens = promptCount
-                    messages[lastIndex].completionTokens = completionCount
-                    print(
-                        "📊 [MLX-SwiftUI] Token Consumption — Model: \(currentModel.name) | " +
-                        "Prompt: \(promptCount) | Completion: \(completionCount) | " +
-                        "Total: \(promptCount + completionCount) | Context Window: \(currentModel.contextWindowTokens) tokens"
-                    )
-                } else {
-                    print("📊 [MLX-SwiftUI] Model Loaded: \(currentModel.name) | Context Window: \(currentModel.contextWindowTokens) tokens")
-                }
-            }
+            let usage = try await consumeResponseStream(stream)
+            try finalizeResponse(promptTokens: usage.promptTokens, completionTokens: usage.completionTokens)
         } catch {
             cancelPendingStreamFlush()
             if error is CancellationError || Task.isCancelled {
@@ -534,10 +504,60 @@ final class ChatViewModel {
         }
     }
 
+    private func consumeResponseStream(
+        _ stream: ChatTextStream
+    ) async throws -> (promptTokens: Int?, completionTokens: Int?) {
+        var receivedPromptTokens: Int?
+        var receivedCompletionTokens: Int?
+
+        for try await event in stream {
+            switch event {
+            case .chunk(let chunk):
+                let visibleText = responseStreamFilter.append(chunk)
+                if !visibleText.isEmpty {
+                    appendStreamedChunk(visibleText)
+                    scheduleStreamedTextFlush()
+                }
+            case .usage(let promptTokens, let completionTokens):
+                receivedPromptTokens = promptTokens
+                receivedCompletionTokens = completionTokens
+            }
+        }
+
+        cancelPendingStreamFlush()
+        let remainingText = responseStreamFilter.finish()
+        if !remainingText.isEmpty {
+            appendStreamedChunk(remainingText)
+        }
+        flushStreamedTextNow()
+        return (receivedPromptTokens, receivedCompletionTokens)
+    }
+
+    private func finalizeResponse(promptTokens: Int?, completionTokens: Int?) throws {
+        guard let lastIndex = messages.indices.last else { return }
+        let finalText = ChatResponseSanitizer.clean(streamedResponseText)
+        guard !finalText.isEmpty else {
+            throw ChatBackendError.emptyResponse
+        }
+        messages[lastIndex].text = finalText
+        if let promptTokens, let completionTokens {
+            messages[lastIndex].promptTokens = promptTokens
+            messages[lastIndex].completionTokens = completionTokens
+            print(
+                "📊 [MLX-SwiftUI] Token Consumption — Model: \(currentModel.name) | " +
+                "Prompt: \(promptTokens) | Completion: \(completionTokens) | " +
+                "Total: \(promptTokens + completionTokens) | Context Window: \(currentModel.contextWindowTokens) tokens"
+            )
+        } else {
+            print("📊 [MLX-SwiftUI] Model Loaded: \(currentModel.name) | Context Window: \(currentModel.contextWindowTokens) tokens")
+        }
+    }
+
     /// A cancelled stream (e.g. the user switching models mid-generation) keeps
     /// whatever partial text already arrived, marked as interrupted so the UI can
     /// offer regeneration. An empty placeholder is dropped instead of persisted.
     private func handleStreamCancellation() {
+        _ = responseStreamFilter.finish()
         flushStreamedTextNow()
         cancelPendingStreamFlush()
         guard let lastIndex = messages.indices.last,
@@ -591,6 +611,7 @@ private extension ChatViewModel {
         cancelPendingStreamFlush()
         streamedResponseText = ""
         streamedCharacterCount = 0
+        responseStreamFilter = ChatResponseSanitizer.StreamFilter()
         isSending = false
         responseTask = nil
         persistMessages(force: true)
