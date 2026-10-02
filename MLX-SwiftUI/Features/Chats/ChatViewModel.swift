@@ -81,6 +81,7 @@ final class ChatViewModel {
     private var streamedResponseText = ""
     private var streamedCharacterCount = 0
     private var pendingStreamFlushTask: Task<Void, Never>?
+    private var responseStreamFilter = ChatResponseSanitizer.StreamFilter()
     private var modelContext: SwiftData.ModelContext?
     private let conversationID: UUID?
     private var conversation: Conversation?
@@ -489,6 +490,7 @@ final class ChatViewModel {
             )
             streamedResponseText = ""
             streamedCharacterCount = 0
+            responseStreamFilter = ChatResponseSanitizer.StreamFilter()
             let stream = backend.streamResponse(for: request)
 
             var receivedPromptTokens: Int?
@@ -497,8 +499,11 @@ final class ChatViewModel {
             for try await event in stream {
                 switch event {
                 case .chunk(let chunk):
-                    appendStreamedChunk(chunk)
-                    scheduleStreamedTextFlush()
+                    let visibleText = responseStreamFilter.append(chunk)
+                    if !visibleText.isEmpty {
+                        appendStreamedChunk(visibleText)
+                        scheduleStreamedTextFlush()
+                    }
                 case .usage(let promptTokens, let completionTokens):
                     receivedPromptTokens = promptTokens
                     receivedCompletionTokens = completionTokens
@@ -506,6 +511,11 @@ final class ChatViewModel {
             }
 
             cancelPendingStreamFlush()
+            let remainingText = responseStreamFilter.finish()
+            if !remainingText.isEmpty {
+                appendStreamedChunk(remainingText)
+            }
+            flushStreamedTextNow()
             if let lastIndex = messages.indices.last {
                 let finalText = ChatResponseSanitizer.clean(streamedResponseText)
                 guard !finalText.isEmpty else {
@@ -538,6 +548,7 @@ final class ChatViewModel {
     /// whatever partial text already arrived, marked as interrupted so the UI can
     /// offer regeneration. An empty placeholder is dropped instead of persisted.
     private func handleStreamCancellation() {
+        _ = responseStreamFilter.finish()
         flushStreamedTextNow()
         cancelPendingStreamFlush()
         guard let lastIndex = messages.indices.last,
@@ -591,6 +602,7 @@ private extension ChatViewModel {
         cancelPendingStreamFlush()
         streamedResponseText = ""
         streamedCharacterCount = 0
+        responseStreamFilter = ChatResponseSanitizer.StreamFilter()
         isSending = false
         responseTask = nil
         persistMessages(force: true)

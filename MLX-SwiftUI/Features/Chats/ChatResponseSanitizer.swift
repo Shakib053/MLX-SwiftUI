@@ -2,6 +2,63 @@ import Foundation
 
 enum ChatResponseSanitizer {
     private static let unavailableAnswer = "I could not produce a final answer. Please try again."
+    private static let thinkTagPrefix = "<think"
+    private static let thinkTagSuffix = "</think>"
+
+    struct StreamFilter {
+        private var pendingText = ""
+        private var isThinking = false
+
+        mutating func append(_ chunk: String) -> String {
+            pendingText += chunk
+            var visibleText = ""
+
+            while !pendingText.isEmpty {
+                if isThinking {
+                    guard let closingTag = pendingText.range(of: thinkTagSuffix, options: .caseInsensitive) else {
+                        pendingText = String(pendingText.suffix(thinkTagSuffix.count - 1))
+                        break
+                    }
+
+                    pendingText.removeSubrange(..<closingTag.upperBound)
+                    isThinking = false
+                    continue
+                }
+
+                guard let openingTag = pendingText.range(of: thinkTagPrefix, options: .caseInsensitive) else {
+                    let retainedCount = min(pendingText.count, thinkTagPrefix.count - 1)
+                    let visibleCount = pendingText.count - retainedCount
+                    if visibleCount > 0 {
+                        let splitIndex = pendingText.index(pendingText.startIndex, offsetBy: visibleCount)
+                        visibleText += pendingText[..<splitIndex]
+                        pendingText = String(pendingText[splitIndex...])
+                    }
+                    break
+                }
+
+                guard let openingTagEnd = pendingText[openingTag.upperBound...].firstIndex(of: ">") else {
+                    let possibleTag = pendingText[openingTag.lowerBound...]
+                    if openingTag.lowerBound > pendingText.startIndex {
+                        visibleText += pendingText[..<openingTag.lowerBound]
+                    }
+                    pendingText = String(possibleTag)
+                    break
+                }
+
+                visibleText += pendingText[..<openingTag.lowerBound]
+                pendingText.removeSubrange(..<pendingText.index(after: openingTagEnd))
+                isThinking = true
+            }
+
+            return visibleText
+        }
+
+        mutating func finish() -> String {
+            defer { pendingText = "" }
+            guard !isThinking else { return "" }
+            return pendingText
+        }
+    }
 
     static func clean(_ response: String) -> String {
         let original = response.trimmingCharacters(in: .whitespacesAndNewlines)
