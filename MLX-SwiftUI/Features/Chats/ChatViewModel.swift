@@ -544,14 +544,15 @@ final class ChatViewModel {
         if let promptTokens, let completionTokens {
             messages[lastIndex].promptTokens = promptTokens
             messages[lastIndex].completionTokens = completionTokens
-            AppLogger.chat.debug(
-                "Token consumption — model: \(currentModel.name, privacy: .public), " +
-                "prompt: \(promptTokens), completion: \(completionTokens), " +
-                "total: \(promptTokens + completionTokens), " +
-                "context window: \(currentModel.contextWindowTokens)"
-            )
+            let modelName = self.currentModel.name
+            let totalTokens = promptTokens + completionTokens
+            let contextWindowTokens = self.currentModel.contextWindowTokens
+            let tokenDetails = "Prompt: \(promptTokens) | Completion: \(completionTokens) | Total: \(totalTokens) | Context Window: \(contextWindowTokens) tokens"
+            AppLogger.chat.debug("Token consumption — model: \(modelName, privacy: .public) | \(tokenDetails, privacy: .public)")
         } else {
-            AppLogger.chat.info("Model loaded: \(currentModel.name, privacy: .public), context window: \(currentModel.contextWindowTokens)")
+            let modelName = self.currentModel.name
+            let contextWindowTokens = self.currentModel.contextWindowTokens
+            AppLogger.chat.info("Model loaded: \(modelName, privacy: .public), context window: \(contextWindowTokens)")
         }
     }
 
