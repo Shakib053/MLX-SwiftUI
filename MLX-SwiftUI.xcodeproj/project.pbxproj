@@ -11,6 +11,7 @@
 		0C7892753016854700FD9307 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7892743016854700FD9307 /* WidgetKit.framework */; };
 		0C7892773016854700FD9307 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7892763016854700FD9307 /* SwiftUI.framework */; };
 		0C7892883016854900FD9307 /* MLX_SwiftUIWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0C7892723016854700FD9307 /* MLX_SwiftUIWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8F0D2AA930168DDF00FD0001 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0D2AA930168DDF00FD0002 /* AppLogger.swift */; };
 		4D0C7B9A3C1E4D2C8A0F0001 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0001 /* MLXLLM */; };
 		4D0C7B9A3C1E4D2C8A0F0002 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0002 /* MLXLMCommon */; };
 		4D0C7B9A3C1E4D2C8A0F0003 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0003 /* MLXHuggingFace */; };
@@ -51,6 +52,7 @@
 		0C7892763016854700FD9307 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		0C78928F30168BD300FD9307 /* MLX_SwiftUIWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MLX_SwiftUIWidgetExtension.entitlements; sourceTree = "<group>"; };
 		4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		8F0D2AA930168DDF00FD0002 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MLX-SwiftUI/Shared/AppLogger.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -135,6 +137,7 @@
 				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
 				4D1A100A3C1E4D2C8A0F0103 /* Config */,
+				8F0D2AA930168DDF00FD0002 /* AppLogger.swift */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
 				0C7892783016854700FD9307 /* MLX_SwiftUIWidget */,
 				0C7892733016854700FD9307 /* Frameworks */,
@@ -318,6 +321,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F0D2AA930168DDF00FD0001 /* AppLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,6 +15,7 @@ import MLXHuggingFace
 import MLXLMCommon
 import MLXLLM
 import Tokenizers
+import OSLog
 
 @MainActor
 @Observable
@@ -543,13 +544,15 @@ final class ChatViewModel {
         if let promptTokens, let completionTokens {
             messages[lastIndex].promptTokens = promptTokens
             messages[lastIndex].completionTokens = completionTokens
-            print(
-                "📊 [MLX-SwiftUI] Token Consumption — Model: \(currentModel.name) | " +
-                "Prompt: \(promptTokens) | Completion: \(completionTokens) | " +
-                "Total: \(promptTokens + completionTokens) | Context Window: \(currentModel.contextWindowTokens) tokens"
-            )
+            let modelName = self.currentModel.name
+            let totalTokens = promptTokens + completionTokens
+            let contextWindowTokens = self.currentModel.contextWindowTokens
+            let tokenDetails = "Prompt: \(promptTokens) | Completion: \(completionTokens) | Total: \(totalTokens) | Context Window: \(contextWindowTokens) tokens"
+            AppLogger.chat.debug("Token consumption — model: \(modelName, privacy: .public) | \(tokenDetails, privacy: .public)")
         } else {
-            print("📊 [MLX-SwiftUI] Model Loaded: \(currentModel.name) | Context Window: \(currentModel.contextWindowTokens) tokens")
+            let modelName = self.currentModel.name
+            let contextWindowTokens = self.currentModel.contextWindowTokens
+            AppLogger.chat.info("Model loaded: \(modelName, privacy: .public), context window: \(contextWindowTokens)")
         }
     }
 
@@ -733,7 +736,7 @@ extension ChatViewModel {
             return true
         } catch {
             persistenceError = "Could not save conversation history: \(error.localizedDescription)"
-            print(persistenceError ?? "Failed to persist conversation history")
+            AppLogger.chat.error("Failed to persist conversation history: \(error.localizedDescription, privacy: .public)")
             return false
         }
     }
