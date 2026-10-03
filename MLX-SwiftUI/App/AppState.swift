@@ -3,6 +3,7 @@ import Observation
 import WidgetKit
 import HuggingFace
 import MLXLMCommon
+import OSLog
 
 @MainActor
 @Observable
@@ -68,13 +69,13 @@ final class AppState {
         prefersFoundationModel = false
         persistModelState()
         updateWidget()
-        print("Activated model: \(model.name)")
+        AppLogger.app.info("Activated model: \(model.name, privacy: .public)")
     }
 
     func download(_ model: LocalModel) async {
         guard !downloadedModelIDs.contains(model.id), downloadingModelID == nil else { return }
         guard downloadedModelIDs.count < Self.modelLimit else {
-            print("Model limit reached; choose a model to remove before downloading \(model.name).")
+            AppLogger.app.warning("Model limit reached before downloading \(model.name, privacy: .public)")
             return
         }
 
@@ -111,7 +112,7 @@ final class AppState {
             return
         } catch {
             downloadError = error.localizedDescription
-            print("Model download failed: \(model.name): \(error.localizedDescription)")
+            AppLogger.app.error("Model download failed: \(model.name, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         #endif
 
@@ -123,7 +124,7 @@ final class AppState {
 
     func remove(_ model: LocalModel) {
         guard downloadedModelIDs.count > 1 else {
-            print("At least one model must remain downloaded.")
+            AppLogger.app.warning("Cannot remove the last downloaded model")
             return
         }
         downloadedModelIDs.removeAll { $0 == model.id }
@@ -132,7 +133,7 @@ final class AppState {
         }
         persistModelState()
         removeCachedFiles(for: model)
-        print("Removed model: \(model.name)")
+        AppLogger.app.info("Removed model: \(model.name, privacy: .public)")
         updateWidget()
     }
 
@@ -161,7 +162,7 @@ final class AppState {
     private func updateWidget() {
         SharedWidgetData.save(activeModelName: activeModel.name)
 
-        print("APP wrote model:", SharedWidgetData.activeModelName)
+        AppLogger.app.debug("Updated widget model to \(SharedWidgetData.activeModelName, privacy: .public)")
 
         WidgetCenter.shared.reloadTimelines(
             ofKind: "MLX_SwiftUIWidget"

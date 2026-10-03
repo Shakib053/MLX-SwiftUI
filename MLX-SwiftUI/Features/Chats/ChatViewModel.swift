@@ -15,6 +15,7 @@ import MLXHuggingFace
 import MLXLMCommon
 import MLXLLM
 import Tokenizers
+import OSLog
 
 @MainActor
 @Observable
@@ -543,13 +544,9 @@ final class ChatViewModel {
         if let promptTokens, let completionTokens {
             messages[lastIndex].promptTokens = promptTokens
             messages[lastIndex].completionTokens = completionTokens
-            print(
-                "📊 [MLX-SwiftUI] Token Consumption — Model: \(currentModel.name) | " +
-                "Prompt: \(promptTokens) | Completion: \(completionTokens) | " +
-                "Total: \(promptTokens + completionTokens) | Context Window: \(currentModel.contextWindowTokens) tokens"
-            )
+            AppLogger.chat.debug("Token consumption — model: \(currentModel.name, privacy: .public), prompt: \(promptTokens), completion: \(completionTokens), total: \(promptTokens + completionTokens), context window: \(currentModel.contextWindowTokens)")
         } else {
-            print("📊 [MLX-SwiftUI] Model Loaded: \(currentModel.name) | Context Window: \(currentModel.contextWindowTokens) tokens")
+            AppLogger.chat.info("Model loaded: \(currentModel.name, privacy: .public), context window: \(currentModel.contextWindowTokens)")
         }
     }
 
@@ -733,7 +730,7 @@ extension ChatViewModel {
             return true
         } catch {
             persistenceError = "Could not save conversation history: \(error.localizedDescription)"
-            print(persistenceError ?? "Failed to persist conversation history")
+            AppLogger.chat.error("Failed to persist conversation history: \(error.localizedDescription, privacy: .public)")
             return false
         }
     }

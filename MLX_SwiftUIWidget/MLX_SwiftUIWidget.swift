@@ -7,6 +7,7 @@
 
 import WidgetKit
 import SwiftUI
+import OSLog
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
@@ -23,7 +24,7 @@ struct Provider: AppIntentTimelineProvider {
     ) async -> SimpleEntry {
         let modelName = SharedWidgetData.activeModelName
 
-        print("WIDGET read model:", modelName)
+        AppLogger.widget.debug("Read active model: \(modelName, privacy: .public)")
 
         return SimpleEntry(
             date: .now,
@@ -38,7 +39,7 @@ struct Provider: AppIntentTimelineProvider {
     ) async -> Timeline<SimpleEntry> {
         let modelName = SharedWidgetData.activeModelName
 
-        print("WIDGET read model:", modelName)
+        AppLogger.widget.debug("Read active model: \(modelName, privacy: .public)")
 
         let entry = SimpleEntry(
             date: .now,
