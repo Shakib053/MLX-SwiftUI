@@ -16,7 +16,7 @@ struct FeedbackView: View {
                 .foregroundStyle(.secondary)
 
             Button("Compose Feedback Email") {
-                print("Feedback compose tapped. Configure the production support address and MessageUI composer.")
+                AppLogger.app.info("Feedback compose tapped. Configure the production support address and MessageUI composer.")
             }
             .buttonStyle(.borderedProminent)
 

@@ -55,7 +55,7 @@ struct SettingsView: View {
                     }
 
                     Button {
-                        print("Rate MLX Chat tapped. Add the production App Store product URL before release.")
+                        AppLogger.app.info("Rate MLX Chat tapped. Add the production App Store product URL before release.")
                     } label: {
                         Label("Rate MLX Chat", systemImage: "star")
                     }
