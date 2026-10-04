@@ -1,4 +1,5 @@
 import SwiftUI
+import OSLog
 
 struct ChatComposer: View {
     @Binding var text: String
