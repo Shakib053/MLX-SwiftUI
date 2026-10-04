@@ -2,9 +2,17 @@
 
 Instructions for Codex and other coding agents working in this repository.
 
+## Working Agreement
+
+- Treat the working tree as user-owned. Inspect `git status --short` before editing and preserve unrelated changes.
+- Read the closest `AGENTS.md` first if one is added below this directory; more-specific guidance wins for files in its subtree.
+- Keep patches reviewable: change only files required for the request, avoid drive-by formatting, and explain any necessary behavior change.
+- Do not add packages, change signing, alter bundle identifiers, or change deployment targets unless the task explicitly requires it.
+- Never read, print, stage, or commit `Secrets.xcconfig`, tokens, provisioning assets, or generated build output. Keep credentials in local configuration only.
+
 ## Project Snapshot
 
-This is a native iOS SwiftUI app for local-first LLM chat using Apple MLX, MLX Swift LM, Hugging Face model loading, and a simulator-only hosted fallback. The main app target lives under `MLX-SwiftUI/`; the widget extension lives under `MLX_SwiftUIWidget/`.
+This is an iOS 26 SwiftUI app for local-first LLM chat. It can use Apple Foundation Models when available, runs MLX Swift models on physical devices, and uses a Hugging Face hosted fallback only on Simulator. Conversations and saved task results are persisted with SwiftData. The main app target lives under `MLX-SwiftUI/`; the WidgetKit extension lives under `MLX_SwiftUIWidget/`.
 
 Important areas:
 
@@ -12,13 +20,23 @@ Important areas:
 - `MLX-SwiftUI/Core`: shared domain and MLX model loading.
 - `MLX-SwiftUI/Features/Chats`: chat domain, persistence, safety, backend selection, and UI.
 - `MLX-SwiftUI/Features/Models`: model catalog, model detail, and model selection UI.
+- `MLX-SwiftUI/Features/Home`: task workspace and result extraction.
+- `MLX-SwiftUI/Features/Onboarding`: first-launch experience.
 - `MLX-SwiftUI/Features/Settings`: settings, licenses, feedback, and appearance controls.
 - `MLX-SwiftUI/Shared`: reusable UI primitives and shared widget data.
 - `MLX_SwiftUIWidget`: WidgetKit surfaces that should stay in sync with shared data contracts.
 
+### State and ownership
+
+- `AppState` owns app-wide model selection, download state, appearance, and widget refreshes; do not duplicate that state in feature views.
+- `ChatViewModel` owns one chat session's backend lifecycle, streaming/cancellation, and persistence coordination. Keep backend/domain behavior out of SwiftUI views.
+- `ChatBackend` is the seam for Foundation Models, local MLX, and hosted inference. Preserve its streaming and cancellation contract when adding or changing a backend.
+- `Conversation` and `PersistedMessage` are SwiftData schema. Treat persistent-property changes as data migrations: preserve existing records and verify launch/restore behavior, not just compilation.
+- `SharedWidgetData` is an app-group contract used by both targets. Update the app and widget together when its keys or values change.
+
 ## Karpathy-Inspired Execution
 
-Apply the four principles from the `karpathy-guidelines` skill. Use judgment for trivial, obvious changes; apply the full process for ambiguous, risky, or multi-step work.
+Apply the four principles from the [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) guidance. They deliberately favor caution over speed for ambiguous, risky, or multi-step work; use judgment for trivial, obvious changes.
 
 ### Think Before Coding
 
@@ -55,7 +73,7 @@ Apply the four principles from the `karpathy-guidelines` skill. Use judgment for
 - Use `Core` only for app-wide models and services. Use `Shared` only for reusable UI/data used across multiple areas.
 - Keep SwiftUI views decomposed by responsibility, not by arbitrary size limits.
 - Do not introduce new dependencies unless the task clearly requires one.
-- Do not commit secrets. `Secrets.xcconfig` is local-only; use `Secrets.example.xcconfig` for documented placeholders.
+- Do not commit secrets. `Secrets.xcconfig` is local-only; document only placeholders and required variable names in tracked documentation.
 - Avoid broad refactors while fixing narrow bugs.
 - Respect user changes in the working tree. Never revert unrelated modifications.
 
@@ -76,6 +94,7 @@ Apply the four principles from the `karpathy-guidelines` skill. Use judgment for
 - Treat model loading as expensive and failure-prone. Preserve clear loading, ready, error, and retry states.
 - Keep simulator behavior separate from physical-device MLX behavior.
 - Do not accidentally trigger local MLX model downloads on simulator paths.
+- Preserve the DEBUG simulator download scenarios: they exercise UI states only and must not cause real local MLX work. Release Simulator uses hosted chat; physical devices remain local-first after the optional Foundation Models path.
 - Keep Hugging Face token handling behind configuration. Never hardcode tokens.
 - Make chat backend behavior testable by keeping domain logic separate from SwiftUI rendering.
 - Be careful with streaming, cancellation, and repeated sends. A user should not be able to corrupt chat state by tapping quickly.
@@ -106,6 +125,14 @@ After editing:
 
 ## Build And Verification
 
+Run the narrowest relevant check first. There is currently no checked-in unit-test target. Add tests only when the task introduces testable domain behavior and a suitable target is in scope.
+
+### SwiftLint policy
+
+Do **not** run `swiftlint` directly during ordinary agent work, including targeted or whole-project scopes. It is a broad, redundant check for this repository and CI already runs the required authoritative command: `swiftlint lint --strict --no-cache`.
+
+Run SwiftLint locally only when the user explicitly asks for it, or when diagnosing a SwiftLint failure reported by CI. A normal Xcode build may execute the project's existing SwiftLint build phase when SwiftLint is installed; do not add a separate lint invocation before or after that build.
+
 Primary build command:
 
 ```sh
@@ -128,6 +155,8 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project MLX
 ```
 
 Use simulator builds when checking the hosted fallback. In `DEBUG` simulator builds, the normal and hosted-only download scenarios use the hosted backend; the other simulated scenarios can exercise local-load states. Use physical-device generic builds when checking MLX/device compatibility.
+
+Do not use `clean` as a default verification step: it is slower and discards useful local derived data. Use it only to diagnose a suspected stale-build problem or when a requested command explicitly needs it.
 
 ## Common Pitfalls
 
