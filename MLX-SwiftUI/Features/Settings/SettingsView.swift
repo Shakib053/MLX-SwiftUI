@@ -1,4 +1,5 @@
 import SwiftUI
+import OSLog
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState

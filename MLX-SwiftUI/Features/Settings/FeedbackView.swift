@@ -1,4 +1,5 @@
 import SwiftUI
+import OSLog
 
 struct FeedbackView: View {
     var body: some View {
