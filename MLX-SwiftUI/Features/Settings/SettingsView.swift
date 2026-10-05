@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftUI
 import OSLog
 
@@ -38,7 +39,10 @@ struct SettingsView: View {
                             color: .purple,
                             title: "Default model",
                             subtitle: "Used for new chats",
-                            value: appState.prefersFoundationModel ? "Apple Foundation Models" : appState.activeModel.name
+                            value: appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable
+                                ? "Apple Foundation Models"
+                                : appState.downloadedModelIDs.contains(appState.activeModelID)
+                                    ? appState.activeModel.name : "Download needed"
                         )
                     }
                     .foregroundStyle(.primary)

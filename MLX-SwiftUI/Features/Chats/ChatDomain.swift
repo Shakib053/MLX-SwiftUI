@@ -17,6 +17,7 @@ enum ChatBackendError: LocalizedError {
 enum ChatState: Equatable {
     case loading
     case downloading
+    case needsDownload
     case ready
     case failed(String)
 }

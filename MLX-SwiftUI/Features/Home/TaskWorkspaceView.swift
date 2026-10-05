@@ -88,6 +88,7 @@ struct TaskWorkspaceView: View {
         .navigationTitle(input.action.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            appState.refreshInstalledModels()
             if sourceTitle.isEmpty {
                 text = input.text
                 sourceTitle = input.title
@@ -174,6 +175,28 @@ struct TaskWorkspaceView: View {
                 }
             }
             if isImporting { ProgressView("Reading content…") }
+            if needsModelDownload {
+                #if targetEnvironment(simulator)
+                Text("On-device MLX tools need a physical iPhone.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                #else
+                Text("\(appState.activeModel.name) needs an internet download of about \(appState.activeModel.sizeLabel) before this tool can run on your device.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                if appState.downloadingModelID == appState.activeModelID {
+                    ProgressView(value: appState.downloadProgress)
+                } else {
+                    Button("Download \(appState.activeModel.name)") {
+                        Task {
+                            await appState.download(appState.activeModel)
+                            errorMessage = appState.downloadError
+                        }
+                    }
+                    .disabled(appState.downloadingModelID != nil)
+                }
+                #endif
+            }
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red)
                 Button("Try again") { self.errorMessage = nil }
@@ -182,7 +205,8 @@ struct TaskWorkspaceView: View {
                 Text(input.action.title).frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting)
+            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                text.count > 10_000 || isImporting || needsModelDownload)
         }
     }
 
@@ -231,7 +255,7 @@ struct TaskWorkspaceView: View {
                     throw WorkspaceError.unavailable
                     #else
                     guard appState.downloadedModelIDs.contains(appState.activeModelID) else { throw WorkspaceError.unavailable }
-                    let model = try await MLXModelLoader.load(configuration: appState.activeModel.configuration, progressHandler: { _ in })
+                    let model = try await MLXModelLoader.loadCached(appState.activeModel)
                     try Task.checkCancellation()
                     backend = LocalMLXChatBackend(model: model, instructions: ChatRequest.defaultSystemPrompt, additionalContext: [:])
                     #endif
@@ -251,6 +275,11 @@ struct TaskWorkspaceView: View {
             }
             isWorking = false
         }
+    }
+
+    private var needsModelDownload: Bool {
+        !(appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable) &&
+        !appState.downloadedModelIDs.contains(appState.activeModelID)
     }
 
     private func prompt(for source: String) -> String {

@@ -10,10 +10,7 @@ import FoundationModels
 import Observation
 import SwiftData
 import MLX
-import MLXHuggingFace
 import MLXLMCommon
-import MLXLLM
-import Tokenizers
 import OSLog
 
 @MainActor
@@ -42,7 +39,7 @@ final class ChatViewModel {
         #if DEBUG && targetEnvironment(simulator)
         return "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone."
         #else
-        return "The selected model downloads once and is reused from the device cache on later launches."
+        return "Loading the selected model from this device."
         #endif
     }
 
@@ -232,8 +229,18 @@ final class ChatViewModel {
     private func startLocalModelLoad(for model: LocalModel) {
         downloadProgress = 0
         downloadError = nil
+        #if !targetEnvironment(simulator)
+        guard MLXModelLoader.cachedDirectory(for: model) != nil else {
+            state = .needsDownload
+            return
+        }
+        #endif
         if backend == nil {
+            #if DEBUG && targetEnvironment(simulator)
             state = .downloading
+            #else
+            state = .loading
+            #endif
         }
 
         localLoadingTask = Task { [weak self] in
@@ -243,15 +250,7 @@ final class ChatViewModel {
                 try await self.runSimulatedDownload()
                 self.simulatedDownloadCompleted()
                 #else
-                let container = try await #huggingFaceLoadModelContainer(
-                    configuration: model.configuration,
-                    progressHandler: { progress in
-                        let fraction = progress.fractionCompleted
-                        Task { @MainActor [weak self] in
-                            self?.updateDownloadProgress(fraction)
-                        }
-                    }
-                )
+                let container = try await MLXModelLoader.loadCached(model)
                 let localHistory = ChatHistoryPolicy.modelSeed(self.messages)
                     .compactMap { message -> Chat.Message? in
                         guard !message.text.isEmpty else { return nil }
@@ -270,7 +269,11 @@ final class ChatViewModel {
                 #endif
             } catch is CancellationError {
                 return
+            } catch CachedModelError.notInstalled {
+                guard model.id == self.currentModelID else { return }
+                self.state = .needsDownload
             } catch {
+                guard model.id == self.currentModelID else { return }
                 self.localDownloadFailed(error.localizedDescription)
             }
         }

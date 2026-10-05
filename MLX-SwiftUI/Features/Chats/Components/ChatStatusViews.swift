@@ -62,6 +62,59 @@ struct ChatDownloadView: View {
     }
 }
 
+struct ChatModelDownloadPrompt: View {
+    let model: LocalModel
+    let isDownloading: Bool
+    let isDownloadBlocked: Bool
+    let progress: Double
+    let error: String?
+    let hasOtherModels: Bool
+    let style: ChatVisualStyle
+    let download: () -> Void
+    let chooseModel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 40))
+                .foregroundStyle(.indigo)
+            Text("Get ready for private chat")
+                .font(.title2.weight(.semibold))
+            Text("\(model.name) is not on this device yet. Download about \(model.sizeLabel) to chat privately. An internet connection is needed once; later chats work offline.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            if isDownloading {
+                ProgressView(value: progress)
+                Text("Downloading \(Int(progress * 100))%")
+                    .font(.caption)
+            } else {
+                Button("Download \(model.name)", action: download)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isDownloadBlocked)
+                if isDownloadBlocked {
+                    Text("Another model is downloading.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if hasOtherModels {
+                    Button("Choose another model", action: chooseModel)
+                }
+            }
+            if let error {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: 420)
+        .background(style.panelFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding()
+    }
+}
+
 struct ChatErrorView: View {
     let message: String
     let style: ChatVisualStyle

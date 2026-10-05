@@ -27,6 +27,7 @@ struct ModelCatalogView: View {
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Search supported models")
         .toolbar(.hidden, for: .tabBar)
+        .onAppear { appState.refreshInstalledModels() }
     }
 
     private func modelCard(_ model: LocalModel) -> some View {
@@ -40,9 +41,13 @@ struct ModelCatalogView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(appState.downloadedModelIDs.contains(model.id) ? "Downloaded" : "Compatible")
+                Text(appState.downloadedModelIDs.contains(model.id) ? "Downloaded" :
+                        appState.downloadingModelID == model.id ? "Downloading" : "Not downloaded")
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(appState.downloadedModelIDs.contains(model.id) ? Color.green : Color.secondary)
+            }
+            if appState.downloadingModelID == model.id {
+                ProgressView(value: appState.downloadProgress)
             }
             HStack {
                 NavigationLink {
@@ -52,11 +57,12 @@ struct ModelCatalogView: View {
                     Text("Details")
                 }
                     .buttonStyle(.bordered)
-                Button(appState.downloadedModelIDs.contains(model.id) ? "Installed" : "Download") {
+                Button(appState.downloadedModelIDs.contains(model.id) ? "Installed" :
+                        appState.downloadingModelID == model.id ? "Downloading" : "Download") {
                     beginDownload(model)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(appState.downloadedModelIDs.contains(model.id))
+                .disabled(appState.downloadedModelIDs.contains(model.id) || appState.downloadingModelID != nil)
             }
         }
         .padding(16)

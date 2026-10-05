@@ -16,8 +16,6 @@ struct HomeView: View {
     @State private var isImporting = false
     @State private var sourceKind: WorkspaceSourceKind = .text
     @State private var sourceTitle = "Text"
-    @State private var pendingChatPrompt: String?
-    @State private var showsLocalModelChoice = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -52,12 +50,7 @@ struct HomeView: View {
                 TaskWorkspaceView(input: input)
             }
             .sheet(isPresented: $showsContentSheet) { contentSheet }
-            .localModelChoice(isPresented: $showsLocalModelChoice) {
-                if let pendingChatPrompt {
-                    path.append(pendingChatPrompt)
-                    self.pendingChatPrompt = nil
-                }
-            }
+            .onAppear { appState.refreshInstalledModels() }
             .onChange(of: selectedPhoto) { _, photo in
                 guard let photo else { return }
                 isImporting = true
@@ -88,11 +81,11 @@ struct HomeView: View {
                     .tracking(2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Label(backendStatus, systemImage: "checkmark.shield")
+                Label(backendStatus, systemImage: backendSymbol)
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(backendReady ? Color.green : Color.orange)
                     .padding(9)
-                    .background(.green.opacity(0.08), in: Capsule())
+                    .background((backendReady ? Color.green : Color.orange).opacity(0.08), in: Capsule())
             }
             Text("Your content.\nA little clearer.")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
@@ -111,7 +104,29 @@ struct HomeView: View {
         #if targetEnvironment(simulator)
         return "Unavailable in Simulator"
         #else
-        return "On-device MLX"
+        return needsModelDownload ? "Download needed" : "On-device MLX"
+        #endif
+    }
+
+    private var needsModelDownload: Bool {
+        !(appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable) &&
+        !appState.downloadedModelIDs.contains(appState.activeModelID)
+    }
+
+    private var backendSymbol: String {
+        #if targetEnvironment(simulator)
+        return backendReady ? "checkmark.shield" : "xmark.circle"
+        #else
+        return needsModelDownload ? "arrow.down.circle" : "checkmark.shield"
+        #endif
+    }
+
+    private var backendReady: Bool {
+        if appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable { return true }
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        return !needsModelDownload
         #endif
     }
 
@@ -282,12 +297,7 @@ struct HomeView: View {
     }
 
     private func beginChat(with prompt: String) {
-        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
-            pendingChatPrompt = prompt
-            showsLocalModelChoice = true
-        } else {
-            path.append(prompt)
-        }
+        path.append(prompt)
     }
 
     private func finishImport() {
