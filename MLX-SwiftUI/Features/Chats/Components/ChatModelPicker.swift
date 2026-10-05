@@ -10,22 +10,17 @@ struct ChatModelPicker: View {
     var body: some View {
         NavigationStack {
             List {
-                Button {
-                    appState.prefersFoundationModel = true
-                    isPresented = false
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
+                if SystemLanguageModel.default.isAvailable {
+                    Button {
+                        appState.prefersFoundationModel = true
+                        isPresented = false
+                    } label: {
+                        HStack {
                             Label("Apple Foundation Models", systemImage: "sparkles")
-                            if !SystemLanguageModel.default.isAvailable {
-                                Text("Uses the available fallback for now")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            Spacer()
+                            if selectedBackend == .foundation {
+                                Image(systemName: "checkmark").foregroundStyle(.indigo)
                             }
-                        }
-                        Spacer()
-                        if selectedBackend == .foundation {
-                            Image(systemName: "checkmark").foregroundStyle(.indigo)
                         }
                     }
                 }

@@ -13,7 +13,7 @@ struct OnboardingView: View {
         (
             "cpu",
             "Choose your model",
-            "Foundation Models is the default. You can also choose an MLX model and keep up to two downloaded models."
+            "Foundation Models is the default. You can also choose an MLX model and keep up to three downloaded models."
         ),
         (
             "checkmark.shield.fill",
