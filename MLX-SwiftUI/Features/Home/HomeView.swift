@@ -16,6 +16,8 @@ struct HomeView: View {
     @State private var isImporting = false
     @State private var sourceKind: WorkspaceSourceKind = .text
     @State private var sourceTitle = "Text"
+    @State private var pendingChatPrompt: String?
+    @State private var showsLocalModelChoice = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -50,6 +52,12 @@ struct HomeView: View {
                 TaskWorkspaceView(input: input)
             }
             .sheet(isPresented: $showsContentSheet) { contentSheet }
+            .localModelChoice(isPresented: $showsLocalModelChoice) {
+                if let pendingChatPrompt {
+                    path.append(pendingChatPrompt)
+                    self.pendingChatPrompt = nil
+                }
+            }
             .onChange(of: selectedPhoto) { _, photo in
                 guard let photo else { return }
                 isImporting = true
@@ -264,12 +272,21 @@ struct HomeView: View {
 
     private func open(_ action: HomeAction) {
         if action == .askAI {
-            path.append("")
+            beginChat(with: "")
         } else if content.count > 10_000 {
             pendingAction = action
             showsContentSheet = true
         } else if let workspaceAction = action.workspaceAction {
             workspace = WorkspaceInput(action: workspaceAction, kind: sourceKind, title: sourceTitle, text: content)
+        }
+    }
+
+    private func beginChat(with prompt: String) {
+        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
+            pendingChatPrompt = prompt
+            showsLocalModelChoice = true
+        } else {
+            path.append(prompt)
         }
     }
 

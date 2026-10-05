@@ -8,7 +8,7 @@ import OSLog
 @MainActor
 @Observable
 final class AppState {
-    static let modelLimit = 2
+    static let modelLimit = 3
 
     var selectedTab: AppTab = .home
     var prefersFoundationModel: Bool {

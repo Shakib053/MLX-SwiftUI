@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftData
 import SwiftUI
 
@@ -10,6 +11,8 @@ struct ChatsView: View {
     @State private var conversationToDelete: Conversation?
     @State private var persistenceError: String?
     @State private var resultToDelete: SavedTaskResult?
+    @State private var startsNewChat = false
+    @State private var showsLocalModelChoice = false
 
     private var filteredResults: [SavedTaskResult] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,13 +64,16 @@ struct ChatsView: View {
             .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        ChatView(viewID: UUID())
+                    Button {
+                        startNewChat()
                     } label: {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Start new conversation")
                 }
+            }
+            .navigationDestination(isPresented: $startsNewChat) {
+                ChatView(viewID: UUID())
             }
             .alert("Delete Conversation?", isPresented: Binding(
                 get: { conversationToDelete != nil },
@@ -91,6 +97,9 @@ struct ChatsView: View {
                 Button("OK", role: .cancel) { persistenceError = nil }
             } message: {
                 Text(persistenceError ?? "Please try again.")
+            }
+            .localModelChoice(isPresented: $showsLocalModelChoice) {
+                startsNewChat = true
             }
             .alert("Delete Saved Result?", isPresented: Binding(
                 get: { resultToDelete != nil },
@@ -255,7 +264,9 @@ struct ChatsView: View {
                     .multilineTextAlignment(.center)
             }
 
-            NavigationLink { ChatView(viewID: UUID()) } label: {
+            Button {
+                startNewChat()
+            } label: {
                 Label("New Conversation", systemImage: "plus")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -266,7 +277,7 @@ struct ChatsView: View {
             .tint(.indigo)
             .accessibilityHint("Opens a new chat using your preferred model")
 
-            Label("\(appState.activeModel.shortName) • On device", systemImage: "lock.fill")
+            Label(preferredModelStatus, systemImage: preferredModelSymbol)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
@@ -278,6 +289,27 @@ struct ChatsView: View {
                 .stroke(.primary.opacity(0.07))
         }
         .padding(.top, 40)
+    }
+
+    private func startNewChat() {
+        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
+            showsLocalModelChoice = true
+        } else {
+            startsNewChat = true
+        }
+    }
+
+    private var preferredModelStatus: String {
+        if appState.prefersFoundationModel {
+            return SystemLanguageModel.default.isAvailable
+                ? "Apple Foundation Models • On device"
+                : "Apple Foundation Models unavailable"
+        }
+        return "\(appState.activeModel.shortName) • On device"
+    }
+
+    private var preferredModelSymbol: String {
+        appState.prefersFoundationModel ? "sparkles" : "lock.fill"
     }
 }
 

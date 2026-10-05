@@ -26,8 +26,8 @@ struct ModelsView: View {
                     }) {
                         SectionHeader(
                             title: appState.downloadedModels.count == AppState.modelLimit
-                                ? "Both model slots are used"
-                                : "Suggested second model"
+                                ? "All model slots are used"
+                                : "Suggested model"
                         )
                         suggestedCard(suggestion)
                     }
@@ -35,7 +35,7 @@ struct ModelsView: View {
                     Label {
                         Text(
                             "Switching models does not delete chats. " +
-                            "When both slots are full, choose one to remove before adding another."
+                            "When all slots are full, choose one to remove before adding another."
                         )
                     } icon: {
                         Image(systemName: "info.circle")
@@ -91,7 +91,7 @@ struct ModelsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("You can keep up to two downloaded models. Remove one to continue.")
+                Text("You can keep up to three downloaded models. Remove one to continue.")
             }
         }
     }
