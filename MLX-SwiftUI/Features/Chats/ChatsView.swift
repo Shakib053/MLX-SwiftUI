@@ -12,7 +12,6 @@ struct ChatsView: View {
     @State private var persistenceError: String?
     @State private var resultToDelete: SavedTaskResult?
     @State private var startsNewChat = false
-    @State private var showsLocalModelChoice = false
 
     private var filteredResults: [SavedTaskResult] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -62,6 +61,7 @@ struct ChatsView: View {
             }
             .background(AppBackground())
             .navigationTitle("History")
+            .onAppear { appState.refreshInstalledModels() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -97,9 +97,6 @@ struct ChatsView: View {
                 Button("OK", role: .cancel) { persistenceError = nil }
             } message: {
                 Text(persistenceError ?? "Please try again.")
-            }
-            .localModelChoice(isPresented: $showsLocalModelChoice) {
-                startsNewChat = true
             }
             .alert("Delete Saved Result?", isPresented: Binding(
                 get: { resultToDelete != nil },
@@ -292,24 +289,36 @@ struct ChatsView: View {
     }
 
     private func startNewChat() {
-        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
-            showsLocalModelChoice = true
-        } else {
-            startsNewChat = true
-        }
+        startsNewChat = true
     }
 
     private var preferredModelStatus: String {
+        #if targetEnvironment(simulator)
+        return "Simulator chat mode"
+        #else
         if appState.prefersFoundationModel {
             return SystemLanguageModel.default.isAvailable
                 ? "Apple Foundation Models • On device"
-                : "Apple Foundation Models unavailable"
+                : appState.downloadedModelIDs.contains(appState.activeModelID)
+                    ? "\(appState.activeModel.shortName) • On device"
+                    : "Model download needed"
         }
-        return "\(appState.activeModel.shortName) • On device"
+        return appState.downloadedModelIDs.contains(appState.activeModelID)
+            ? "\(appState.activeModel.shortName) • On device"
+            : "Model download needed"
+        #endif
     }
 
     private var preferredModelSymbol: String {
-        appState.prefersFoundationModel ? "sparkles" : "lock.fill"
+        #if targetEnvironment(simulator)
+        return "laptopcomputer"
+        #else
+        if appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable {
+            return "sparkles"
+        }
+        return appState.downloadedModelIDs.contains(appState.activeModelID)
+            ? "lock.fill" : "arrow.down.circle"
+        #endif
     }
 }
 

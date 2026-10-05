@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftUI
 
 struct ModelsView: View {
@@ -50,6 +51,7 @@ struct ModelsView: View {
             }
             .background(AppBackground())
             .navigationTitle("Models")
+            .onAppear { appState.refreshInstalledModels() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -129,13 +131,15 @@ struct ModelsView: View {
             HStack {
                 ModelStat(
                     icon: "sparkles",
-                    label: appState.prefersFoundationModel ? "MLX fallback" : "Active",
-                    value: appState.activeModel.shortName
+                    label: appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable
+                        ? "MLX fallback" : "Active",
+                    value: appState.downloadedModelIDs.contains(appState.activeModelID)
+                        ? appState.activeModel.shortName : "Not downloaded"
                 )
                 Divider().frame(height: 36)
                 ModelStat(
                     icon: "arrow.down.circle",
-                    label: "Storage",
+                    label: "Est. storage",
                     value: String(format: "%.2f GB", appState.storageUsed)
                 )
             }
@@ -177,7 +181,6 @@ struct ModelsView: View {
                 }
                 Spacer()
                 Button("Remove", role: .destructive) { appState.remove(model) }
-                    .disabled(appState.downloadedModels.count == 1)
             }
             .font(.subheadline.weight(.semibold))
         }
@@ -218,6 +221,7 @@ struct ModelsView: View {
                         .buttonStyle(.bordered)
                     Button("Download") { beginDownload(model) }
                         .buttonStyle(.borderedProminent)
+                        .disabled(appState.downloadingModelID != nil)
                 }
                 .frame(maxWidth: .infinity)
             }

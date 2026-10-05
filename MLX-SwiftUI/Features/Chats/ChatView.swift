@@ -1,3 +1,4 @@
+import FoundationModels
 import SwiftUI
 import SwiftData
 
@@ -51,6 +52,8 @@ struct ChatView: View {
                         progress: viewModel.downloadProgress,
                         style: style
                     )
+                case .needsDownload:
+                    modelDownloadPrompt
                 case .failed(let message):
                     ChatErrorView(
                         message: message,
@@ -113,6 +116,7 @@ struct ChatView: View {
         }
         .task {
             if !initialPrompt.isEmpty { composerText = initialPrompt }
+            appState.refreshInstalledModels()
             await viewModel.start(
                 activeModel: appState.activeModel,
                 downloadedModelIDs: appState.downloadedModelIDs,
@@ -143,11 +147,13 @@ struct ChatView: View {
                     .font(.headline)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(.green)
+                        .fill(viewModel.state == .needsDownload ? Color.orange : Color.green)
                         .frame(width: 6, height: 6)
-                    Text(viewModel.backendMode == .foundation
-                         ? "Apple Foundation Models • On device"
-                         : "\(viewModel.currentModel.shortName) • On device")
+                    Text(viewModel.state == .needsDownload
+                         ? "\(viewModel.currentModel.shortName) • Download needed"
+                         : viewModel.backendMode == .foundation
+                            ? "Apple Foundation Models • On device"
+                            : "\(viewModel.currentModel.shortName) • On device")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -255,14 +261,18 @@ struct ChatView: View {
             }
 
             if isSwitchingModel {
-                ChatModelSwitchStatusView(
-                    state: viewModel.state,
-                    modelName: viewModel.currentModel.shortName,
-                    progress: viewModel.downloadProgress,
-                    retry: {
-                        viewModel.retryDownload()
-                    }
-                )
+                if viewModel.state == .needsDownload {
+                    modelDownloadPrompt
+                } else {
+                    ChatModelSwitchStatusView(
+                        state: viewModel.state,
+                        modelName: viewModel.currentModel.shortName,
+                        progress: viewModel.downloadProgress,
+                        retry: {
+                            viewModel.retryDownload()
+                        }
+                    )
+                }
             }
 
             ChatComposer(
@@ -279,12 +289,39 @@ struct ChatView: View {
             .id(composerID)
         }
         .onAppear {
-            isComposerFocused = true
+            isComposerFocused = viewModel.state == .ready
         }
     }
 
     private var isSwitchingModel: Bool {
         viewModel.state != .ready && !viewModel.messages.isEmpty
+    }
+
+    private var modelDownloadPrompt: some View {
+        ChatModelDownloadPrompt(
+            model: viewModel.currentModel,
+            isDownloading: appState.downloadingModelID == viewModel.currentModel.id,
+            isDownloadBlocked: appState.downloadingModelID != nil,
+            progress: appState.downloadProgress,
+            error: appState.downloadError,
+            hasOtherModels: SystemLanguageModel.default.isAvailable ||
+                appState.downloadedModels.contains { $0.id != viewModel.currentModel.id },
+            style: style,
+            download: downloadCurrentModel,
+            chooseModel: { showsModelPicker = true }
+        )
+    }
+
+    private func downloadCurrentModel() {
+        let model = viewModel.currentModel
+        Task {
+            await appState.download(model)
+            if appState.downloadedModelIDs.contains(model.id),
+               viewModel.currentModel.id == model.id,
+               viewModel.backendMode != .foundation {
+                viewModel.retryDownload()
+            }
+        }
     }
 
     /// Model labels appear on assistant bubbles only once a conversation mixes

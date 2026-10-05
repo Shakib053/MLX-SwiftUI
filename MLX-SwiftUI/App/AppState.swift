@@ -1,8 +1,8 @@
 import Foundation
+import FoundationModels
 import Observation
 import WidgetKit
 import HuggingFace
-import MLXLMCommon
 import OSLog
 
 @MainActor
@@ -12,7 +12,10 @@ final class AppState {
 
     var selectedTab: AppTab = .home
     var prefersFoundationModel: Bool {
-        didSet { UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel") }
+        didSet {
+            UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel")
+            updateWidget()
+        }
     }
     var appearance: AppAppearance {
         didSet {
@@ -26,7 +29,6 @@ final class AppState {
     var downloadProgress = 0.0
     var downloadError: String?
 
-    private let downloadedModelsKey = "downloadedModelIDs"
     private let activeModelKey = "activeModelID"
 
     init() {
@@ -34,17 +36,13 @@ final class AppState {
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
 
-        let savedIDs = UserDefaults.standard.stringArray(forKey: downloadedModelsKey) ?? []
-        let validIDs = savedIDs.filter { savedID in
-            LocalModel.catalog.contains { model in model.id == savedID }
+        downloadedModelIDs = LocalModel.catalog.compactMap { model in
+            MLXModelLoader.cachedDirectory(for: model) == nil ? nil : model.id
         }
-        let initialDownloadedIDs = validIDs.isEmpty ? [LocalModel.qwen.id] : validIDs
-        downloadedModelIDs = initialDownloadedIDs
 
         let savedActiveID = UserDefaults.standard.string(forKey: activeModelKey)
-        activeModelID = initialDownloadedIDs.contains(savedActiveID ?? "")
-            ? savedActiveID!
-            : initialDownloadedIDs[0]
+        activeModelID = savedActiveID.flatMap { downloadedModelIDs.contains($0) ? $0 : nil }
+            ?? downloadedModelIDs.first ?? LocalModel.qwen.id
 
         updateWidget()
     }
@@ -63,6 +61,17 @@ final class AppState {
         downloadedModels.reduce(0) { $0 + $1.sizeGB }
     }
 
+    func refreshInstalledModels() {
+        downloadedModelIDs = LocalModel.catalog.compactMap { model in
+            MLXModelLoader.cachedDirectory(for: model) == nil ? nil : model.id
+        }
+        if !downloadedModelIDs.contains(activeModelID), let first = downloadedModelIDs.first {
+            activeModelID = first
+            persistModelState()
+        }
+        updateWidget()
+    }
+
     func activate(_ model: LocalModel) {
         guard downloadedModelIDs.contains(model.id) else { return }
         activeModelID = model.id
@@ -73,6 +82,7 @@ final class AppState {
     }
 
     func download(_ model: LocalModel) async {
+        refreshInstalledModels()
         guard !downloadedModelIDs.contains(model.id), downloadingModelID == nil else { return }
         guard downloadedModelIDs.count < Self.modelLimit else {
             AppLogger.app.warning("Model limit reached before downloading \(model.name, privacy: .public)")
@@ -92,22 +102,22 @@ final class AppState {
         return
         #else
         do {
-            _ = try await MLXModelLoader.load(
-                configuration: model.configuration,
+            try await MLXModelLoader.download(
+                model,
                 progressHandler: { [weak self] progress in
-                    Task { @MainActor [weak self] in
-                        self?.downloadProgress = max(
-                            self?.downloadProgress ?? 0,
-                            min(max(progress.fractionCompleted, 0), 1)
-                        )
-                    }
+                    self?.downloadProgress = max(
+                        self?.downloadProgress ?? 0,
+                        min(max(progress.fractionCompleted, 0), 1)
+                    )
                 }
             )
 
             guard !Task.isCancelled else { return }
-            downloadedModelIDs.append(model.id)
+            refreshInstalledModels()
+            guard downloadedModelIDs.contains(model.id) else {
+                throw CachedModelError.notInstalled
+            }
             persistModelState()
-            updateWidget()
         } catch is CancellationError {
             return
         } catch {
@@ -123,22 +133,17 @@ final class AppState {
     }
 
     func remove(_ model: LocalModel) {
-        guard downloadedModelIDs.count > 1 else {
-            AppLogger.app.warning("Cannot remove the last downloaded model")
-            return
-        }
-        downloadedModelIDs.removeAll { $0 == model.id }
-        if activeModelID == model.id {
-            activeModelID = downloadedModelIDs[0]
-        }
-        persistModelState()
         removeCachedFiles(for: model)
+        refreshInstalledModels()
+        if activeModelID == model.id && !downloadedModelIDs.contains(model.id) {
+            activeModelID = downloadedModelIDs.first ?? LocalModel.qwen.id
+            persistModelState()
+        }
         AppLogger.app.info("Removed model: \(model.name, privacy: .public)")
         updateWidget()
     }
 
     private func persistModelState() {
-        UserDefaults.standard.set(downloadedModelIDs, forKey: downloadedModelsKey)
         UserDefaults.standard.set(activeModelID, forKey: activeModelKey)
     }
 
@@ -160,7 +165,10 @@ final class AppState {
     }
 
     private func updateWidget() {
-        SharedWidgetData.save(activeModelName: activeModel.name)
+        let modelName = prefersFoundationModel && SystemLanguageModel.default.isAvailable
+            ? "Apple Foundation Models"
+            : downloadedModelIDs.contains(activeModelID) ? activeModel.name : "No model downloaded"
+        SharedWidgetData.save(activeModelName: modelName)
 
         AppLogger.app.debug("Updated widget model to \(SharedWidgetData.activeModelName, privacy: .public)")
 
