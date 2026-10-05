@@ -1,24 +1,15 @@
 import Foundation
 
 enum ChatBackendError: LocalizedError {
-    case missingHuggingFaceToken(String)
-    case invalidResponse
     case emptyResponse
-    case apiError(statusCode: Int, message: String?)
+    case simulatedLocalModelLoadFailure
 
     var errorDescription: String? {
         switch self {
-        case .missingHuggingFaceToken(let diagnostics):
-            return "Missing Hugging Face token. \(diagnostics)"
-        case .invalidResponse:
-            return "The fallback service returned an invalid response."
         case .emptyResponse:
-            return "The fallback service returned an empty response."
-        case .apiError(let statusCode, let message):
-            if let message, !message.isEmpty {
-                return "Hugging Face fallback failed with HTTP \(statusCode): \(message)"
-            }
-            return "Hugging Face fallback failed with HTTP \(statusCode)."
+            return "The model returned an empty response."
+        case .simulatedLocalModelLoadFailure:
+            return "Simulated local model download failure"
         }
     }
 }
@@ -33,24 +24,8 @@ enum ChatState: Equatable {
 enum ChatBackendMode: Equatable {
     case foundation
     case local
-    case hosted
 
-    /// Identifier recorded on assistant messages produced by the hosted
-    /// Hugging Face fallback rather than an on-device model.
-    static let hostedModelID = "hosted"
     static let foundationModelID = "foundation"
-}
-
-enum ChatEnvironment {
-    /// The hosted Hugging Face fallback is offered in the simulator when the
-    /// system foundation model is unavailable. Devices use on-device models.
-    static var supportsHostedChat: Bool {
-        #if targetEnvironment(simulator)
-        return true
-        #else
-        return false
-        #endif
-    }
 }
 
 #if DEBUG
@@ -59,9 +34,6 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
     case slow
     case cached
     case localFailure
-    case hostedFailure
-    case bothUnavailable
-    case hostedOnly
 
     static let defaultsKey = "simulatorDownloadScenario"
 
@@ -69,13 +41,10 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .normal: "Hosted Hugging Face chat"
+        case .normal: "Apple Foundation Models"
         case .slow: "Slow download (60 seconds)"
         case .cached: "Cached model"
         case .localFailure: "Local download failure"
-        case .hostedFailure: "Hosted fallback failure"
-        case .bothUnavailable: "Both unavailable"
-        case .hostedOnly: "Hosted only"
         }
     }
 
@@ -142,8 +111,8 @@ extension ChatMessage {
         if modelID == Self.safetyModelID {
             return "Safety filter"
         }
-        if modelID == ChatBackendMode.hostedModelID {
-            return "Hugging Face"
+        if modelID == "hosted" {
+            return "Apple Foundation Models"
         }
         if modelID == ChatBackendMode.foundationModelID {
             return "Apple Foundation Models"

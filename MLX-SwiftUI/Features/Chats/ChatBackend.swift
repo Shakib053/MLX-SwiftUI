@@ -1,6 +1,5 @@
 import Foundation
 import FoundationModels
-import HuggingFace
 import MLXLMCommon
 
 struct ChatRequest {
@@ -170,83 +169,6 @@ final class LocalMLXChatBackend: ChatBackend {
             continuation.onTermination = { _ in
                 task.cancel()
             }
-        }
-    }
-}
-
-struct HuggingFaceAPIChatBackend: ChatBackend {
-    private let model = "Qwen/Qwen3-4B-Instruct-2507"
-    private let client: InferenceClient
-
-    init(token: String, urlSession: URLSession = .shared) {
-        self.client = InferenceClient(
-            session: urlSession,
-            host: URL(string: "https://router.huggingface.co")!,
-            bearerToken: token
-        )
-    }
-
-    func streamResponse(for request: ChatRequest) -> ChatTextStream {
-        var messages: [ChatCompletion.Message] = [
-            ChatCompletion.Message.system(request.systemPrompt)
-        ]
-        messages.append(contentsOf: request.history.compactMap { message in
-            guard !message.text.isEmpty else { return nil }
-            switch message.role {
-            case .user:
-                return ChatCompletion.Message.user(message.text)
-            case .assistant:
-                return ChatCompletion.Message.assistant(message.text)
-            }
-        })
-        messages.append(ChatCompletion.Message.user(request.prompt))
-
-        let stream = client.chatCompletionStream(
-            model: model,
-            messages: messages,
-            temperature: request.temperature,
-            maxTokens: request.maxTokens
-        )
-
-        return AsyncThrowingStream { continuation in
-            let task = Task {
-                do {
-                    for try await chunk in stream {
-                        if let content = chunk.choices.first?.message.content?.plainText, !content.isEmpty {
-                            continuation.yield(.chunk(content))
-                        }
-                        if let usage = chunk.usage {
-                            continuation.yield(.usage(
-                                promptTokens: usage.promptTokens,
-                                completionTokens: usage.completionTokens
-                            ))
-                        }
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in
-                task.cancel()
-            }
-        }
-    }
-}
-
-private extension ChatCompletion.Message.Content {
-    var plainText: String {
-        switch self {
-        case .text(let text):
-            return text
-        case .mixed(let items):
-            return items.compactMap { item in
-                if case .text(let text) = item {
-                    return text
-                }
-                return nil
-            }
-            .joined()
         }
     }
 }

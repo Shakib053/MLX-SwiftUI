@@ -51,7 +51,6 @@
 		0C7892743016854700FD9307 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		0C7892763016854700FD9307 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		0C78928F30168BD300FD9307 /* MLX_SwiftUIWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MLX_SwiftUIWidgetExtension.entitlements; sourceTree = "<group>"; };
-		4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		8F0D2AA930168DDF00FD0002 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MLX-SwiftUI/Shared/AppLogger.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -136,7 +135,6 @@
 				0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */,
 				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
-				4D1A100A3C1E4D2C8A0F0103 /* Config */,
 				8F0D2AA930168DDF00FD0002 /* AppLogger.swift */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
 				0C7892783016854700FD9307 /* MLX_SwiftUIWidget */,
@@ -161,14 +159,6 @@
 				0C7892763016854700FD9307 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		4D1A100A3C1E4D2C8A0F0103 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */,
-			);
-			name = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -457,7 +447,6 @@
 		};
 		0C3B37BA2FD1CF740062165A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -469,8 +458,6 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
-				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
-				INFOPLIST_KEY_HuggingFaceToken = "$(HF_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -495,7 +482,6 @@
 		};
 		0C3B37BB2FD1CF740062165A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4D1A100A3C1E4D2C8A0F0101 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -507,8 +493,6 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "MLX-SwiftUI/Info.plist";
-				INFOPLIST_KEY_HF_TOKEN = "$(HF_TOKEN)";
-				INFOPLIST_KEY_HuggingFaceToken = "$(HF_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -18,7 +18,7 @@ struct OnboardingView: View {
         (
             "checkmark.shield.fill",
             "Know where chat runs",
-            "Private tool results are saved only when you choose Save. Chat uses MLX on iPhone or the labeled hosted fallback in Simulator when the system model is unavailable."
+            "Private tool results are saved only when you choose Save. Chat uses MLX on iPhone, with Apple Foundation Models as its on-device fallback."
         )
     ]
 

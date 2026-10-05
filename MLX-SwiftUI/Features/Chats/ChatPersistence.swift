@@ -55,8 +55,8 @@ final class PersistedMessage {
     var text: String
     var createdAt: Date
     var orderIndex: Int
-    /// Model that produced this message (LocalModel id, or "hosted" for the
-    /// online fallback). Empty for messages written before this field existed.
+    /// Model that produced this message. Empty for messages written before
+    /// this field existed.
     var modelID: String = ""
     /// True when generation was cancelled (e.g. a mid-chat model switch)
     /// and the stored text is only a partial reply.
@@ -99,7 +99,6 @@ extension ChatBackendMode {
         switch self {
         case .foundation: "foundation"
         case .local: "local"
-        case .hosted: "hosted"
         }
     }
 
@@ -107,7 +106,7 @@ extension ChatBackendMode {
         switch rawValue {
         case "foundation": self = .foundation
         case "local": self = .local
-        case "hosted": self = .hosted
+        case "hosted": self = .foundation
         default: return nil
         }
     }

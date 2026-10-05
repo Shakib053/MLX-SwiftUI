@@ -40,7 +40,7 @@ struct SimulatorTestingSection: View {
         } footer: {
             Text(
                 "The scenario applies to the next new conversation. " +
-                "Hosted chat uses Hugging Face and never loads MLX."
+                "Apple Foundation Models are used when available; local MLX loading is simulated."
             )
         }
         .onChange(of: scenario) { _, value in

@@ -342,7 +342,7 @@ private struct ConversationRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                Label(statusText, systemImage: conversation.backendMode == .hosted ? "network" : "lock.fill")
+                Label(statusText, systemImage: "lock.fill")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -358,7 +358,7 @@ private struct ConversationRow: View {
     }
 
     private var statusText: String {
-        conversation.backendMode == .hosted ? "Online" : "On device"
+        "On device"
     }
 
     private var avatarColor: Color {
