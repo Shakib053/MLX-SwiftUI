@@ -45,7 +45,7 @@ struct ChatComposer: View {
                         }
                         Text(backendMode == .foundation
                              ? "Apple Foundation Models"
-                             : backendMode == .hosted ? "Hugging Face" : activeModel.name)
+                             : activeModel.name)
                     }
                     .font(.caption.weight(.semibold))
                 }
@@ -55,8 +55,8 @@ struct ChatComposer: View {
                 Spacer()
 
                 Label(
-                    backendMode == .hosted ? "Online via Hugging Face" : "Private by default",
-                    systemImage: backendMode == .hosted ? "cloud.fill" : "lock.fill"
+                    "Private by default",
+                    systemImage: "lock.fill"
                 )
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.secondary)

@@ -88,11 +88,11 @@ struct HomeView: View {
                     .tracking(2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Label(backendStatus, systemImage: backendStatus == "Online fallback" ? "network" : "checkmark.shield")
+                Label(backendStatus, systemImage: "checkmark.shield")
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(backendStatus == "Online fallback" ? .blue : .green)
+                    .foregroundStyle(.green)
                     .padding(9)
-                    .background(backendStatus == "Online fallback" ? .blue.opacity(0.08) : .green.opacity(0.08), in: Capsule())
+                    .background(.green.opacity(0.08), in: Capsule())
             }
             Text("Your content.\nA little clearer.")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
@@ -109,7 +109,7 @@ struct HomeView: View {
             return "On-device"
         }
         #if targetEnvironment(simulator)
-        return "Online fallback"
+        return "Unavailable in Simulator"
         #else
         return "On-device MLX"
         #endif

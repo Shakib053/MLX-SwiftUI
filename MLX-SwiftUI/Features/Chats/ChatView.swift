@@ -49,17 +49,11 @@ struct ChatView: View {
                         title: viewModel.loadingTitle,
                         message: viewModel.loadingMessage,
                         progress: viewModel.downloadProgress,
-                        fallbackError: viewModel.fallbackError,
-                        isConnecting: viewModel.isConnectingToFallback,
-                        showsHostedOption: ChatEnvironment.supportsHostedChat,
                         style: style
-                    ) {
-                        Task { await viewModel.useHostedFallback() }
-                    }
+                    )
                 case .failed(let message):
                     ChatErrorView(
                         message: message,
-                        showsHostedOption: ChatEnvironment.supportsHostedChat,
                         style: style
                     ) {
                         if appState.prefersFoundationModel {
@@ -67,8 +61,6 @@ struct ChatView: View {
                         } else {
                             viewModel.retryDownload()
                         }
-                    } useHostedFallback: {
-                        Task { await viewModel.useHostedFallback() }
                     }
                 case .ready:
                     EmptyView()
@@ -151,11 +143,9 @@ struct ChatView: View {
                     .font(.headline)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(viewModel.backendMode == .hosted ? .blue : .green)
+                        .fill(.green)
                         .frame(width: 6, height: 6)
-                    Text(viewModel.backendMode == .hosted
-                         ? "Hugging Face • Online"
-                         : viewModel.backendMode == .foundation
+                    Text(viewModel.backendMode == .foundation
                          ? "Apple Foundation Models • On device"
                          : "\(viewModel.currentModel.shortName) • On device")
                 }
@@ -196,16 +186,6 @@ struct ChatView: View {
 
     private var conversationView: some View {
         VStack(spacing: 0) {
-            if viewModel.backendMode == .hosted,
-               viewModel.isLocalModelReady || viewModel.downloadError != nil {
-                ChatLocalModelStatusBanner(
-                    isReady: viewModel.isLocalModelReady,
-                    hasError: viewModel.downloadError != nil
-                ) {
-                    viewModel.retryDownload()
-                }
-            }
-
             if viewModel.historyLimitReached {
                 Label(
                     "Older messages were removed to keep this chat within the device limit.",
@@ -281,9 +261,6 @@ struct ChatView: View {
                     progress: viewModel.downloadProgress,
                     retry: {
                         viewModel.retryDownload()
-                    },
-                    useHostedFallback: {
-                        Task { await viewModel.useHostedFallback() }
                     }
                 )
             }
@@ -361,7 +338,6 @@ private struct ChatModelSwitchStatusView: View {
     let modelName: String
     let progress: Double
     let retry: () -> Void
-    let useHostedFallback: () -> Void
 
     private var hasFailed: Bool {
         if case .failed = state { return true }
@@ -389,13 +365,6 @@ private struct ChatModelSwitchStatusView: View {
                 Text(state == .downloading ? "Downloading \(modelName)…" : "Loading \(modelName)…")
                     .font(.caption)
                 Spacer()
-            }
-
-            // Preserve the hosted-fallback escape hatch the full-screen
-            // download/error views offer (simulator only).
-            if ChatEnvironment.supportsHostedChat {
-                Button("Chat Online", action: useHostedFallback)
-                    .font(.caption.weight(.semibold))
             }
         }
         .padding(.horizontal, 16)

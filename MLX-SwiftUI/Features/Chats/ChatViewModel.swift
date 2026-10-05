@@ -9,7 +9,6 @@ import Foundation
 import FoundationModels
 import Observation
 import SwiftData
-import HuggingFace
 import MLX
 import MLXHuggingFace
 import MLXLMCommon
@@ -25,9 +24,6 @@ final class ChatViewModel {
     var isSending = false
     var downloadProgress = 0.0
     var downloadError: String?
-    var fallbackError: String?
-    var isConnectingToFallback = false
-    var isLocalModelReady = false
     var backendMode: ChatBackendMode?
     var isRenaming = false
     var renameText = ""
@@ -36,7 +32,6 @@ final class ChatViewModel {
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
-        if isConnectingToFallback { return "Connecting to Hugging Face…" }
         let modelName = LocalModel.catalog.first { $0.id == currentModelID }?.shortName ?? "model"
         return state == .downloading
             ? "Downloading \(modelName) for offline chat"
@@ -44,11 +39,8 @@ final class ChatViewModel {
     }
 
     var loadingMessage: String {
-        if isConnectingToFallback {
-            return "The system model is unavailable, so this chat is connecting to the simulator fallback."
-        }
         #if DEBUG && targetEnvironment(simulator)
-        return "Simulator uses the hosted fallback. Local MLX models run on a physical iPhone."
+        return "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone."
         #else
         return "The selected model downloads once and is reused from the device cache on later launches."
         #endif
@@ -61,16 +53,13 @@ final class ChatViewModel {
         if backendMode == .local {
             return "Private on-device chat"
         }
-        if isLocalModelReady {
-            return "Online fallback • Local model ready for next chat"
-        }
         if downloadError != nil {
-            return "Online fallback • Local download failed"
+            return "Apple Foundation Models fallback"
         }
         if downloadProgress > 0, downloadProgress < 1 {
-            return "Online fallback • Local model \(Int(downloadProgress * 100))%"
+            return "Loading local model \(Int(downloadProgress * 100))%"
         }
-        return "Online fallback"
+        return "Preparing on-device model"
     }
 
     private var backend: (any ChatBackend)?
@@ -113,7 +102,6 @@ final class ChatViewModel {
     private var assistantModelID: String {
         switch backendMode {
         case .foundation: ChatBackendMode.foundationModelID
-        case .hosted: ChatBackendMode.hostedModelID
         default: currentModelID
         }
     }
@@ -153,17 +141,14 @@ final class ChatViewModel {
         }
 
         let model = currentModel
-        #if targetEnvironment(simulator)
-        #if DEBUG
-        if SimulatorDownloadScenario.selected == .normal ||
-            SimulatorDownloadScenario.selected == .hostedOnly {
-            await connectHosted(isInitialLoad: true)
+        #if targetEnvironment(simulator) && !DEBUG
+        startFoundationFallback(after: nil)
+        #elseif DEBUG && targetEnvironment(simulator)
+        if SimulatorDownloadScenario.selected == .normal {
+            startFoundationFallback(after: nil)
         } else {
             startLocalModelLoad(for: model)
         }
-        #else
-        await connectHosted(isInitialLoad: true)
-        #endif
         #else
         startLocalModelLoad(for: model)
         #endif
@@ -182,20 +167,15 @@ final class ChatViewModel {
         MLX.Memory.clearCache()
         #endif
         backendMode = nil
-        isLocalModelReady = false
         downloadError = nil
-        fallbackError = nil
-        #if targetEnvironment(simulator)
-        #if DEBUG
-        if SimulatorDownloadScenario.selected == .normal ||
-            SimulatorDownloadScenario.selected == .hostedOnly {
-            Task { await connectHosted(isInitialLoad: true) }
+        #if targetEnvironment(simulator) && !DEBUG
+        startFoundationFallback(after: nil)
+        #elseif DEBUG && targetEnvironment(simulator)
+        if SimulatorDownloadScenario.selected == .normal {
+            startFoundationFallback(after: nil)
         } else {
             startLocalModelLoad(for: model)
         }
-        #else
-        Task { await connectHosted(isInitialLoad: true) }
-        #endif
         #else
         startLocalModelLoad(for: model)
         #endif
@@ -209,13 +189,11 @@ final class ChatViewModel {
         #if !targetEnvironment(simulator)
         MLX.Memory.clearCache()
         #endif
-        isLocalModelReady = false
         downloadError = nil
-        fallbackError = nil
         downloadProgress = 0
         if !startFoundationModel() {
             #if targetEnvironment(simulator)
-            Task { await connectHosted(isInitialLoad: true) }
+            startFoundationFallback(after: nil)
             #else
             startLocalModelLoad(for: currentModel)
             #endif
@@ -234,15 +212,17 @@ final class ChatViewModel {
         retryDownload()
     }
 
-    func useHostedFallback() async {
-        guard ChatEnvironment.supportsHostedChat else { return }
-        await connectHosted(isInitialLoad: false)
-    }
-
     func retryDownload() {
         localLoadingTask?.cancel()
         #if targetEnvironment(simulator) && !DEBUG
-        Task { await connectHosted(isInitialLoad: true) }
+        startFoundationFallback(after: nil)
+        #elseif DEBUG && targetEnvironment(simulator)
+        if SimulatorDownloadScenario.selected == .normal {
+            startFoundationFallback(after: nil)
+        } else {
+            let model = LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
+            startLocalModelLoad(for: model)
+        }
         #else
         let model = LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
         startLocalModelLoad(for: model)
@@ -252,8 +232,6 @@ final class ChatViewModel {
     private func startLocalModelLoad(for model: LocalModel) {
         downloadProgress = 0
         downloadError = nil
-        fallbackError = nil
-        isLocalModelReady = false
         if backend == nil {
             state = .downloading
         }
@@ -263,7 +241,7 @@ final class ChatViewModel {
             do {
                 #if DEBUG && targetEnvironment(simulator)
                 try await self.runSimulatedDownload()
-                await self.simulatedDownloadCompleted()
+                self.simulatedDownloadCompleted()
                 #else
                 let container = try await #huggingFaceLoadModelContainer(
                     configuration: model.configuration,
@@ -305,7 +283,6 @@ final class ChatViewModel {
     private func localDownloadCompleted(with localBackend: any ChatBackend, modelID: String) {
         guard modelID == currentModelID else { return }
         downloadProgress = 1
-        isLocalModelReady = true
         downloadError = nil
         loadedModelID = modelID
 
@@ -318,41 +295,19 @@ final class ChatViewModel {
     private func localDownloadFailed(_ message: String) {
         downloadError = message
         if backend == nil {
-            state = .failed(message)
+            startFoundationFallback(after: message)
         }
     }
 
-    private func connectHosted(isInitialLoad: Bool) async {
-        guard ChatEnvironment.supportsHostedChat else { return }
+    private func startFoundationFallback(after localModelError: String?) {
         guard backend == nil else { return }
-        isConnectingToFallback = true
-        fallbackError = nil
-        if isInitialLoad {
-            state = .loading
+        if startFoundationModel() {
+            return
         }
-
-        do {
-            #if DEBUG && targetEnvironment(simulator)
-            let scenario = SimulatorDownloadScenario.selected
-            if scenario == .hostedFailure || scenario == .bothUnavailable {
-                throw ChatBackendError.apiError(statusCode: 503, message: "Simulated hosted fallback failure")
-            }
-            #endif
-            let token = try huggingFaceToken()
-            backend = HuggingFaceAPIChatBackend(token: token)
-            backendMode = .hosted
-            state = .ready
-        } catch {
-            fallbackError = error.localizedDescription
-            if isInitialLoad || downloadError != nil {
-                let message = downloadError.map { "\($0) Online fallback also failed: \(error.localizedDescription)" }
-                    ?? error.localizedDescription
-                state = .failed(message)
-            } else {
-                state = .downloading
-            }
-        }
-        isConnectingToFallback = false
+        let message = localModelError.map {
+            "\($0) Apple Foundation Models are also unavailable on this device."
+        } ?? "Apple Foundation Models are unavailable on this device."
+        state = .failed(message)
     }
 
     #if DEBUG && targetEnvironment(simulator)
@@ -371,23 +326,19 @@ final class ChatViewModel {
             let fraction = Double(step) / Double(steps)
             updateDownloadProgress(fraction)
 
-            if scenario == .localFailure || scenario == .bothUnavailable, fraction >= 0.45 {
-                throw ChatBackendError.apiError(
-                    statusCode: 500,
-                    message: "Simulated local model download failure"
-                )
+            if scenario == .localFailure, fraction >= 0.45 {
+                throw ChatBackendError.simulatedLocalModelLoadFailure
             }
         }
     }
 
-    private func simulatedDownloadCompleted() async {
+    private func simulatedDownloadCompleted() {
         downloadProgress = 1
-        isLocalModelReady = true
         downloadError = nil
 
         // MLX cannot run in Simulator, so completion only verifies the UI flow.
         if backend == nil {
-            await connectHosted(isInitialLoad: true)
+            startFoundationFallback(after: nil)
         }
     }
     #endif
@@ -778,40 +729,4 @@ extension ChatViewModel {
         }
     }
 
-    private func huggingFaceToken() throws -> String {
-        let possibleKeys = ["HuggingFaceToken", "HF_TOKEN"]
-        let infoPlistValues = possibleKeys.compactMap { key -> String? in
-            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
-                return nil
-            }
-            return sanitizedToken(value)
-        }
-        let token = infoPlistValues.first ?? Secrets.hfToken
-
-        guard !token.isEmpty else {
-            throw ChatBackendError.missingHuggingFaceToken(
-                "Add HF_TOKEN to Secrets.xcconfig or to the Xcode scheme environment, " +
-                "then clean and rebuild the simulator app."
-            )
-        }
-        return token
-    }
-
-    private func sanitizedToken(_ value: String) -> String? {
-        let token = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !token.isEmpty, !token.hasPrefix("$(") else {
-            return nil
-        }
-        return token
-    }
-}
-
-enum Secrets {
-    static var hfToken: String {
-        guard let token = Bundle.main.object(forInfoDictionaryKey: "HFToken") as? String else {
-            return ""
-        }
-        let sanitized = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        return sanitized.hasPrefix("$(") ? "" : sanitized
-    }
 }
