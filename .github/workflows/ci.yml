@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  lint:
     runs-on: macos-latest
 
     steps:
@@ -20,6 +20,17 @@ jobs:
       - name: Lint Swift sources
         run: swiftlint lint --strict --no-cache
 
+  build:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        destination: ['generic/platform=iOS Simulator', 'generic/platform=iOS']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Create temporary configuration
         run: |
           echo "HF_TOKEN = ci-placeholder" > Secrets.xcconfig
@@ -30,7 +41,7 @@ jobs:
             -project MLX-SwiftUI.xcodeproj \
             -scheme MLX-SwiftUI \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination '${{ matrix.destination }}' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            clean build
+            build
