@@ -7,6 +7,7 @@
 
 import Foundation
 import FoundationModels
+import HuggingFace
 import Observation
 import SwiftData
 import MLX
