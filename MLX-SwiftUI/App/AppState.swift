@@ -36,13 +36,14 @@ final class AppState {
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
 
-        downloadedModelIDs = LocalModel.catalog.compactMap { model in
+        let installedModelIDs = LocalModel.catalog.compactMap { model in
             MLXModelLoader.cachedDirectory(for: model) == nil ? nil : model.id
         }
+        downloadedModelIDs = installedModelIDs
 
         let savedActiveID = UserDefaults.standard.string(forKey: activeModelKey)
-        activeModelID = savedActiveID.flatMap { downloadedModelIDs.contains($0) ? $0 : nil }
-            ?? downloadedModelIDs.first ?? LocalModel.qwen.id
+        activeModelID = savedActiveID.flatMap { installedModelIDs.contains($0) ? $0 : nil }
+            ?? installedModelIDs.first ?? LocalModel.qwen.id
 
         updateWidget()
     }
