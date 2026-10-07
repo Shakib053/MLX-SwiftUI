@@ -65,8 +65,6 @@ MLX-SwiftUI
 4. On physical devices, the model may need to download on first launch. Later launches reuse the cached model.
 5. On simulator, the app uses Apple Foundation Models when they are available; it does not call a hosted chat provider.
 
-No Hugging Face API token is required. The app downloads public local models through MLX on physical devices and does not use hosted Hugging Face inference.
-
 ## Future Improvements
 
 - Streaming responses.
