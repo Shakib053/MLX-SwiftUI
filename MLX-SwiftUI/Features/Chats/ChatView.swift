@@ -197,6 +197,17 @@ struct ChatView: View {
                 .padding(.vertical, 8)
             }
 
+            if viewModel.olderMessagesOmittedFromContext {
+                Label(
+                    "Older messages remain in this chat but may be omitted from new replies.",
+                    systemImage: "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {

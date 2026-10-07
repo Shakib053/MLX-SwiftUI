@@ -141,6 +141,7 @@ enum ChatHistoryPolicy {
 
     // Rehydrating the entire store into an LLM context can exceed a model's context
     // window even when the store itself is healthy.
+    static let maxFoundationMessages = 12
     static let maxModelMessages = 60
     static let maxModelCharacters = 120_000
 
@@ -160,8 +161,8 @@ enum ChatHistoryPolicy {
         trim(normalized(messages), maxMessages: maxStoredMessages, maxCharacters: maxStoredCharacters)
     }
 
-    static func modelMessages(_ messages: [ChatMessage]) -> [ChatMessage] {
-        trim(normalized(messages), maxMessages: maxModelMessages, maxCharacters: maxModelCharacters)
+    static func modelMessages(_ messages: [ChatMessage], maxMessages: Int = maxModelMessages) -> [ChatMessage] {
+        trim(normalized(messages), maxMessages: maxMessages, maxCharacters: maxModelCharacters)
     }
 
     /// History seeded into a freshly loaded model. Trailing empty or interrupted

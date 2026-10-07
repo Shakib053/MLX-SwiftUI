@@ -99,6 +99,16 @@ final class ChatViewModel {
         LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
     }
 
+    var olderMessagesOmittedFromContext: Bool {
+        messages.count > modelHistoryLimit
+    }
+
+    private var modelHistoryLimit: Int {
+        backendMode == .foundation
+            ? ChatHistoryPolicy.maxFoundationMessages
+            : ChatHistoryPolicy.maxModelMessages
+    }
+
     /// Identifier recorded on assistant messages produced by the current backend.
     private var assistantModelID: String {
         switch backendMode {
@@ -438,7 +448,10 @@ final class ChatViewModel {
             try Task.checkCancellation()
             let request = ChatRequest(
                 prompt: prompt,
-                history: ChatHistoryPolicy.modelMessages(Array(messages.dropLast(2))),
+                history: ChatHistoryPolicy.modelMessages(
+                    Array(messages.dropLast(2)),
+                    maxMessages: modelHistoryLimit
+                ),
                 rebuildLocalSession: rebuildLocalSession
             )
             streamedResponseText = ""
