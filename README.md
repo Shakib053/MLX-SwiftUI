@@ -44,8 +44,7 @@ MLX-SwiftUI
 - Swift
 - SwiftUI
 - Observation framework
-- MLX Swift LM
-- MLX Hugging Face integration for local model downloads
+- MLX Swift LM for local model downloads and inference
 - Tokenizers
 
 ## Architecture
@@ -54,7 +53,7 @@ MLX-SwiftUI
 - `ContentView` owns application state, appearance, and onboarding presentation.
 - `MainTabView` owns type-safe navigation between Chats, Models, and Settings.
 - Each folder under `Features` owns its screens, state, and feature-specific components.
-- `ChatViewModel` selects the chat backend and coordinates model/API initialization, prompts, streaming responses, and chat state.
+- `ChatViewModel` selects the chat backend and coordinates model initialization, prompts, streaming responses, and chat state.
 - `Core/Models` contains application-wide domain models, while `Shared/UI` contains presentation primitives used by multiple features.
 
 
@@ -65,6 +64,8 @@ MLX-SwiftUI
 3. Build and run the app on an iPhone, iPad, or simulator.
 4. On physical devices, the model may need to download on first launch. Later launches reuse the cached model.
 5. On simulator, the app uses Apple Foundation Models when they are available; it does not call a hosted chat provider.
+
+No Hugging Face API token is required. The app downloads public local models through MLX on physical devices and does not use hosted Hugging Face inference.
 
 ## Future Improvements
 
