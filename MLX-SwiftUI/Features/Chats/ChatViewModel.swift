@@ -54,8 +54,8 @@ final class ChatViewModel {
         if backendMode == .local {
             return "Private on-device chat"
         }
-        if downloadError != nil {
-            return "Apple Foundation Models fallback"
+        if case .failed = state {
+            return "Model unavailable"
         }
         if downloadProgress > 0, downloadProgress < 1 {
             return "Loading local model \(Int(downloadProgress * 100))%"

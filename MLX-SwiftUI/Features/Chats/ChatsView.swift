@@ -1,4 +1,3 @@
-import FoundationModels
 import SwiftData
 import SwiftUI
 
@@ -12,7 +11,6 @@ struct ChatsView: View {
     @State private var persistenceError: String?
     @State private var resultToDelete: SavedTaskResult?
     @State private var startsNewChat = false
-    @State private var showsLocalModelChoice = false
 
     private var filteredResults: [SavedTaskResult] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -97,9 +95,6 @@ struct ChatsView: View {
                 Button("OK", role: .cancel) { persistenceError = nil }
             } message: {
                 Text(persistenceError ?? "Please try again.")
-            }
-            .localModelChoice(isPresented: $showsLocalModelChoice) {
-                startsNewChat = true
             }
             .alert("Delete Saved Result?", isPresented: Binding(
                 get: { resultToDelete != nil },
@@ -292,20 +287,20 @@ struct ChatsView: View {
     }
 
     private func startNewChat() {
-        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
-            showsLocalModelChoice = true
-        } else {
-            startsNewChat = true
-        }
+        startsNewChat = true
     }
 
     private var preferredModelStatus: String {
-        if appState.prefersFoundationModel {
-            return SystemLanguageModel.default.isAvailable
-                ? "Apple Foundation Models • On device"
-                : "Apple Foundation Models unavailable"
-        }
-        return "\(appState.activeModel.shortName) • On device"
+        if appState.usesFoundationModel { return "Apple Foundation Models • On device" }
+        #if targetEnvironment(simulator)
+        return appState.foundationModelAvailable
+            ? "Apple Foundation Models fallback • On device"
+            : "No model available in Simulator"
+        #else
+        return appState.prefersFoundationModel
+            ? "Foundation Models unavailable • \(appState.activeModel.shortName) fallback"
+            : "\(appState.activeModel.shortName) • On device"
+        #endif
     }
 
     private var preferredModelSymbol: String {

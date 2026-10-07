@@ -1,5 +1,4 @@
 import SwiftUI
-import FoundationModels
 
 struct ChatModelPicker: View {
     @Environment(AppState.self) private var appState
@@ -10,19 +9,23 @@ struct ChatModelPicker: View {
     var body: some View {
         NavigationStack {
             List {
-                if SystemLanguageModel.default.isAvailable {
-                    Button {
-                        appState.prefersFoundationModel = true
-                        isPresented = false
-                    } label: {
-                        HStack {
-                            Label("Apple Foundation Models", systemImage: "sparkles")
-                            Spacer()
-                            if selectedBackend == .foundation {
-                                Image(systemName: "checkmark").foregroundStyle(.indigo)
-                            }
+                Button {
+                    appState.prefersFoundationModel = true
+                    isPresented = false
+                } label: {
+                    HStack {
+                        Label("Apple Foundation Models", systemImage: "sparkles")
+                        Spacer()
+                        if selectedBackend == .foundation {
+                            Image(systemName: "checkmark").foregroundStyle(.indigo)
                         }
                     }
+                }
+                .disabled(!appState.foundationModelAvailable)
+                if !appState.foundationModelAvailable {
+                    Text("Apple Foundation Models are unavailable on this iPhone. Choose a local model.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 ForEach(appState.downloadedModels) { model in
                     Button {

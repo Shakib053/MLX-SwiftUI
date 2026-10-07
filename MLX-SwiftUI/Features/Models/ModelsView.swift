@@ -23,6 +23,8 @@ struct ModelsView: View {
                                 .foregroundStyle(accent)
                         }
 
+                        foundationModelCard
+
                         ForEach(appState.downloadedModels) { model in
                             installedModelCard(model)
                         }
@@ -116,7 +118,7 @@ struct ModelsView: View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("MODEL LIBRARY")
+                    Text("DOWNLOADED MLX MODELS")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Text("\(appState.downloadedModels.count) of \(AppState.modelLimit) models")
@@ -141,9 +143,12 @@ struct ModelsView: View {
                         .font(.title3)
                         .foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(appState.prefersFoundationModel ? "MLX fallback" : "Active")
+                        Text(appState.hasUsableDefaultModel
+                             ? (appState.usesFoundationModel ? "Default" :
+                                appState.prefersFoundationModel ? "MLX fallback" : "Default")
+                             : "Unavailable")
                             .foregroundStyle(.secondary)
-                        Text(appState.activeModel.name)
+                        Text(appState.usesFoundationModel ? "Apple Foundation Models" : appState.defaultModelName)
                             .fontWeight(.semibold)
                             .lineLimit(2)
                     }
@@ -183,6 +188,52 @@ struct ModelsView: View {
         .modelCardBackground()
     }
 
+    private var foundationModelCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 13) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                    .frame(width: 54, height: 54)
+                    .background(accent.gradient, in: RoundedRectangle(cornerRadius: 16))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Apple Foundation Models")
+                        .font(.headline)
+                    Text(appState.foundationModelAvailable ? "Built into this iPhone" : "Unavailable on this device")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                if appState.usesFoundationModel {
+                    Text("Default")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(accent.opacity(0.2), in: Capsule())
+                } else if appState.foundationModelAvailable {
+                    Button("Use") { appState.prefersFoundationModel = true }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(accent)
+                }
+            }
+
+            if !appState.foundationModelAvailable {
+                #if targetEnvironment(simulator)
+                Text("Foundation Models are unavailable here. Local MLX models require a physical iPhone.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                #else
+                Text("New chats will try \(appState.activeModel.name) on this iPhone. If it cannot load, the app will show an error.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                #endif
+            }
+        }
+        .padding(18)
+        .modelCardBackground()
+    }
+
     private func installedModelCard(_ model: LocalModel) -> some View {
         VStack(spacing: 16) {
             HStack(spacing: 13) {
@@ -192,8 +243,8 @@ struct ModelsView: View {
                         Text(model.name)
                             .font(.headline)
                             .lineLimit(2)
-                        if model.id == appState.activeModelID && !appState.prefersFoundationModel {
-                            Text("Default")
+                        if model.id == appState.activeModelID && !appState.usesFoundationModel {
+                            Text(appState.prefersFoundationModel ? "Fallback" : "Default")
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(accent)
                                 .padding(.horizontal, 8)
