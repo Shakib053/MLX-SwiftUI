@@ -9,9 +9,10 @@ struct ModelsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 28) {
+            List {
                     overviewCard
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
 
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
@@ -24,10 +25,25 @@ struct ModelsView: View {
                         }
 
                         foundationModelCard
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
-                        ForEach(appState.downloadedModels) { model in
-                            installedModelCard(model)
-                        }
+                    ForEach(appState.downloadedModels) { model in
+                        installedModelCard(model)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", systemImage: "trash", role: .destructive) {
+                                    appState.remove(model)
+                                }
+                            }
+                    }
+
+                    if appState.downloadedModels.isEmpty {
+                        ContentUnavailableView("No MLX models downloaded", systemImage: "square.stack.3d.up.slash")
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
 
                     if let suggestion = LocalModel.catalog.first(where: {
@@ -39,6 +55,8 @@ struct ModelsView: View {
                                 .font(.title2.bold())
                             suggestedCard(suggestion)
                         }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
 
                     Label {
@@ -52,11 +70,11 @@ struct ModelsView: View {
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .modelCardBackground()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             }
+            .listStyle(.plain)
+            .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
             .background(AppBackground())
             .navigationTitle("Models")
             .navigationBarTitleDisplayMode(.inline)
@@ -87,6 +105,17 @@ struct ModelsView: View {
             } message: {
                 Text(appState.downloadError ?? "The model could not be downloaded.")
             }
+            .alert(
+                "Model deletion failed",
+                isPresented: Binding(
+                    get: { appState.deletionError != nil },
+                    set: { if !$0 { appState.dismissDeletionError() } }
+                )
+            ) {
+                Button("OK", role: .cancel) { appState.dismissDeletionError() }
+            } message: {
+                Text(appState.deletionError ?? "The model could not be deleted.")
+            }
             .confirmationDialog(
                 "Model limit reached",
                 isPresented: replacementDialogBinding,
@@ -95,7 +124,7 @@ struct ModelsView: View {
                 ForEach(appState.downloadedModels) { installed in
                     Button("Remove \(installed.name)", role: .destructive) {
                         guard let target = replacementTarget else { return }
-                        appState.remove(installed)
+                        guard appState.remove(installed) else { return }
                         replacementTarget = nil
                         Task { await appState.download(target) }
                     }
@@ -273,8 +302,7 @@ struct ModelsView: View {
                 }
                 .foregroundStyle(accent)
                 Spacer()
-                Button("Remove", role: .destructive) { appState.remove(model) }
-                    .disabled(appState.downloadedModels.count == 1)
+                Button("Delete", role: .destructive) { appState.remove(model) }
             }
             .font(.subheadline.weight(.semibold))
         }
