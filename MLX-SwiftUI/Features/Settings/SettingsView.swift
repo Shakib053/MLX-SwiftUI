@@ -1,5 +1,4 @@
 import SwiftUI
-import OSLog
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
@@ -10,10 +9,12 @@ struct SettingsView: View {
 
         NavigationStack {
             Form {
-                Section("Private tools") {
-                    Label("Summarize, Rewrite, Extract, Read Image Text, and Analyze Document run only with an available on-device model.", systemImage: "lock.shield")
-                    Text("Results are saved only when you tap Save. Saved results and their source appear in History.")
-                    Text("Ask AI continues to use chat, which stays on device with Apple Foundation Models or MLX.")
+                Section {
+                    Label("Private by design", systemImage: "lock.shield")
+                        .font(.headline)
+                    Text("Your chats and private tools use an available on-device model. Task results are saved only when you choose Save.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
                 Section {
                     Picker("Appearance", selection: $appState.appearance) {
@@ -30,20 +31,19 @@ struct SettingsView: View {
                 }
 
                 Section("General") {
-                    Button {
-                        appState.selectedTab = .models
+                    NavigationLink {
+                        DefaultModelView()
                     } label: {
                         SettingsRow(
                             icon: "cpu",
                             color: .purple,
-                            title: "Default model",
+                            title: "Default Model",
                             subtitle: "Used for new chats",
                             value: appState.prefersFoundationModel && !appState.foundationModelAvailable && appState.hasUsableDefaultModel
                                 ? "MLX fallback: \(appState.activeModel.shortName)"
                                 : appState.defaultModelName
                         )
                     }
-                    .foregroundStyle(.primary)
 
                     Toggle(isOn: $appState.hapticsEnabled) {
                         Label("Haptic feedback", systemImage: "waveform")
@@ -55,12 +55,6 @@ struct SettingsView: View {
                         FeedbackView()
                     } label: {
                         Label("Send Feedback", systemImage: "bubble.left")
-                    }
-
-                    Button {
-                        AppLogger.app.info("Rate MLX Chat tapped. Add the production App Store product URL before release.")
-                    } label: {
-                        Label("Rate MLX Chat", systemImage: "star")
                     }
 
                     NavigationLink {

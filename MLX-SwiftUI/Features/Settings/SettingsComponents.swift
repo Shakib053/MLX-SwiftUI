@@ -8,18 +8,20 @@ struct SettingsRow: View {
     let value: String
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: icon)
                 .foregroundStyle(.white)
                 .frame(width: 30, height: 30)
                 .background(color, in: RoundedRectangle(cornerRadius: 7))
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                Text(value)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
-            Spacer()
-            Text(value).font(.caption).foregroundStyle(.secondary)
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            Spacer(minLength: 0)
         }
     }
 }
