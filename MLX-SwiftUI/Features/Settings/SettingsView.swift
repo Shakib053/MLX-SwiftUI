@@ -38,7 +38,9 @@ struct SettingsView: View {
                             color: .purple,
                             title: "Default model",
                             subtitle: "Used for new chats",
-                            value: appState.prefersFoundationModel ? "Apple Foundation Models" : appState.activeModel.name
+                            value: appState.prefersFoundationModel && !appState.foundationModelAvailable && appState.hasUsableDefaultModel
+                                ? "MLX fallback: \(appState.activeModel.shortName)"
+                                : appState.defaultModelName
                         )
                     }
                     .foregroundStyle(.primary)

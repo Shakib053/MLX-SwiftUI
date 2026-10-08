@@ -1,4 +1,5 @@
 import Foundation
+import FoundationModels
 import Observation
 import WidgetKit
 import HuggingFace
@@ -12,7 +13,10 @@ final class AppState {
 
     var selectedTab: AppTab = .home
     var prefersFoundationModel: Bool {
-        didSet { UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel") }
+        didSet {
+            UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel")
+            updateWidget()
+        }
     }
     var appearance: AppAppearance {
         didSet {
@@ -57,6 +61,31 @@ final class AppState {
 
     var activeModel: LocalModel {
         LocalModel.catalog.first { $0.id == activeModelID } ?? .qwen
+    }
+
+    var foundationModelAvailable: Bool {
+        SystemLanguageModel.default.isAvailable
+    }
+
+    var usesFoundationModel: Bool {
+        prefersFoundationModel && foundationModelAvailable
+    }
+
+    var defaultModelName: String {
+        if usesFoundationModel { return "Apple Foundation Models" }
+        #if targetEnvironment(simulator)
+        return foundationModelAvailable ? "Apple Foundation Models" : "Unavailable in Simulator"
+        #else
+        return activeModel.name
+        #endif
+    }
+
+    var hasUsableDefaultModel: Bool {
+        #if targetEnvironment(simulator)
+        return foundationModelAvailable
+        #else
+        return true
+        #endif
     }
 
     var storageUsed: Double {
@@ -160,7 +189,7 @@ final class AppState {
     }
 
     private func updateWidget() {
-        SharedWidgetData.save(activeModelName: activeModel.name)
+        SharedWidgetData.save(activeModelName: defaultModelName)
 
         AppLogger.app.debug("Updated widget model to \(SharedWidgetData.activeModelName, privacy: .public)")
 

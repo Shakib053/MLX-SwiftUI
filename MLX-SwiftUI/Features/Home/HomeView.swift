@@ -1,4 +1,3 @@
-import FoundationModels
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -16,8 +15,6 @@ struct HomeView: View {
     @State private var isImporting = false
     @State private var sourceKind: WorkspaceSourceKind = .text
     @State private var sourceTitle = "Text"
-    @State private var pendingChatPrompt: String?
-    @State private var showsLocalModelChoice = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -52,12 +49,6 @@ struct HomeView: View {
                 TaskWorkspaceView(input: input)
             }
             .sheet(isPresented: $showsContentSheet) { contentSheet }
-            .localModelChoice(isPresented: $showsLocalModelChoice) {
-                if let pendingChatPrompt {
-                    path.append(pendingChatPrompt)
-                    self.pendingChatPrompt = nil
-                }
-            }
             .onChange(of: selectedPhoto) { _, photo in
                 guard let photo else { return }
                 isImporting = true
@@ -88,11 +79,12 @@ struct HomeView: View {
                     .tracking(2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Label(backendStatus, systemImage: "checkmark.shield")
+                Label(backendStatus, systemImage: !appState.hasUsableDefaultModel
+                      ? "exclamationmark.triangle" : "checkmark.shield")
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
                     .padding(9)
-                    .background(.green.opacity(0.08), in: Capsule())
+                    .background(.secondary.opacity(0.08), in: Capsule())
             }
             Text("Your content.\nA little clearer.")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
@@ -105,13 +97,11 @@ struct HomeView: View {
     }
 
     private var backendStatus: String {
-        if appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable {
-            return "On-device"
-        }
+        if appState.usesFoundationModel { return "Foundation Models" }
         #if targetEnvironment(simulator)
-        return "Unavailable in Simulator"
+        return appState.foundationModelAvailable ? "Foundation fallback" : "Unavailable in Simulator"
         #else
-        return "On-device MLX"
+        return appState.prefersFoundationModel ? "MLX fallback" : "On-device MLX"
         #endif
     }
 
@@ -282,12 +272,7 @@ struct HomeView: View {
     }
 
     private func beginChat(with prompt: String) {
-        if appState.prefersFoundationModel && !SystemLanguageModel.default.isAvailable {
-            pendingChatPrompt = prompt
-            showsLocalModelChoice = true
-        } else {
-            path.append(prompt)
-        }
+        path.append(prompt)
     }
 
     private func finishImport() {

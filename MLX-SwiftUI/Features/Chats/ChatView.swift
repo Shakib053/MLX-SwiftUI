@@ -143,11 +143,9 @@ struct ChatView: View {
                     .font(.headline)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(.green)
+                        .fill(viewModel.state == .ready ? .green : .orange)
                         .frame(width: 6, height: 6)
-                    Text(viewModel.backendMode == .foundation
-                         ? "Apple Foundation Models • On device"
-                         : "\(viewModel.currentModel.shortName) • On device")
+                    Text(viewModel.headerSubtitle)
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
