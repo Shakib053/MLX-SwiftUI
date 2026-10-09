@@ -19,9 +19,11 @@ struct ModelsView: View {
                             Text("On this iPhone")
                                 .font(.title2.bold())
                             Spacer()
+                            #if !targetEnvironment(simulator)
                             Button("Add model") { showsCatalog = true }
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(accent)
+                            #endif
                         }
 
                         foundationModelCard
@@ -29,6 +31,14 @@ struct ModelsView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
+                    #if targetEnvironment(simulator)
+                    ContentUnavailableView(
+                        "Local MLX models require a physical iPhone",
+                        systemImage: "iphone"
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    #else
                     ForEach(appState.downloadedModels) { model in
                         installedModelCard(model)
                             .listRowBackground(Color.clear)
@@ -72,6 +82,7 @@ struct ModelsView: View {
                     .modelCardBackground()
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    #endif
             }
             .listStyle(.plain)
             .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
@@ -79,6 +90,7 @@ struct ModelsView: View {
             .navigationTitle("Models")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                #if !targetEnvironment(simulator)
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showsCatalog = true } label: {
                         Image(systemName: "plus")
@@ -89,6 +101,7 @@ struct ModelsView: View {
                     }
                     .accessibilityLabel("Add model")
                 }
+                #endif
             }
             .navigationDestination(isPresented: $showsCatalog) {
                 ModelCatalogView(replacementTarget: $replacementTarget)
@@ -253,7 +266,9 @@ struct ModelsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 #else
-                Text("New chats will try \(appState.activeModel.name) on this iPhone. If it cannot load, the app will show an error.")
+                Text(appState.downloadedModels.isEmpty
+                     ? "Download an MLX model to start chatting on this iPhone."
+                     : "New chats will try \(appState.activeModel.name) on this iPhone. If it cannot load, the app will show an error.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 #endif

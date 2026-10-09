@@ -39,12 +39,15 @@ final class AppState {
         let saved = UserDefaults.standard.string(forKey: "appAppearance")
         appearance = AppAppearance(rawValue: saved ?? "") ?? .system
 
+        #if targetEnvironment(simulator)
+        let initialDownloadedIDs: [String] = []
+        #else
         let savedIDs = UserDefaults.standard.stringArray(forKey: downloadedModelsKey) ?? []
         let validIDs = savedIDs.filter { savedID in
             LocalModel.catalog.contains { model in model.id == savedID }
         }
-        let initialDownloadedIDs = savedIDs.isEmpty && UserDefaults.standard.object(forKey: downloadedModelsKey) == nil
-            ? [LocalModel.qwen.id] : validIDs
+        let initialDownloadedIDs = validIDs
+        #endif
         downloadedModelIDs = initialDownloadedIDs
 
         let savedActiveID = UserDefaults.standard.string(forKey: activeModelKey)
