@@ -36,6 +36,10 @@ struct DefaultModelView: View {
             }
 
             Section {
+                #if targetEnvironment(simulator)
+                Text("Local MLX models require a physical iPhone.")
+                    .foregroundStyle(.secondary)
+                #else
                 ForEach(appState.downloadedModels) { model in
                     Button {
                         appState.activate(model)
@@ -59,17 +63,13 @@ struct DefaultModelView: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    #if targetEnvironment(simulator)
-                    .disabled(true)
-                    #endif
                     .accessibilityAddTraits(model.id == appState.activeModelID && !appState.usesFoundationModel ? .isSelected : [])
                 }
+                #endif
             } header: {
                 Text("Downloaded MLX models")
             } footer: {
-                #if targetEnvironment(simulator)
-                Text("Local MLX models can be selected on a physical iPhone.")
-                #else
+                #if !targetEnvironment(simulator)
                 Text("Manage downloads in the Models tab.")
                 #endif
             }

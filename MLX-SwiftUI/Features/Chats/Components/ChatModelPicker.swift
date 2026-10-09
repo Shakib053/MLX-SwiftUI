@@ -23,10 +23,17 @@ struct ChatModelPicker: View {
                 }
                 .disabled(!appState.foundationModelAvailable)
                 if !appState.foundationModelAvailable {
+                    #if targetEnvironment(simulator)
+                    Text("Apple Foundation Models are unavailable here. Local MLX models require a physical iPhone.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    #else
                     Text("Apple Foundation Models are unavailable on this iPhone. Choose a local model.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    #endif
                 }
+                #if !targetEnvironment(simulator)
                 ForEach(appState.downloadedModels) { model in
                     Button {
                         select(model)
@@ -57,6 +64,7 @@ struct ChatModelPicker: View {
                         }
                     }
                 }
+                #endif
             }
             .navigationTitle("Choose Model")
             .navigationBarTitleDisplayMode(.inline)
