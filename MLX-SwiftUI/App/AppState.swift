@@ -29,6 +29,7 @@ final class AppState {
     var downloadingModelID: String?
     var downloadProgress = 0.0
     var downloadError: String?
+    var deletionError: String?
 
     private let downloadedModelsKey = "downloadedModelIDs"
     private let activeModelKey = "activeModelID"
@@ -42,13 +43,14 @@ final class AppState {
         let validIDs = savedIDs.filter { savedID in
             LocalModel.catalog.contains { model in model.id == savedID }
         }
-        let initialDownloadedIDs = validIDs.isEmpty ? [LocalModel.qwen.id] : validIDs
+        let initialDownloadedIDs = savedIDs.isEmpty && UserDefaults.standard.object(forKey: downloadedModelsKey) == nil
+            ? [LocalModel.qwen.id] : validIDs
         downloadedModelIDs = initialDownloadedIDs
 
         let savedActiveID = UserDefaults.standard.string(forKey: activeModelKey)
         activeModelID = initialDownloadedIDs.contains(savedActiveID ?? "")
             ? savedActiveID!
-            : initialDownloadedIDs[0]
+            : (initialDownloadedIDs.first ?? "")
 
         updateWidget()
     }
@@ -76,7 +78,7 @@ final class AppState {
         #if targetEnvironment(simulator)
         return foundationModelAvailable ? "Apple Foundation Models" : "Unavailable in Simulator"
         #else
-        return activeModel.name
+        return downloadedModelIDs.isEmpty ? "No MLX model downloaded" : activeModel.name
         #endif
     }
 
@@ -84,7 +86,7 @@ final class AppState {
         #if targetEnvironment(simulator)
         return foundationModelAvailable
         #else
-        return true
+        return !downloadedModelIDs.isEmpty || usesFoundationModel
         #endif
     }
 
@@ -135,6 +137,7 @@ final class AppState {
 
             guard !Task.isCancelled else { return }
             downloadedModelIDs.append(model.id)
+            if activeModelID.isEmpty { activeModelID = model.id }
             persistModelState()
             updateWidget()
         } catch is CancellationError {
@@ -151,19 +154,28 @@ final class AppState {
         downloadError = nil
     }
 
-    func remove(_ model: LocalModel) {
-        guard downloadedModelIDs.count > 1 else {
-            AppLogger.app.warning("Cannot remove the last downloaded model")
-            return
+    @discardableResult
+    func remove(_ model: LocalModel) -> Bool {
+        guard downloadedModelIDs.contains(model.id), downloadingModelID != model.id else { return false }
+        do {
+            try removeCachedFiles(for: model)
+        } catch {
+            deletionError = error.localizedDescription
+            AppLogger.app.error("Model deletion failed: \(model.name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
         downloadedModelIDs.removeAll { $0 == model.id }
         if activeModelID == model.id {
-            activeModelID = downloadedModelIDs[0]
+            activeModelID = downloadedModelIDs.first ?? ""
         }
         persistModelState()
-        removeCachedFiles(for: model)
         AppLogger.app.info("Removed model: \(model.name, privacy: .public)")
         updateWidget()
+        return true
+    }
+
+    func dismissDeletionError() {
+        deletionError = nil
     }
 
     private func persistModelState() {
@@ -171,7 +183,7 @@ final class AppState {
         UserDefaults.standard.set(activeModelID, forKey: activeModelKey)
     }
 
-    private func removeCachedFiles(for model: LocalModel) {
+    private func removeCachedFiles(for model: LocalModel) throws {
         let components = model.repositoryID.split(separator: "/", maxSplits: 1).map(String.init)
         guard components.count == 2 else { return }
 
@@ -184,7 +196,7 @@ final class AppState {
         ]
 
         for path in paths where FileManager.default.fileExists(atPath: path.path) {
-            try? FileManager.default.removeItem(at: path)
+            try FileManager.default.removeItem(at: path)
         }
     }
 

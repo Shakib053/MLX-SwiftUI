@@ -151,6 +151,13 @@ final class ChatViewModel {
             if startFoundationModel() { return }
         }
 
+        #if !targetEnvironment(simulator)
+        guard downloadedModelIDs.contains(currentModelID) else {
+            state = .failed("Download an MLX model in the Models tab to start chatting.")
+            return
+        }
+        #endif
+
         let model = currentModel
         #if targetEnvironment(simulator) && !DEBUG
         startFoundationFallback(after: nil)
