@@ -11,6 +11,7 @@ struct ChatsView: View {
     @State private var persistenceError: String?
     @State private var resultToDelete: SavedTaskResult?
     @State private var startsNewChat = false
+    @FocusState private var isSearchFocused: Bool
 
     private var filteredResults: [SavedTaskResult] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -49,16 +50,25 @@ struct ChatsView: View {
 
                     if filteredConversations.isEmpty && filteredResults.isEmpty {
                         emptyState
+                            .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
                     } else {
-                        if !filteredResults.isEmpty { savedResultSection }
+                        if !filteredResults.isEmpty {
+                            savedResultSection
+                                .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
+                        }
                         conversationSections
+                            .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .frame(maxWidth: .infinity)
             }
-            .background(AppBackground())
+            .scrollDismissesKeyboard(.interactively)
+            .background {
+                AppBackground()
+                    .onTapGesture { isSearchFocused = false }
+            }
             .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -225,6 +235,7 @@ struct ChatsView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField("Search history", text: $searchText)
+                .focused($isSearchFocused)
                 .textInputAutocapitalization(.never)
                 .submitLabel(.search)
         }
