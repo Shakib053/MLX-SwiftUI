@@ -14,31 +14,46 @@ struct DefaultModelView: View {
             }
 
             Section {
-                Button {
-                    appState.prefersFoundationModel = true
-                } label: {
-                    modelRow(
-                        icon: "apple.intelligence",
-                        title: "Apple Foundation Models",
-                        detail: appState.foundationModelAvailable
-                            ? "Built into this iPhone"
-                            : "Unavailable on this device",
-                        selected: appState.usesFoundationModel
-                    )
+                #if DEBUG && targetEnvironment(simulator)
+                if appState.modelPreviewScenario != .actual {
+                    modelRow(icon: "apple.intelligence", title: "Apple Foundation Models",
+                             detail: "Built into this iPhone (preview)", selected: true)
+                } else {
+                    foundationModelButton
                 }
-                .disabled(!appState.foundationModelAvailable)
+                #else
+                foundationModelButton
+                #endif
             } header: {
                 Text("Built in")
             } footer: {
+                #if DEBUG && targetEnvironment(simulator)
+                if appState.modelPreviewScenario == .actual && !appState.foundationModelAvailable {
+                    Text("Apple Foundation Models are unavailable on this device.")
+                }
+                #else
                 if !appState.foundationModelAvailable {
                     Text("Apple Foundation Models are unavailable on this device.")
                 }
+                #endif
             }
 
             Section {
                 #if targetEnvironment(simulator)
+                #if DEBUG
+                if appState.modelPreviewScenario != .actual {
+                    ForEach(appState.previewDownloadedModels) { model in
+                        modelRow(icon: "cpu", title: model.name,
+                                 detail: "Downloaded model preview · \(model.sizeLabel)", selected: false)
+                    }
+                } else {
+                    Text("Local MLX models require a physical iPhone.")
+                        .foregroundStyle(.secondary)
+                }
+                #else
                 Text("Local MLX models require a physical iPhone.")
                     .foregroundStyle(.secondary)
+                #endif
                 #else
                 ForEach(appState.downloadedModels) { model in
                     Button {
@@ -69,7 +84,11 @@ struct DefaultModelView: View {
             } header: {
                 Text("Downloaded MLX models")
             } footer: {
-                #if !targetEnvironment(simulator)
+                #if DEBUG && targetEnvironment(simulator)
+                if appState.modelPreviewScenario != .actual {
+                    Text("Preview only. Local MLX models cannot run in Simulator.")
+                }
+                #elseif !targetEnvironment(simulator)
                 Text("Manage downloads in the Models tab.")
                 #endif
             }
@@ -77,6 +96,22 @@ struct DefaultModelView: View {
         .navigationTitle("Default Model")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+    }
+
+    private var foundationModelButton: some View {
+        Button {
+            appState.prefersFoundationModel = true
+        } label: {
+            modelRow(
+                icon: "apple.intelligence",
+                title: "Apple Foundation Models",
+                detail: appState.foundationModelAvailable
+                    ? "Built into this iPhone"
+                    : "Unavailable on this device",
+                selected: appState.usesFoundationModel
+            )
+        }
+        .disabled(!appState.foundationModelAvailable)
     }
 
     private func modelRow(icon: String, title: String, detail: String, selected: Bool) -> some View {

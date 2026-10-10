@@ -27,7 +27,45 @@ struct SettingsRow: View {
 }
 
 #if DEBUG && targetEnvironment(simulator)
+enum SimulatorModelPreviewScenario: String, CaseIterable, Identifiable {
+    case foundationOnly
+    case foundationAndGemma
+    case foundationQwenAndGemma
+    case actual
+
+    static let defaultsKey = "simulatorModelPreviewScenario"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .foundationOnly: "Foundation Models only"
+        case .foundationAndGemma: "Foundation Models + Gemma"
+        case .foundationQwenAndGemma: "Foundation Models + Qwen + Gemma"
+        case .actual: "Actual Simulator"
+        }
+    }
+
+    var modelIDs: [String] {
+        switch self {
+        case .foundationOnly, .actual: []
+        case .foundationAndGemma: [LocalModel.gemma.id]
+        case .foundationQwenAndGemma: [LocalModel.qwen.id, LocalModel.gemma.id]
+        }
+    }
+
+    static var selected: Self {
+        get {
+            Self(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .actual
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: defaultsKey)
+        }
+    }
+}
+
 struct SimulatorTestingSection: View {
+    @Environment(AppState.self) private var appState
     @State private var scenario = SimulatorDownloadScenario.selected
 
     var body: some View {
@@ -37,12 +75,24 @@ struct SimulatorTestingSection: View {
                     Text(scenario.title).tag(scenario)
                 }
             }
+            Picker("Model screens", selection: Binding(
+                get: { appState.modelPreviewScenario },
+                set: {
+                    appState.modelPreviewScenario = $0
+                    SimulatorModelPreviewScenario.selected = $0
+                }
+            )) {
+                ForEach(SimulatorModelPreviewScenario.allCases) { preview in
+                    Text(preview.title).tag(preview)
+                }
+            }
         } header: {
             Text("Simulator Testing")
         } footer: {
             Text(
                 "The scenario applies to the next new conversation. " +
-                "Apple Foundation Models are used when available; local MLX loading is simulated."
+                "Apple Foundation Models are used when available; local MLX loading is simulated. " +
+                "Model screens preview changes display only and never download MLX models."
             )
         }
         .onChange(of: scenario) { _, value in

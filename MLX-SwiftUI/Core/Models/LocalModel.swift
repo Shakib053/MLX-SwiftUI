@@ -26,6 +26,18 @@ struct LocalModel: Identifiable, Equatable {
         return configuration.name
     }
 
+    var repositoryURL: URL {
+        URL(string: "https://huggingface.co/\(repositoryID)")!
+    }
+
+    var licenseURL: URL {
+        switch id {
+        case "qwen": URL(string: "https://www.apache.org/licenses/LICENSE-2.0")!
+        case "gemma": URL(string: "https://ai.google.dev/gemma/terms")!
+        default: URL(string: "https://www.llama.com/llama3_2/license/")!
+        }
+    }
+
     static let qwen = LocalModel(
         id: "qwen",
         name: "Qwen 3 0.6B",

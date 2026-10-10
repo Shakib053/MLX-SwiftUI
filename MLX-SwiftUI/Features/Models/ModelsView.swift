@@ -7,6 +7,44 @@ struct ModelsView: View {
 
     private let accent = Color(red: 0.43, green: 0.42, blue: 1)
 
+    private var displayedModels: [LocalModel] {
+        #if DEBUG && targetEnvironment(simulator)
+        return appState.previewDownloadedModels
+        #else
+        return appState.downloadedModels
+        #endif
+    }
+
+    private var displayedFoundationAvailable: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        return appState.previewFoundationModelAvailable
+        #else
+        return appState.foundationModelAvailable
+        #endif
+    }
+
+    private var displayedStorageUsed: Double {
+        displayedModels.reduce(0) { $0 + $1.sizeGB }
+    }
+
+    private var displayedDefaultLabel: String {
+        #if DEBUG && targetEnvironment(simulator)
+        if appState.modelPreviewScenario != .actual {
+            return "Default"
+        }
+        #endif
+        guard appState.hasUsableDefaultModel else { return "Unavailable" }
+        if appState.usesFoundationModel { return "Default" }
+        return appState.prefersFoundationModel ? "MLX fallback" : "Default"
+    }
+
+    private var displayedDefaultName: String {
+        #if DEBUG && targetEnvironment(simulator)
+        if appState.modelPreviewScenario != .actual { return "Apple Foundation Models" }
+        #endif
+        return appState.usesFoundationModel ? "Apple Foundation Models" : appState.defaultModelName
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -32,12 +70,23 @@ struct ModelsView: View {
                     .listRowSeparator(.hidden)
 
                     #if targetEnvironment(simulator)
-                    ContentUnavailableView(
-                        "Local MLX models require a physical iPhone",
-                        systemImage: "iphone"
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
+                    #if DEBUG
+                    if appState.modelPreviewScenario != .actual {
+                        Text("Model availability preview. MLX models are not downloaded or runnable in Simulator.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .listRowBackground(Color.clear)
+                        ForEach(displayedModels) { model in
+                            previewInstalledModelCard(model)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        }
+                    } else {
+                        simulatorUnavailableView
+                    }
+                    #else
+                    simulatorUnavailableView
+                    #endif
                     #else
                     ForEach(appState.downloadedModels) { model in
                         installedModelCard(model)
@@ -163,17 +212,17 @@ struct ModelsView: View {
                     Text("DOWNLOADED MLX MODELS")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    Text("\(appState.downloadedModels.count) of \(AppState.modelLimit) models")
+                    Text("\(displayedModels.count) of \(AppState.modelLimit) models")
                         .font(.title.bold())
                 }
                 Spacer()
                 ZStack {
                     Circle().stroke(.secondary.opacity(0.2), lineWidth: 7)
                     Circle()
-                        .trim(from: 0, to: Double(appState.downloadedModels.count) / Double(AppState.modelLimit))
+                        .trim(from: 0, to: Double(displayedModels.count) / Double(AppState.modelLimit))
                         .stroke(accent, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                    Text("\(appState.downloadedModels.count)")
+                    Text("\(displayedModels.count)")
                         .font(.title3.weight(.semibold))
                 }
                 .frame(width: 64, height: 64)
@@ -185,12 +234,9 @@ struct ModelsView: View {
                         .font(.title3)
                         .foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(appState.hasUsableDefaultModel
-                             ? (appState.usesFoundationModel ? "Default" :
-                                appState.prefersFoundationModel ? "MLX fallback" : "Default")
-                             : "Unavailable")
+                        Text(displayedDefaultLabel)
                             .foregroundStyle(.secondary)
-                        Text(appState.usesFoundationModel ? "Apple Foundation Models" : appState.defaultModelName)
+                        Text(displayedDefaultName)
                             .fontWeight(.semibold)
                             .lineLimit(2)
                     }
@@ -208,7 +254,7 @@ struct ModelsView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Storage")
                             .foregroundStyle(.secondary)
-                        Text(String(format: "%.2f GB", appState.storageUsed))
+                        Text(String(format: "%.2f GB", displayedStorageUsed))
                             .fontWeight(.semibold)
                     }
                 }
@@ -220,11 +266,11 @@ struct ModelsView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(.secondary.opacity(0.25))
                     Capsule().fill(accent)
-                        .frame(width: geometry.size.width * min(appState.storageUsed / 3, 1))
+                        .frame(width: geometry.size.width * min(displayedStorageUsed / 3, 1))
                 }
             }
             .frame(height: 6)
-            .accessibilityLabel("Model storage, \(String(format: "%.2f", appState.storageUsed)) gigabytes")
+            .accessibilityLabel("Model storage, \(String(format: "%.2f", displayedStorageUsed)) gigabytes")
         }
         .padding(20)
         .modelCardBackground()
@@ -241,12 +287,12 @@ struct ModelsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Apple Foundation Models")
                         .font(.headline)
-                    Text(appState.foundationModelAvailable ? "Built into this iPhone" : "Unavailable on this device")
+                    Text(displayedFoundationAvailable ? "Built into this iPhone" : "Unavailable on this device")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                if appState.usesFoundationModel {
+                if displayedFoundationAvailable {
                     Text("Default")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(accent)
@@ -260,7 +306,7 @@ struct ModelsView: View {
                 }
             }
 
-            if !appState.foundationModelAvailable {
+            if !displayedFoundationAvailable {
                 #if targetEnvironment(simulator)
                 Text("Foundation Models are unavailable here. Local MLX models require a physical iPhone.")
                     .font(.caption)
@@ -277,6 +323,36 @@ struct ModelsView: View {
         .padding(18)
         .modelCardBackground()
     }
+
+    private var simulatorUnavailableView: some View {
+        ContentUnavailableView("Local MLX models require a physical iPhone", systemImage: "iphone")
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    #if DEBUG && targetEnvironment(simulator)
+    private func previewInstalledModelCard(_ model: LocalModel) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 13) {
+                ModelMark(model: model, size: 54)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.name).font(.headline)
+                    Text("\(model.sizeLabel) · \(model.quantization) · \(model.focus)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Divider()
+            NavigationLink("Details") {
+                ModelDetailView(model: model)
+                    .environment(appState)
+            }
+            .font(.subheadline.weight(.semibold))
+        }
+        .padding(18)
+        .modelCardBackground()
+    }
+    #endif
 
     private func installedModelCard(_ model: LocalModel) -> some View {
         VStack(spacing: 16) {
