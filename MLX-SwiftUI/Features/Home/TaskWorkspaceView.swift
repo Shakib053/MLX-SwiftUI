@@ -3,6 +3,7 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
 
 enum WorkspaceAction: String, Hashable, CaseIterable {
     case summarize, rewrite, extract, understandImage, analyzeDocument
@@ -70,16 +71,27 @@ struct TaskWorkspaceView: View {
     @State private var showsModelSetup = false
     @State private var continueAfterModelSetup = false
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showsCamera = false
     @State private var task: Task<Void, Never>?
     @State private var savedID: UUID?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Label("Only on your device", systemImage: "lock.shield")
+                Label(appState.hasUsableDefaultModel ? "On Device" : "AI setup needed", systemImage: "checkmark.shield")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.green)
-                Text(input.action.title).font(.largeTitle.bold())
+                    .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
+                HStack(spacing: 12) {
+                    Image(systemName: input.action == .understandImage ? "photo" : "sparkles")
+                        .font(.title2).foregroundStyle(.indigo)
+                        .frame(width: 48, height: 48)
+                        .background(.indigo.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                    Text(input.action.title).font(.title.bold())
+                }
+                if input.action == .understandImage {
+                    Text("Extract and understand text from images, screenshots, and photos using local AI models.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
 
                 if !result.isEmpty { resultSection } else if isWorking { workingSection } else { inputSection }
             }
@@ -97,6 +109,12 @@ struct TaskWorkspaceView: View {
             }
         }
         .onDisappear { task?.cancel() }
+        .sheet(isPresented: $showsCamera) {
+            CameraPicker { image in
+                guard let data = image.jpegData(compressionQuality: 0.9) else { return }
+                importImage(data, title: "Camera photo")
+            }
+        }
         .fileImporter(isPresented: $showsFileImporter, allowedContentTypes: [.pdf, .plainText, .init(filenameExtension: "md") ?? .plainText]) { selection in
             guard case .success(let url) = selection else { return }
             isImporting = true
@@ -115,18 +133,13 @@ struct TaskWorkspaceView: View {
         }
         .onChange(of: selectedPhoto) { _, photo in
             guard let photo else { return }
-            isImporting = true
             Task {
                 do {
                     guard let data = try await photo.loadTransferable(type: Data.self) else { throw HomeImportError.noText }
-                    text = try await HomeContentExtractor.image(from: data)
-                    sourceTitle = "Selected image"
-                    sourceKind = .image
-                    errorMessage = nil
+                    importImage(data, title: "Selected image")
                 } catch {
                     errorMessage = error.localizedDescription
                 }
-                isImporting = false
                 selectedPhoto = nil
             }
         }
@@ -165,8 +178,11 @@ struct TaskWorkspaceView: View {
                 Label(sourceTitle, systemImage: sourceKind == .document ? "doc.text" : "text.viewfinder")
                 Button("View source") { showsSource = true }
             }
+            if input.action == .understandImage && text.isEmpty {
+                imageChooser
+            }
             TextEditor(text: $text)
-                .frame(minHeight: 180)
+                .frame(minHeight: input.action == .understandImage ? 120 : 180)
                 .padding(8)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel("Source text")
@@ -174,8 +190,10 @@ struct TaskWorkspaceView: View {
                 .font(.caption).foregroundStyle(text.count > 10_000 ? .red : .secondary)
 
             if input.action == .understandImage {
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label("Choose screenshot or photo", systemImage: "photo")
+                if !text.isEmpty {
+                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                        Label("Choose another photo", systemImage: "photo")
+                    }
                 }
                 Text("Reads visible text. Photo scene descriptions are not available yet.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -210,6 +228,51 @@ struct TaskWorkspaceView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting || !appState.hasUsableDefaultModel)
+        }
+    }
+
+    private var imageChooser: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "photo.badge.plus")
+                .font(.system(size: 44)).foregroundStyle(.indigo)
+            Text("Choose an image").font(.headline)
+            Text("Select from your gallery or take a new photo")
+                .font(.subheadline).foregroundStyle(.secondary)
+            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                Label("Choose Photo", systemImage: "photo")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.indigo)
+            .padding(.top, 8)
+            Text("OR").font(.caption).foregroundStyle(.secondary)
+            Button {
+                showsCamera = true
+            } label: {
+                Label("Take Photo", systemImage: "camera")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .background(.indigo.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.indigo.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [5])))
+    }
+
+    private func importImage(_ data: Data, title: String) {
+        isImporting = true
+        Task {
+            do {
+                text = try await HomeContentExtractor.image(from: data)
+                sourceTitle = title
+                sourceKind = .image
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isImporting = false
         }
     }
 
@@ -345,5 +408,33 @@ struct SavedTaskResultView: View {
                     .toolbar { Button("Done") { showsSource = false } }
             }
         }
+    }
+}
+
+private struct CameraPicker: UIViewControllerRepresentable {
+    let onImage: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        let parent: CameraPicker
+        init(_ parent: CameraPicker) { self.parent = parent }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage { parent.onImage(image) }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { parent.dismiss() }
     }
 }
