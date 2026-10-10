@@ -64,6 +64,20 @@ final class AppState {
         }
     }
 
+    #if DEBUG && targetEnvironment(simulator)
+    var modelPreviewScenario = SimulatorModelPreviewScenario.selected
+
+    var previewDownloadedModels: [LocalModel] {
+        modelPreviewScenario.modelIDs.compactMap { id in
+            LocalModel.catalog.first { $0.id == id }
+        }
+    }
+
+    var previewFoundationModelAvailable: Bool {
+        modelPreviewScenario == .actual ? foundationModelAvailable : true
+    }
+    #endif
+
     var activeModel: LocalModel {
         LocalModel.catalog.first { $0.id == activeModelID } ?? .qwen
     }

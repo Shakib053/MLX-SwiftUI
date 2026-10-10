@@ -41,7 +41,7 @@ struct SettingsView: View {
                             subtitle: "Used for new chats",
                             value: appState.prefersFoundationModel && !appState.foundationModelAvailable && appState.hasUsableDefaultModel
                                 ? "MLX fallback: \(appState.activeModel.shortName)"
-                                : appState.defaultModelName
+                                : displayedDefaultModelName
                         )
                     }
 
@@ -79,5 +79,12 @@ struct SettingsView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    private var displayedDefaultModelName: String {
+        #if DEBUG && targetEnvironment(simulator)
+        if appState.modelPreviewScenario != .actual { return "Apple Foundation Models (preview)" }
+        #endif
+        return appState.defaultModelName
     }
 }
