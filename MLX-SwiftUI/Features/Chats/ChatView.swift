@@ -10,6 +10,7 @@ struct ChatView: View {
     @State private var composerText = ""
     @State private var composerID = UUID()
     @State private var showsModelPicker = false
+    @State private var showsModelSetup = false
     @State private var showsDeleteConfirmation = false
     @State private var isFollowingBottom = true
     @State private var scrollPhase: ScrollPhase = .idle
@@ -51,17 +52,28 @@ struct ChatView: View {
                         progress: viewModel.downloadProgress,
                         style: style
                     )
+                case .needsModel:
+                    ContentUnavailableView {
+                        Label("Set up on-device AI", systemImage: "cpu")
+                    } description: {
+                        Text("Apple Foundation Models isn’t available here. Download a model once to use chat offline.")
+                    } actions: {
+                        Button("Choose a model") { showsModelSetup = true }
+                            .buttonStyle(.borderedProminent)
+                    }
                 case .failed(let message):
                     ChatErrorView(
                         message: message,
-                        style: style
-                    ) {
-                        if appState.prefersFoundationModel {
-                            viewModel.switchToFoundationModel()
-                        } else {
-                            viewModel.retryDownload()
-                        }
-                    }
+                        style: style,
+                        retry: {
+                            if appState.prefersFoundationModel {
+                                viewModel.switchToFoundationModel()
+                            } else {
+                                viewModel.retryDownload()
+                            }
+                        },
+                        chooseModel: { showsModelSetup = true }
+                    )
                 case .ready:
                     EmptyView()
                 }
@@ -83,6 +95,16 @@ struct ChatView: View {
             )
                 .environment(appState)
         }
+        #if !targetEnvironment(simulator)
+        .sheet(isPresented: $showsModelSetup, onDismiss: {
+            guard case .failed = viewModel.state,
+                  appState.downloadedModelIDs.contains(appState.activeModelID) else { return }
+            viewModel.switchModel(to: appState.activeModel)
+        }, content: {
+            ModelSetupView()
+                .environment(appState)
+        })
+        #endif
         .alert("Delete this conversation?", isPresented: $showsDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
@@ -121,7 +143,7 @@ struct ChatView: View {
             )
         }
         .onChange(of: appState.activeModelID) { _, newModelID in
-            guard !appState.prefersFoundationModel else { return }
+            guard !appState.prefersFoundationModel || viewModel.state == .needsModel else { return }
             guard let model = LocalModel.catalog.first(where: { $0.id == newModelID }) else { return }
             viewModel.switchModel(to: model)
         }
@@ -132,6 +154,13 @@ struct ChatView: View {
                 viewModel.switchModel(to: appState.activeModel)
             }
         }
+        #if !targetEnvironment(simulator)
+        .onChange(of: appState.downloadedModelIDs) { _, newIDs in
+            guard viewModel.state == .needsModel,
+                  newIDs.contains(appState.activeModelID) else { return }
+            viewModel.switchModel(to: appState.activeModel)
+        }
+        #endif
         .id(viewID)
     }
 
@@ -268,6 +297,7 @@ struct ChatView: View {
                     state: viewModel.state,
                     modelName: viewModel.currentModel.shortName,
                     progress: viewModel.downloadProgress,
+                    setup: { showsModelSetup = true },
                     retry: {
                         viewModel.retryDownload()
                     }
@@ -346,6 +376,7 @@ private struct ChatModelSwitchStatusView: View {
     let state: ChatState
     let modelName: String
     let progress: Double
+    let setup: () -> Void
     let retry: () -> Void
 
     private var hasFailed: Bool {
@@ -355,7 +386,14 @@ private struct ChatModelSwitchStatusView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if hasFailed {
+            if state == .needsModel {
+                Image(systemName: "cpu")
+                Text("A model is needed to continue this chat")
+                    .font(.caption)
+                Spacer()
+                Button("Choose Model", action: setup)
+                    .font(.caption.weight(.semibold))
+            } else if hasFailed {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 Text("\(modelName) could not load")
@@ -363,6 +401,10 @@ private struct ChatModelSwitchStatusView: View {
                 Spacer()
                 Button("Retry", action: retry)
                     .font(.caption.weight(.semibold))
+                #if !targetEnvironment(simulator)
+                Button("Choose Model", action: setup)
+                    .font(.caption.weight(.semibold))
+                #endif
             } else {
                 if state == .downloading, progress > 0 {
                     ProgressView(value: progress)

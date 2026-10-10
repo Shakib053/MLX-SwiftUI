@@ -13,12 +13,12 @@ struct OnboardingView: View {
         (
             "cpu",
             "Choose your model",
-            "Foundation Models is the default. You can also choose an MLX model and keep up to three downloaded models."
+            "Apple Foundation Models runs when available. Otherwise, choose an MLX model to download. You can keep up to three downloaded models."
         ),
         (
             "checkmark.shield.fill",
             "Know where chat runs",
-            "Private tool results are saved only when you choose Save. Chat uses MLX on iPhone, with Apple Foundation Models as its on-device fallback."
+            "Private tool results are saved only when you choose Save. Chat uses an available on-device model and shows which one is in use."
         )
     ]
 
