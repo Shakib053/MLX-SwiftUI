@@ -18,6 +18,7 @@ enum ChatState: Equatable {
     case loading
     case downloading
     case ready
+    case needsModel
     case failed(String)
 }
 

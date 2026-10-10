@@ -67,6 +67,8 @@ struct TaskWorkspaceView: View {
     @State private var isImporting = false
     @State private var showsFileImporter = false
     @State private var showsSource = false
+    @State private var showsModelSetup = false
+    @State private var continueAfterModelSetup = false
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var task: Task<Void, Never>?
     @State private var savedID: UUID?
@@ -135,10 +137,30 @@ struct TaskWorkspaceView: View {
                     .toolbar { Button("Done") { showsSource = false } }
             }
         }
+        #if !targetEnvironment(simulator)
+        .sheet(isPresented: $showsModelSetup, onDismiss: {
+            guard continueAfterModelSetup else { return }
+            continueAfterModelSetup = false
+            if appState.hasUsableDefaultModel { run() }
+        }) {
+            ModelSetupView()
+                .environment(appState)
+        }
+        #endif
     }
 
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            #if !targetEnvironment(simulator)
+            if !appState.foundationModelAvailable && appState.downloadedModels.isEmpty {
+                Label("Set up on-device AI to use this tool", systemImage: "cpu")
+                Button("Choose a model") {
+                    continueAfterModelSetup = true
+                    showsModelSetup = true
+                }
+                    .buttonStyle(.borderedProminent)
+            }
+            #endif
             if sourceKind != .text && !text.isEmpty {
                 Label(sourceTitle, systemImage: sourceKind == .document ? "doc.text" : "text.viewfinder")
                 Button("View source") { showsSource = true }
@@ -177,12 +199,17 @@ struct TaskWorkspaceView: View {
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red)
                 Button("Try again") { self.errorMessage = nil }
+                #if !targetEnvironment(simulator)
+                if !appState.foundationModelAvailable {
+                    Button("Choose another model") { showsModelSetup = true }
+                }
+                #endif
             }
             Button(action: run) {
                 Text(input.action.title).frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting)
+            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting || !appState.hasUsableDefaultModel)
         }
     }
 

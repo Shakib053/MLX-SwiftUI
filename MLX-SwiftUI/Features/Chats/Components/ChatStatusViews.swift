@@ -66,6 +66,7 @@ struct ChatErrorView: View {
     let message: String
     let style: ChatVisualStyle
     let retry: () -> Void
+    let chooseModel: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
@@ -89,6 +90,9 @@ struct ChatErrorView: View {
                 .overlay {
                     Capsule().stroke(style.surfaceBorder, lineWidth: 1)
                 }
+            #if !targetEnvironment(simulator)
+            Button("Choose another model", action: chooseModel)
+            #endif
         }
         .padding(28)
     }

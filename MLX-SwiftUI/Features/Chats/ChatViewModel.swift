@@ -69,6 +69,7 @@ final class ChatViewModel {
     private var responseTask: Task<Void, Never>?
     private var lastPersistenceDate = Date.distantPast
     private var currentModelID = LocalModel.qwen.id
+    private var availableModelIDs: Set<String> = []
     private var streamedResponseText = ""
     private var streamedCharacterCount = 0
     private var pendingStreamFlushTask: Task<Void, Never>?
@@ -126,6 +127,7 @@ final class ChatViewModel {
         guard !didStartLoading else { return }
         didStartLoading = true
         modelContext = context
+        availableModelIDs = Set(downloadedModelIDs)
 
         #if !targetEnvironment(simulator)
         // Cap MLX's allocator cache so freed model weights are returned to the
@@ -153,7 +155,8 @@ final class ChatViewModel {
 
         #if !targetEnvironment(simulator)
         guard downloadedModelIDs.contains(currentModelID) else {
-            state = .failed("Download an MLX model in the Models tab to start chatting.")
+            if startFoundationModel() { return }
+            state = .needsModel
             return
         }
         #endif
@@ -175,6 +178,7 @@ final class ChatViewModel {
     func switchModel(to model: LocalModel) {
         guard model.id != currentModelID || backendMode != .local else { return }
 
+        availableModelIDs.insert(model.id)
         currentModelID = model.id
         localLoadingTask?.cancel()
         responseTask?.cancel()
@@ -213,7 +217,11 @@ final class ChatViewModel {
             #if targetEnvironment(simulator)
             startFoundationFallback(after: nil)
             #else
-            startLocalModelLoad(for: currentModel)
+            if availableModelIDs.contains(currentModelID) {
+                startLocalModelLoad(for: currentModel)
+            } else {
+                state = .needsModel
+            }
             #endif
         }
     }
