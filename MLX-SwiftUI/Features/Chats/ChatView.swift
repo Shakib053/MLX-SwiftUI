@@ -100,10 +100,10 @@ struct ChatView: View {
             guard case .failed = viewModel.state,
                   appState.downloadedModelIDs.contains(appState.activeModelID) else { return }
             viewModel.switchModel(to: appState.activeModel)
-        }) {
+        }, content: {
             ModelSetupView()
                 .environment(appState)
-        }
+        })
         #endif
         .alert("Delete this conversation?", isPresented: $showsDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}

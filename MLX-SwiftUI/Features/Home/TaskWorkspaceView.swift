@@ -142,10 +142,10 @@ struct TaskWorkspaceView: View {
             guard continueAfterModelSetup else { return }
             continueAfterModelSetup = false
             if appState.hasUsableDefaultModel { run() }
-        }) {
+        }, content: {
             ModelSetupView()
                 .environment(appState)
-        }
+        })
         #endif
     }
 
