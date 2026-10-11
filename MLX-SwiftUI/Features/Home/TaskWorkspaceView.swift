@@ -54,6 +54,7 @@ final class SavedTaskResult {
 
 struct TaskWorkspaceView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     let input: WorkspaceInput
     @State private var text = ""
@@ -74,8 +75,13 @@ struct TaskWorkspaceView: View {
     @State private var showsCamera = false
     @State private var task: Task<Void, Never>?
     @State private var savedID: UUID?
+    @State private var summarySource: WorkspaceSourceKind = .text
 
     var body: some View {
+        Group {
+            if input.action == .summarize && result.isEmpty && !isWorking {
+                summarizeView
+            } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Label(appState.hasUsableDefaultModel ? "On Device" : "AI setup needed", systemImage: "checkmark.shield")
@@ -101,11 +107,16 @@ struct TaskWorkspaceView: View {
         }
         .navigationTitle(input.action.title)
         .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .background(HomePalette.background)
+        .tint(HomePalette.lavender)
         .onAppear {
             if sourceTitle.isEmpty {
                 text = input.text
                 sourceTitle = input.title
                 sourceKind = input.kind
+                summarySource = input.kind
             }
         }
         .onDisappear { task?.cancel() }
@@ -162,6 +173,182 @@ struct TaskWorkspaceView: View {
         #endif
     }
 
+    private var summarizeView: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    HStack {
+                        Spacer()
+                        Label(appState.hasUsableDefaultModel ? "On device" : "AI setup needed", systemImage: "checkmark.shield")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(appState.hasUsableDefaultModel ? Color.blue : Color.orange)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(appState.hasUsableDefaultModel ? Color.blue.opacity(0.15) : Color.orange.opacity(0.15), in: Capsule())
+                    }
+                    HStack(alignment: .top, spacing: 16) {
+                        Image(systemName: "text.alignleft")
+                            .font(.title2)
+                            .foregroundStyle(.blue)
+                            .frame(width: 64, height: 64)
+                            .background(Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12), in: RoundedRectangle(cornerRadius: 18))
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Summarize").font(.largeTitle.bold())
+                            Text("Turn long text into a clear, short summary, privately on your iPhone.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    HStack(spacing: 4) {
+                        summaryTab(.text, title: "Text", symbol: "doc.text")
+                        summaryTab(.document, title: "Document", symbol: "folder")
+                        summaryTab(.image, title: "Image", symbol: "photo")
+                    }
+                    .padding(5)
+                    .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 20))
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(summarySource == .text ? "Your text" : summarySource == .document ? "Your document" : "Your image")
+                                .font(.headline)
+                            Spacer()
+                            Text("\(text.count.formatted()) / 10,000")
+                                .foregroundStyle(text.count > 10_000 ? .red : .secondary)
+                        }
+                        VStack(alignment: .leading, spacing: 12) {
+                            if summarySource != .text && !sourceTitle.isEmpty && !text.isEmpty {
+                                Label(sourceTitle, systemImage: summarySource == .document ? "doc.text" : "photo")
+                                    .lineLimit(1)
+                            }
+                            if summarySource == .text {
+                                ZStack(alignment: .topLeading) {
+                                    if text.isEmpty {
+                                        Text("Paste or type the text you want to summarize...")
+                                            .foregroundStyle(.secondary)
+                                            .padding(.top, 8)
+                                            .padding(.leading, 5)
+                                    }
+                                    TextEditor(text: $text)
+                                        .scrollContentBackground(.hidden)
+                                        .opacity(text.isEmpty ? 0.75 : 1)
+                                        .accessibilityLabel("Text to summarize")
+                                }
+                                .frame(minHeight: 130)
+                                HStack {
+                                    Button("Paste", systemImage: "doc.on.clipboard") {
+                                        if let pasted = UIPasteboard.general.string { text = pasted }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.blue)
+                                    Button("Clear", systemImage: "xmark") { text = "" }
+                                        .buttonStyle(.bordered)
+                                        .disabled(text.isEmpty)
+                                }
+                            } else if summarySource == .document {
+                                Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.blue)
+                                if !text.isEmpty { Button("View source") { showsSource = true } }
+                            } else {
+                                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                                    Label("Choose photo", systemImage: "photo.badge.plus")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.blue)
+                                Button("Take photo", systemImage: "camera") { showsCamera = true }
+                                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                                if !text.isEmpty { Button("View extracted text") { showsSource = true } }
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 20))
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(colorScheme == .dark ? HomePalette.border : .clear))
+                    }
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Summary length").font(.headline)
+                        HStack(spacing: 10) {
+                            lengthCard("Short", subtitle: "Key points only", symbol: "text.alignleft")
+                            lengthCard("Detailed", subtitle: "Full summary", symbol: "text.book.closed")
+                        }
+                    }
+                    if isImporting { ProgressView("Reading content…") }
+                    if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                    #if !targetEnvironment(simulator)
+                    if !appState.hasUsableDefaultModel {
+                        Button("Choose a model") { showsModelSetup = true }
+                    }
+                    #endif
+                }
+                .padding(20)
+                .frame(maxWidth: 650)
+                .frame(maxWidth: .infinity)
+            }
+            VStack(spacing: 10) {
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Add some text to get started").foregroundStyle(.secondary)
+                }
+                Button(action: run) {
+                    Label("Generate summary", systemImage: "sparkles")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting || !appState.hasUsableDefaultModel)
+            }
+            .padding(20)
+            .frame(maxWidth: 650)
+            .frame(maxWidth: .infinity)
+            .background(colorScheme == .dark ? HomePalette.background : Color(uiColor: .systemBackground))
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func summaryTab(_ kind: WorkspaceSourceKind, title: String, symbol: String) -> some View {
+        Button {
+            summarySource = kind
+            text = ""
+            sourceTitle = ""
+            sourceKind = kind
+        } label: {
+            Label(title, systemImage: symbol)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(summarySource == kind ? Color.blue.opacity(colorScheme == .dark ? 0.8 : 0.7) : Color.clear, in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(summarySource == kind && colorScheme == .dark ? HomePalette.background : Color.primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func lengthCard(_ value: String, subtitle: String, symbol: String) -> some View {
+        Button { detail = value } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: symbol).foregroundStyle(.blue)
+                Spacer(minLength: 8)
+                Text(value).font(.headline)
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+            .padding(14)
+            .background(
+                detail == value
+                    ? Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    : (colorScheme == .dark ? HomePalette.background : Color.clear),
+                in: RoundedRectangle(cornerRadius: 16)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        detail == value
+                            ? Color.blue
+                            : (colorScheme == .dark ? HomePalette.border : Color.secondary.opacity(0.25))
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             #if !targetEnvironment(simulator)
@@ -184,7 +371,8 @@ struct TaskWorkspaceView: View {
             TextEditor(text: $text)
                 .frame(minHeight: input.action == .understandImage ? 120 : 180)
                 .padding(8)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                .scrollContentBackground(.hidden)
+                .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel("Source text")
             Text("\(text.count) / 10,000 characters")
                 .font(.caption).foregroundStyle(text.count > 10_000 ? .red : .secondary)
@@ -257,7 +445,7 @@ struct TaskWorkspaceView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(24)
-        .background(.indigo.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
+        .background(colorScheme == .dark ? HomePalette.card : Color.indigo.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.indigo.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [5])))
     }
 
@@ -287,11 +475,12 @@ struct TaskWorkspaceView: View {
 
     private var resultSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Result ready", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            Label("Result ready", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(input.action == .summarize ? .blue : .green)
             Text(result).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 12))
             Button("View source") { showsSource = true }
             HStack {
                 Button(savedID == nil ? "Save" : "Saved", systemImage: savedID == nil ? "bookmark" : "checkmark") { save() }
@@ -401,6 +590,7 @@ struct SavedTaskResultView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle(item.title)
+        .background(HomePalette.background)
         .sheet(isPresented: $showsSource) {
             NavigationStack {
                 ScrollView { Text(item.sourceText).frame(maxWidth: .infinity, alignment: .leading).padding() }

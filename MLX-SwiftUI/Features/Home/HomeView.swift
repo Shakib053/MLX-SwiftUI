@@ -1,9 +1,27 @@
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
+
+enum HomePalette {
+    static let background = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(red: 0.055, green: 0.055, blue: 0.075, alpha: 1) : .systemBackground
+    })
+    static let card = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(red: 0.105, green: 0.105, blue: 0.135, alpha: 1) : .secondarySystemBackground
+    })
+    static let border = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(red: 0.17, green: 0.17, blue: 0.21, alpha: 1) : UIColor.systemIndigo.withAlphaComponent(0.12)
+    })
+    static let violet = Color(red: 0.29, green: 0.24, blue: 0.88)
+    static let lavender = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(red: 0.56, green: 0.52, blue: 1, alpha: 1) : .systemIndigo
+    })
+}
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
     @State private var path = NavigationPath()
     @State private var workspace: WorkspaceInput?
     @State private var content = ""
@@ -54,7 +72,7 @@ struct HomeView: View {
                             Image(systemName: "chevron.right").font(.caption)
                         }
                         .padding(14)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
                     }
                     .buttonStyle(.plain)
                     Text("TRY IT WITH A SAMPLE")
@@ -68,7 +86,8 @@ struct HomeView: View {
                 .frame(maxWidth: 520)
                 .frame(maxWidth: .infinity)
             }
-            .background(Color(uiColor: .systemBackground))
+            .background(HomePalette.background)
+            .tint(HomePalette.lavender)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { prompt in
                 ChatView(initialPrompt: prompt)
@@ -114,7 +133,7 @@ struct HomeView: View {
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
                 .padding(.horizontal, 10).padding(.vertical, 7)
-                .background(.green.opacity(0.1), in: Capsule())
+                .background(.green.opacity(colorScheme == .dark ? 0.16 : 0.1), in: Capsule())
             Button { appState.selectedTab = .settings } label: {
                 Image(systemName: "gearshape").font(.title3)
             }
@@ -149,7 +168,12 @@ struct HomeView: View {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(LinearGradient(colors: [.blue, .indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
+        .background(
+            colorScheme == .dark
+                ? LinearGradient(colors: [HomePalette.violet], startPoint: .topLeading, endPoint: .bottomTrailing)
+                : LinearGradient(colors: [.blue, .indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: colorScheme == .dark ? 28 : 20)
+        )
     }
 
     private func actionCard(_ action: HomeAction) -> some View {
@@ -174,8 +198,8 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .padding(14)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(.indigo.opacity(0.12)))
+        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: colorScheme == .dark ? 20 : 16))
+        .overlay(RoundedRectangle(cornerRadius: colorScheme == .dark ? 20 : 16).stroke(HomePalette.border))
     }
 
     private var samples: some View {
@@ -199,7 +223,7 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, 13)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
+        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 15))
     }
 
     private func sample(_ title: String, subtitle: String, symbol: String, action: @escaping () -> Void) -> some View {
