@@ -331,8 +331,20 @@ struct TaskWorkspaceView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
             .padding(14)
-            .background(detail == value ? Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12) : (colorScheme == .dark ? HomePalette.background : Color.clear), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(detail == value ? Color.blue : (colorScheme == .dark ? HomePalette.border : Color.secondary.opacity(0.25))))
+            .background(
+                detail == value
+                    ? Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    : (colorScheme == .dark ? HomePalette.background : Color.clear),
+                in: RoundedRectangle(cornerRadius: 16)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        detail == value
+                            ? Color.blue
+                            : (colorScheme == .dark ? HomePalette.border : Color.secondary.opacity(0.25))
+                    )
+            )
         }
         .buttonStyle(.plain)
     }
