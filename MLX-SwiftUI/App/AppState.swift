@@ -1,7 +1,6 @@
 import Foundation
 import FoundationModels
 import Observation
-import WidgetKit
 import HuggingFace
 import MLXLMCommon
 import OSLog
@@ -15,7 +14,6 @@ final class AppState {
     var prefersFoundationModel: Bool {
         didSet {
             UserDefaults.standard.set(prefersFoundationModel, forKey: "prefersFoundationModel")
-            updateWidget()
         }
     }
     var appearance: AppAppearance {
@@ -54,8 +52,6 @@ final class AppState {
         activeModelID = initialDownloadedIDs.contains(savedActiveID ?? "")
             ? savedActiveID!
             : (initialDownloadedIDs.first ?? "")
-
-        updateWidget()
     }
 
     var downloadedModels: [LocalModel] {
@@ -116,7 +112,6 @@ final class AppState {
         activeModelID = model.id
         prefersFoundationModel = false
         persistModelState()
-        updateWidget()
         AppLogger.app.info("Activated model: \(model.name, privacy: .public)")
     }
 
@@ -156,7 +151,6 @@ final class AppState {
             downloadedModelIDs.append(model.id)
             if activeModelID.isEmpty { activeModelID = model.id }
             persistModelState()
-            updateWidget()
         } catch is CancellationError {
             return
         } catch {
@@ -187,7 +181,6 @@ final class AppState {
         }
         persistModelState()
         AppLogger.app.info("Removed model: \(model.name, privacy: .public)")
-        updateWidget()
         return true
     }
 
@@ -215,15 +208,5 @@ final class AppState {
         for path in paths where FileManager.default.fileExists(atPath: path.path) {
             try FileManager.default.removeItem(at: path)
         }
-    }
-
-    private func updateWidget() {
-        SharedWidgetData.save(activeModelName: defaultModelName)
-
-        AppLogger.app.debug("Updated widget model to \(SharedWidgetData.activeModelName, privacy: .public)")
-
-        WidgetCenter.shared.reloadTimelines(
-            ofKind: "MLX_SwiftUIWidget"
-        )
     }
 }
