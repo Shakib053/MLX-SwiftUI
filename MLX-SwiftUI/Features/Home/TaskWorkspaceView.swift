@@ -176,16 +176,7 @@ struct TaskWorkspaceView: View {
     private var summarizeView: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    HStack {
-                        Spacer()
-                        Label(appState.hasUsableDefaultModel ? "On device" : "AI setup needed", systemImage: "checkmark.shield")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(appState.hasUsableDefaultModel ? Color.blue : Color.orange)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(appState.hasUsableDefaultModel ? Color.blue.opacity(0.15) : Color.orange.opacity(0.15), in: Capsule())
-                    }
+                VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Summarize").font(.largeTitle.bold())
                         Text("Turn long text into a clear, short summary, privately on your iPhone.")
@@ -248,8 +239,23 @@ struct TaskWorkspaceView: View {
                         }
                         .padding(summarySource == .image ? 20 : 16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(summarySource == .image ? HomePalette.lavender.opacity(0.05) : (colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill)), in: RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(summarySource == .image ? HomePalette.lavender.opacity(0.4) : (colorScheme == .dark ? HomePalette.border : .clear), style: StrokeStyle(lineWidth: 1, dash: summarySource == .image && text.isEmpty ? [6] : [])))
+                        .background {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(
+                                    summarySource == .image
+                                        ? HomePalette.lavender.opacity(0.05)
+                                        : (colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill))
+                                )
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 20)
+                                .strokeBorder(
+                                    summarySource == .image
+                                        ? HomePalette.lavender.opacity(0.4)
+                                        : (colorScheme == .dark ? HomePalette.border : .clear),
+                                    style: StrokeStyle(lineWidth: 1, dash: summarySource == .image && text.isEmpty ? [6] : [])
+                                )
+                        }
                     }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Summary length").font(.headline)
@@ -266,7 +272,9 @@ struct TaskWorkspaceView: View {
                     }
                     #endif
                 }
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.top, 0)
+                .padding(.bottom, 20)
                 .frame(maxWidth: 650)
                 .frame(maxWidth: .infinity)
             }
