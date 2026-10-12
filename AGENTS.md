@@ -12,7 +12,7 @@ Instructions for Codex and other coding agents working in this repository.
 
 ## Project Snapshot
 
-This is an iOS 26 SwiftUI app for local-first LLM chat. It can use Apple Foundation Models when available, runs MLX Swift models on physical devices, and uses a Hugging Face hosted fallback only on Simulator. Conversations and saved task results are persisted with SwiftData. The main app target lives under `MLX-SwiftUI/`; the WidgetKit extension lives under `MLX_SwiftUIWidget/`.
+This is an iOS 26 SwiftUI app for local-first LLM chat. It can use Apple Foundation Models when available, runs MLX Swift models on physical devices, and uses a Hugging Face hosted fallback only on Simulator. Conversations and saved task results are persisted with SwiftData. The app target lives under `MLX-SwiftUI/`.
 
 Important areas:
 
@@ -23,16 +23,14 @@ Important areas:
 - `MLX-SwiftUI/Features/Home`: task workspace and result extraction.
 - `MLX-SwiftUI/Features/Onboarding`: first-launch experience.
 - `MLX-SwiftUI/Features/Settings`: settings, licenses, feedback, and appearance controls.
-- `MLX-SwiftUI/Shared`: reusable UI primitives and shared widget data.
-- `MLX_SwiftUIWidget`: WidgetKit surfaces that should stay in sync with shared data contracts.
+- `MLX-SwiftUI/Shared`: reusable UI primitives and shared data.
 
 ### State and ownership
 
-- `AppState` owns app-wide model selection, download state, appearance, and widget refreshes; do not duplicate that state in feature views.
+- `AppState` owns app-wide model selection, download state, and appearance; do not duplicate that state in feature views.
 - `ChatViewModel` owns one chat session's backend lifecycle, streaming/cancellation, and persistence coordination. Keep backend/domain behavior out of SwiftUI views.
 - `ChatBackend` is the seam for Foundation Models, local MLX, and hosted inference. Preserve its streaming and cancellation contract when adding or changing a backend.
 - `Conversation` and `PersistedMessage` are SwiftData schema. Treat persistent-property changes as data migrations: preserve existing records and verify launch/restore behavior, not just compilation.
-- `SharedWidgetData` is an app-group contract used by both targets. Update the app and widget together when its keys or values change.
 
 ## Karpathy-Inspired Execution
 
@@ -87,7 +85,6 @@ Apply the four principles from the [andrej-karpathy-skills](https://github.com/m
 - Prefer SF Symbols for iconography.
 - Keep text, colors, spacing, and controls consistent with the existing design system.
 - Handle loading, empty, error, retry, and disabled states for user-facing async workflows.
-- For widgets, keep timelines lightweight and avoid sharing app-only assumptions with extension code.
 
 ## MLX And Chat Behavior
 
@@ -107,7 +104,7 @@ Before editing:
 1. Read the relevant files.
 2. State assumptions and success criteria; resolve ambiguity that would change behavior.
 3. Identify the smallest change that meets those criteria.
-4. Check whether the change touches app state, async work, persistence, widgets, or secrets.
+4. Check whether the change touches app state, async work, persistence, or secrets.
 
 While editing:
 
@@ -163,7 +160,6 @@ Do not use `clean` as a default verification step: it is slower and discards use
 - SwiftUI state updates from background tasks.
 - Async tasks continuing after a view model or user action has moved on.
 - Model downloads or MLX paths running in simulator unexpectedly.
-- Widget extension code depending on APIs unavailable to extensions.
 - Secrets, local config, or derived data entering source control.
 - Creating shared abstractions before two real call sites exist.
 
@@ -172,7 +168,7 @@ Do not use `clean` as a default verification step: it is slower and discards use
 When reviewing changes, lead with bugs and regressions:
 
 - Correctness: state flow, async cancellation, persistence, and model loading.
-- Platform behavior: simulator vs device, app target vs widget extension.
+- Platform behavior: simulator vs device.
 - User experience: loading/error states, disabled controls, accessibility labels, and layout on compact screens.
 - Security: token handling and accidental secret exposure.
 - Maintainability: unnecessary abstraction, duplicated state, or unclear ownership.
