@@ -84,9 +84,6 @@ struct TaskWorkspaceView: View {
             } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Label(appState.hasUsableDefaultModel ? "On Device" : "AI setup needed", systemImage: "checkmark.shield")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
                 HStack(spacing: 12) {
                     Image(systemName: input.action == .understandImage ? "photo" : "sparkles")
                         .font(.title2).foregroundStyle(.indigo)
