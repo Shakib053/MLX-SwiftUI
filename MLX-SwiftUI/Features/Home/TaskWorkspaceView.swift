@@ -186,17 +186,10 @@ struct TaskWorkspaceView: View {
                             .padding(.vertical, 10)
                             .background(appState.hasUsableDefaultModel ? Color.blue.opacity(0.15) : Color.orange.opacity(0.15), in: Capsule())
                     }
-                    HStack(alignment: .top, spacing: 16) {
-                        Image(systemName: "text.alignleft")
-                            .font(.title2)
-                            .foregroundStyle(.blue)
-                            .frame(width: 64, height: 64)
-                            .background(Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12), in: RoundedRectangle(cornerRadius: 18))
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Summarize").font(.largeTitle.bold())
-                            Text("Turn long text into a clear, short summary, privately on your iPhone.")
-                                .foregroundStyle(.secondary)
-                        }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Summarize").font(.largeTitle.bold())
+                        Text("Turn long text into a clear, short summary, privately on your iPhone.")
+                            .foregroundStyle(.secondary)
                     }
                     HStack(spacing: 4) {
                         summaryTab(.text, title: "Text", symbol: "doc.text")
@@ -212,10 +205,11 @@ struct TaskWorkspaceView: View {
                                 .font(.headline)
                             Spacer()
                             Text("\(text.count.formatted()) / 10,000")
+                                .font(.subheadline)
                                 .foregroundStyle(text.count > 10_000 ? .red : .secondary)
                         }
                         VStack(alignment: .leading, spacing: 12) {
-                            if summarySource != .text && !sourceTitle.isEmpty && !text.isEmpty {
+                            if summarySource != .image && summarySource != .text && !sourceTitle.isEmpty && !text.isEmpty {
                                 Label(sourceTitle, systemImage: summarySource == .document ? "doc.text" : "photo")
                                     .lineLimit(1)
                             }
@@ -238,7 +232,7 @@ struct TaskWorkspaceView: View {
                                         if let pasted = UIPasteboard.general.string { text = pasted }
                                     }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(.blue)
+                                    .tint(HomePalette.lavender)
                                     Button("Clear", systemImage: "xmark") { text = "" }
                                         .buttonStyle(.bordered)
                                         .disabled(text.isEmpty)
@@ -246,23 +240,16 @@ struct TaskWorkspaceView: View {
                             } else if summarySource == .document {
                                 Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(.blue)
+                                    .tint(HomePalette.lavender)
                                 if !text.isEmpty { Button("View source") { showsSource = true } }
                             } else {
-                                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                                    Label("Choose photo", systemImage: "photo.badge.plus")
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.blue)
-                                Button("Take photo", systemImage: "camera") { showsCamera = true }
-                                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
-                                if !text.isEmpty { Button("View extracted text") { showsSource = true } }
+                                summaryImagePicker
                             }
                         }
-                        .padding(16)
+                        .padding(summarySource == .image ? 20 : 16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(colorScheme == .dark ? HomePalette.border : .clear))
+                        .background(summarySource == .image ? HomePalette.lavender.opacity(0.05) : (colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill)), in: RoundedRectangle(cornerRadius: 20))
+                        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(summarySource == .image ? HomePalette.lavender.opacity(0.4) : (colorScheme == .dark ? HomePalette.border : .clear), style: StrokeStyle(lineWidth: 1, dash: summarySource == .image && text.isEmpty ? [6] : [])))
                     }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Summary length").font(.headline)
@@ -285,7 +272,8 @@ struct TaskWorkspaceView: View {
             }
             VStack(spacing: 10) {
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("Add some text to get started").foregroundStyle(.secondary)
+                    Text(summarySource == .image ? "Choose a photo to continue" : summarySource == .document ? "Choose a document to continue" : "Add some text to get started")
+                        .foregroundStyle(.secondary)
                 }
                 Button(action: run) {
                     Label("Generate summary", systemImage: "sparkles")
@@ -315,16 +303,88 @@ struct TaskWorkspaceView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(summarySource == kind ? Color.blue.opacity(colorScheme == .dark ? 0.8 : 0.7) : Color.clear, in: RoundedRectangle(cornerRadius: 16))
-                .foregroundStyle(summarySource == kind && colorScheme == .dark ? HomePalette.background : Color.primary)
+                .background(summarySource == kind ? HomePalette.lavender : Color.clear, in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(summarySource == kind ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
+    }
+
+    private var summaryImagePicker: some View {
+        VStack(spacing: 16) {
+            if text.isEmpty {
+                Image(systemName: "photo.badge.plus")
+                    .font(.system(size: 42))
+                    .foregroundStyle(HomePalette.lavender)
+                    .frame(width: 88, height: 88)
+                    .background(HomePalette.lavender.opacity(0.1), in: Circle())
+                VStack(spacing: 4) {
+                    Text("Add an image").font(.title3.bold())
+                    Text("Choose from Photos or capture with Camera.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.viewfinder")
+                        .font(.title2)
+                        .foregroundStyle(HomePalette.lavender)
+                        .frame(width: 56, height: 56)
+                        .background(HomePalette.lavender.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(sourceTitle).font(.headline).lineLimit(1)
+                        Label("\(text.count.formatted()) characters found", systemImage: "checkmark")
+                            .font(.caption).foregroundStyle(.green)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                    Label(text.isEmpty ? "Choose Photo" : "Replace", systemImage: text.isEmpty ? "photo" : "arrow.triangle.2.circlepath")
+                        .frame(maxWidth: .infinity)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+                .tint(HomePalette.lavender)
+                if text.isEmpty {
+                    Button {
+                        showsCamera = true
+                    } label: {
+                        Label("Take Photo", systemImage: "camera")
+                            .frame(maxWidth: .infinity)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.bordered)
+                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                } else {
+                    Button(role: .destructive) {
+                        text = ""
+                        sourceTitle = ""
+                        sourceKind = .image
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.bordered)
+                }
+            }
+            if !text.isEmpty {
+                Button("View extracted text") { showsSource = true }
+                    .font(.subheadline)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, text.isEmpty ? 20 : 0)
     }
 
     private func lengthCard(_ value: String, subtitle: String, symbol: String) -> some View {
         Button { detail = value } label: {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: symbol).foregroundStyle(.blue)
+                Image(systemName: symbol).foregroundStyle(HomePalette.lavender)
                 Spacer(minLength: 8)
                 Text(value).font(.headline)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
@@ -333,7 +393,7 @@ struct TaskWorkspaceView: View {
             .padding(14)
             .background(
                 detail == value
-                    ? Color.blue.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    ? HomePalette.lavender.opacity(colorScheme == .dark ? 0.25 : 0.12)
                     : (colorScheme == .dark ? HomePalette.background : Color.clear),
                 in: RoundedRectangle(cornerRadius: 16)
             )
@@ -341,7 +401,7 @@ struct TaskWorkspaceView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .strokeBorder(
                         detail == value
-                            ? Color.blue
+                            ? HomePalette.lavender
                             : (colorScheme == .dark ? HomePalette.border : Color.secondary.opacity(0.25))
                     )
             )
