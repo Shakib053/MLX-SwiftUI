@@ -323,22 +323,23 @@ struct TaskWorkspaceView: View {
 
     private var rewriteView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 24) {
                 workspaceHeader(title: "Rewrite", subtitle: "Make your text clearer, shorter, more professional, or in a different style.")
 
                 ZStack(alignment: .topLeading) {
                     TextEditor(text: $text)
+                        .scrollContentBackground(.hidden)
                         .padding(.horizontal, 12)
                         .padding(.top, 12)
-                        .padding(.bottom, 36)
-                        .scrollContentBackground(.hidden)
+                        .padding(.bottom, 38)
                         .accessibilityLabel("Text to rewrite")
                     if text.isEmpty {
                         Text("Paste your text here...\n(e.g. email, message, article, or any text)")
                             .font(.subheadline)
+                            .lineSpacing(4)
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 18)
-                            .padding(.top, 21)
+                            .padding(.horizontal, 17)
+                            .padding(.top, 18)
                             .allowsHitTesting(false)
                     }
                     HStack(spacing: 8) {
@@ -352,9 +353,9 @@ struct TaskWorkspaceView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     .allowsHitTesting(false)
                 }
-                .frame(height: 220)
-                .background(HomePalette.card.opacity(colorScheme == .dark ? 1 : 0.55), in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border))
+                .frame(height: 200)
+                .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border, lineWidth: 1))
 
                 Picker("Tone", selection: $tone) {
                     Text("Professional").tag("Professional")
@@ -389,6 +390,7 @@ struct TaskWorkspaceView: View {
         }
         .navigationTitle("Rewrite")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 
     private var canRun: Bool {
@@ -406,9 +408,9 @@ struct TaskWorkspaceView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: "sparkles")
                 .font(.title2)
-                .foregroundStyle(HomePalette.lavender)
-                .frame(width: 56, height: 56)
-                .background(HomePalette.lavender.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(colorScheme == .dark ? .white : HomePalette.lavender)
+                .frame(width: 52, height: 52)
+                .background(HomePalette.lavender.opacity(colorScheme == .dark ? 0.75 : 0.12), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.title.bold())
                 Text(subtitle)
