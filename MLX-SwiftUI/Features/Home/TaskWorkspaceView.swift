@@ -81,6 +81,10 @@ struct TaskWorkspaceView: View {
         Group {
             if input.action == .summarize && result.isEmpty && !isWorking {
                 summarizeView
+            } else if input.action == .extract && result.isEmpty && !isWorking {
+                extractView
+            } else if input.action == .rewrite && result.isEmpty && !isWorking {
+                rewriteView
             } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -170,135 +174,276 @@ struct TaskWorkspaceView: View {
         #endif
     }
 
-    private var summarizeView: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Summarize").font(.largeTitle.bold())
-                        Text("Turn long text into a clear, short summary, privately on your iPhone.")
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack(spacing: 4) {
-                        summaryTab(.text, title: "Text", symbol: "doc.text")
-                        summaryTab(.document, title: "Document", symbol: "folder")
-                        summaryTab(.image, title: "Image", symbol: "photo")
-                    }
-                    .padding(5)
-                    .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 20))
+    private var extractView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                workspaceHeader(title: "Extract", subtitle: "Turn your text into structured information with AI.")
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text(summarySource == .text ? String(localized: "Your text") : summarySource == .document ? String(localized: "Your document") : String(localized: "Your image"))
-                                .font(.headline)
-                            Spacer()
-                            Text("\(text.count.formatted()) / 10,000")
-                                .font(.subheadline)
-                                .foregroundStyle(text.count > 10_000 ? .red : .secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("SOURCE TEXT")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button {
+                            if let pasted = UIPasteboard.general.string { text = pasted }
+                        } label: {
+                            Label("Paste", systemImage: "doc.on.clipboard")
+                                .font(.caption.weight(.medium))
                         }
-                        VStack(alignment: .leading, spacing: 12) {
-                            if summarySource != .image && summarySource != .text && !sourceTitle.isEmpty && !text.isEmpty {
-                                Label(sourceTitle, systemImage: summarySource == .document ? "doc.text" : "photo")
-                                    .lineLimit(1)
-                            }
-                            if summarySource == .text {
-                                ZStack(alignment: .topLeading) {
-                                    if text.isEmpty {
-                                        Text("Paste or type the text you want to summarize...")
-                                            .foregroundStyle(.secondary)
-                                            .padding(.top, 8)
-                                            .padding(.leading, 5)
-                                    }
-                                    TextEditor(text: $text)
-                                        .scrollContentBackground(.hidden)
-                                        .opacity(text.isEmpty ? 0.75 : 1)
-                                        .accessibilityLabel("Text to summarize")
-                                }
-                                .frame(minHeight: 130)
-                                HStack {
-                                    Button("Paste", systemImage: "doc.on.clipboard") {
-                                        if let pasted = UIPasteboard.general.string { text = pasted }
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(HomePalette.lavender)
-                                    Button("Clear", systemImage: "xmark") { text = "" }
-                                        .buttonStyle(.bordered)
-                                        .disabled(text.isEmpty)
-                                }
-                            } else if summarySource == .document {
-                                Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(HomePalette.lavender)
-                                if !text.isEmpty { Button("View source") { showsSource = true } }
-                            } else {
-                                summaryImagePicker
-                            }
-                        }
-                        .padding(summarySource == .image ? 20 : 16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background {
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(
-                                    summarySource == .image
-                                        ? HomePalette.lavender.opacity(0.05)
-                                        : (colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill))
-                                )
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 20)
-                                .strokeBorder(
-                                    summarySource == .image
-                                        ? HomePalette.lavender.opacity(0.4)
-                                        : (colorScheme == .dark ? HomePalette.border : .clear),
-                                    style: StrokeStyle(lineWidth: 1, dash: summarySource == .image && text.isEmpty ? [6] : [])
-                                )
-                        }
+                        .buttonStyle(.bordered)
+                        .tint(HomePalette.lavender)
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Summary length").font(.headline)
-                        HStack(spacing: 10) {
-                            lengthCard("Short", title: "Short", subtitle: "Key points only", symbol: "text.alignleft")
-                            lengthCard("Detailed", title: "Detailed", subtitle: "Full summary", symbol: "text.book.closed")
-                        }
-                    }
-                    if isImporting { ProgressView("Reading content…") }
-                    if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-                    #if !targetEnvironment(simulator)
-                    if !appState.hasUsableDefaultModel {
-                        Button("Choose a model") { showsModelSetup = true }
-                    }
-                    #endif
+                    sourceTextEditor(placeholder: "Paste text to extract key information...", accessibilityLabel: "Text to extract")
+                        .frame(height: 210)
+                    characterCount
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 0)
-                .padding(.bottom, 20)
-                .frame(maxWidth: 650)
-                .frame(maxWidth: .infinity)
-            }
-            VStack(spacing: 10) {
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text(summarySource == .image
-                         ? String(localized: "Choose a photo to continue")
-                         : summarySource == .document
-                         ? String(localized: "Choose a document to continue")
-                         : String(localized: "Add some text to get started"))
-                        .foregroundStyle(.secondary)
-                }
+
                 Button(action: run) {
-                    Label("Generate summary", systemImage: "sparkles")
+                    Label("Extract", systemImage: "sparkles")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.blue)
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting || !appState.hasUsableDefaultModel)
+                .tint(HomePalette.lavender)
+                .disabled(!canRun)
+
+                Label("Extract names, dates, key points, and more.", systemImage: "lightbulb")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(HomePalette.lavender.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+
+                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                #if !targetEnvironment(simulator)
+                if !appState.hasUsableDefaultModel {
+                    Button("Choose a model") { showsModelSetup = true }
+                }
+                #endif
             }
             .padding(20)
             .frame(maxWidth: 650)
             .frame(maxWidth: .infinity)
-            .background(colorScheme == .dark ? HomePalette.background : Color(uiColor: .systemBackground))
         }
+        .navigationTitle("Extract")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var summarizeView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                workspaceHeader(title: "Summarize", subtitle: "Turn long text into a clear, short summary, privately on your iPhone.")
+
+                HStack(spacing: 4) {
+                    summaryTab(.text, title: "Text", symbol: "doc.text")
+                    summaryTab(.document, title: "Document", symbol: "folder")
+                    summaryTab(.image, title: "Image", symbol: "photo")
+                }
+                .padding(5)
+                .background(colorScheme == .dark ? HomePalette.card : HomePalette.lavender.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(summarySource == .text ? "SOURCE TEXT" : summarySource == .document ? "DOCUMENT" : "IMAGE")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if summarySource == .text {
+                            Button {
+                                if let pasted = UIPasteboard.general.string { text = pasted }
+                            } label: {
+                                Label("Paste", systemImage: "doc.on.clipboard")
+                                    .font(.caption.weight(.medium))
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(HomePalette.lavender)
+                        }
+                    }
+                    if summarySource == .text {
+                        sourceTextEditor(placeholder: "Paste text to summarize...", accessibilityLabel: "Text to summarize")
+                            .frame(height: 210)
+                    } else if summarySource == .document {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if !text.isEmpty {
+                                Label(sourceTitle, systemImage: "doc.text").lineLimit(1)
+                                Button("View source") { showsSource = true }
+                            }
+                            Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
+                                .buttonStyle(.borderedProminent)
+                                .tint(HomePalette.lavender)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 170, alignment: .center)
+                        .padding(16)
+                        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                    } else {
+                        summaryImagePicker
+                            .padding(16)
+                            .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    characterCount
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Summary length").font(.headline)
+                    HStack(spacing: 10) {
+                        lengthCard("Short", title: "Short", subtitle: "Key points only", symbol: "text.alignleft")
+                        lengthCard("Detailed", title: "Detailed", subtitle: "Full summary", symbol: "text.book.closed")
+                    }
+                }
+
+                Button(action: run) {
+                    Label("Generate summary", systemImage: "sparkles")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(HomePalette.lavender)
+                .disabled(!canRun)
+
+                if isImporting { ProgressView("Reading content…") }
+                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                #if !targetEnvironment(simulator)
+                if !appState.hasUsableDefaultModel {
+                    Button("Choose a model") { showsModelSetup = true }
+                }
+                #endif
+            }
+            .padding(20)
+            .frame(maxWidth: 650)
+            .frame(maxWidth: .infinity)
+        }
+        .navigationTitle("Summarize")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var rewriteView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                workspaceHeader(title: "Rewrite", subtitle: "Make your text clearer, shorter, more professional, or in a different style.")
+
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $text)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, 36)
+                        .scrollContentBackground(.hidden)
+                        .accessibilityLabel("Text to rewrite")
+                    if text.isEmpty {
+                        Text("Paste your text here...\n(e.g. email, message, article, or any text)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 18)
+                            .padding(.top, 21)
+                            .allowsHitTesting(false)
+                    }
+                    HStack(spacing: 8) {
+                        Image(systemName: "doc.text")
+                        characterCount
+                        Spacer()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .allowsHitTesting(false)
+                }
+                .frame(height: 220)
+                .background(HomePalette.card.opacity(colorScheme == .dark ? 1 : 0.55), in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border))
+
+                Picker("Tone", selection: $tone) {
+                    Text("Professional").tag("Professional")
+                    Text("Friendly").tag("Friendly")
+                    Text("Direct").tag("Direct")
+                }
+                Picker("Length", selection: $detail) {
+                    Text("Short").tag("Short")
+                    Text("Detailed").tag("Detailed")
+                }
+
+                Button(action: run) {
+                    Label("Rewrite", systemImage: "sparkles")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(HomePalette.lavender)
+                .disabled(!canRun)
+
+                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                #if !targetEnvironment(simulator)
+                if !appState.hasUsableDefaultModel {
+                    Button("Choose a model") { showsModelSetup = true }
+                }
+                #endif
+            }
+            .padding(20)
+            .frame(maxWidth: 650)
+            .frame(maxWidth: .infinity)
+        }
+        .navigationTitle("Rewrite")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var canRun: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && text.count <= 10_000 && !isImporting && appState.hasUsableDefaultModel
+    }
+
+    private var characterCount: some View {
+        Text("\(text.count.formatted()) / 10,000 characters")
+            .font(.caption)
+            .foregroundStyle(text.count > 10_000 ? .red : .secondary)
+    }
+
+    private func workspaceHeader(title: LocalizedStringKey, subtitle: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: "sparkles")
+                .font(.title2)
+                .foregroundStyle(HomePalette.lavender)
+                .frame(width: 56, height: 56)
+                .background(HomePalette.lavender.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.title.bold())
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func sourceTextEditor(placeholder: LocalizedStringKey, accessibilityLabel: LocalizedStringKey) -> some View {
+        ZStack {
+            if text.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 36, weight: .light))
+                        .foregroundStyle(HomePalette.lavender.opacity(0.7))
+                    Text(placeholder)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Text stays on your device.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .multilineTextAlignment(.center)
+                .allowsHitTesting(false)
+            }
+            TextEditor(text: $text)
+                .padding(12)
+                .scrollContentBackground(.hidden)
+                .opacity(text.isEmpty ? 0.12 : 1)
+                .accessibilityLabel(accessibilityLabel)
+        }
+        .background(HomePalette.card.opacity(colorScheme == .dark ? 1 : 0.55), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border))
     }
 
     private func summaryTab(_ kind: WorkspaceSourceKind, title: LocalizedStringKey, symbol: String) -> some View {
