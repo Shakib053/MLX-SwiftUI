@@ -8,7 +8,11 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
-        rawValue.capitalized
+        switch self {
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
+        case .system: String(localized: "System")
+        }
     }
 
     var icon: String {

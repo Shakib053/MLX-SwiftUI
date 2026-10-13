@@ -3,8 +3,8 @@ import SwiftUI
 struct SettingsRow: View {
     let icon: String
     let color: Color
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     let value: String
 
     var body: some View {
@@ -39,10 +39,10 @@ enum SimulatorModelPreviewScenario: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .foundationOnly: "Foundation Models only"
-        case .foundationAndGemma: "Foundation Models + Gemma"
-        case .foundationQwenAndGemma: "Foundation Models + Qwen + Gemma"
-        case .actual: "Actual Simulator"
+        case .foundationOnly: String(localized: "Foundation Models only")
+        case .foundationAndGemma: String(localized: "Foundation Models + Gemma")
+        case .foundationQwenAndGemma: String(localized: "Foundation Models + Qwen + Gemma")
+        case .actual: String(localized: "Actual Simulator")
         }
     }
 
@@ -90,9 +90,11 @@ struct SimulatorTestingSection: View {
             Text("Simulator Testing")
         } footer: {
             Text(
-                "The scenario applies to the next new conversation. " +
-                "Apple Foundation Models are used when available; local MLX loading is simulated. " +
-                "Model screens preview changes display only and never download MLX models."
+                """
+                The scenario applies to the next new conversation. \
+                Apple Foundation Models are used when available; local MLX loading is simulated. \
+                Model screens preview changes display only and never download MLX models.
+                """
             )
         }
         .onChange(of: scenario) { _, value in

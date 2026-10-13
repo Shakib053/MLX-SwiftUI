@@ -10,11 +10,11 @@ enum WorkspaceAction: String, Hashable, CaseIterable {
 
     var title: String {
         switch self {
-        case .summarize: "Summarize"
-        case .rewrite: "Rewrite"
-        case .extract: "Extract"
-        case .understandImage: "Read Image Text"
-        case .analyzeDocument: "Analyze Document"
+        case .summarize: String(localized: "Summarize")
+        case .rewrite: String(localized: "Rewrite")
+        case .extract: String(localized: "Extract")
+        case .understandImage: String(localized: "Read Image Text")
+        case .analyzeDocument: String(localized: "Analyze Document")
         }
     }
 }
@@ -120,7 +120,7 @@ struct TaskWorkspaceView: View {
         .sheet(isPresented: $showsCamera) {
             CameraPicker { image in
                 guard let data = image.jpegData(compressionQuality: 0.9) else { return }
-                importImage(data, title: "Camera photo")
+                importImage(data, title: String(localized: "Camera photo"))
             }
         }
         .fileImporter(isPresented: $showsFileImporter, allowedContentTypes: [.pdf, .plainText, .init(filenameExtension: "md") ?? .plainText]) { selection in
@@ -144,7 +144,7 @@ struct TaskWorkspaceView: View {
             Task {
                 do {
                     guard let data = try await photo.loadTransferable(type: Data.self) else { throw HomeImportError.noText }
-                    importImage(data, title: "Selected image")
+                    importImage(data, title: String(localized: "Selected image"))
                 } catch {
                     errorMessage = error.localizedDescription
                 }
@@ -189,7 +189,7 @@ struct TaskWorkspaceView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(summarySource == .text ? "Your text" : summarySource == .document ? "Your document" : "Your image")
+                            Text(summarySource == .text ? String(localized: "Your text") : summarySource == .document ? String(localized: "Your document") : String(localized: "Your image"))
                                 .font(.headline)
                             Spacer()
                             Text("\(text.count.formatted()) / 10,000")
@@ -257,8 +257,8 @@ struct TaskWorkspaceView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Summary length").font(.headline)
                         HStack(spacing: 10) {
-                            lengthCard("Short", subtitle: "Key points only", symbol: "text.alignleft")
-                            lengthCard("Detailed", subtitle: "Full summary", symbol: "text.book.closed")
+                            lengthCard("Short", title: "Short", subtitle: "Key points only", symbol: "text.alignleft")
+                            lengthCard("Detailed", title: "Detailed", subtitle: "Full summary", symbol: "text.book.closed")
                         }
                     }
                     if isImporting { ProgressView("Reading content…") }
@@ -277,7 +277,11 @@ struct TaskWorkspaceView: View {
             }
             VStack(spacing: 10) {
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text(summarySource == .image ? "Choose a photo to continue" : summarySource == .document ? "Choose a document to continue" : "Add some text to get started")
+                    Text(summarySource == .image
+                         ? String(localized: "Choose a photo to continue")
+                         : summarySource == .document
+                         ? String(localized: "Choose a document to continue")
+                         : String(localized: "Add some text to get started"))
                         .foregroundStyle(.secondary)
                 }
                 Button(action: run) {
@@ -297,7 +301,7 @@ struct TaskWorkspaceView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func summaryTab(_ kind: WorkspaceSourceKind, title: String, symbol: String) -> some View {
+    private func summaryTab(_ kind: WorkspaceSourceKind, title: LocalizedStringKey, symbol: String) -> some View {
         Button {
             summarySource = kind
             text = ""
@@ -337,7 +341,7 @@ struct TaskWorkspaceView: View {
                         .background(HomePalette.lavender.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(sourceTitle).font(.headline).lineLimit(1)
-                        Label("\(text.count.formatted()) characters found", systemImage: "checkmark")
+                        Label("\(text.count) characters found", systemImage: "checkmark")
                             .font(.caption).foregroundStyle(.green)
                     }
                     Spacer(minLength: 0)
@@ -345,7 +349,7 @@ struct TaskWorkspaceView: View {
             }
             HStack(spacing: 10) {
                 PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label(text.isEmpty ? "Choose Photo" : "Replace", systemImage: text.isEmpty ? "photo" : "arrow.triangle.2.circlepath")
+                    Label(text.isEmpty ? String(localized: "Choose Photo") : String(localized: "Replace"), systemImage: text.isEmpty ? "photo" : "arrow.triangle.2.circlepath")
                         .frame(maxWidth: .infinity)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -386,12 +390,12 @@ struct TaskWorkspaceView: View {
         .padding(.vertical, text.isEmpty ? 20 : 0)
     }
 
-    private func lengthCard(_ value: String, subtitle: String, symbol: String) -> some View {
+    private func lengthCard(_ value: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, symbol: String) -> some View {
         Button { detail = value } label: {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: symbol).foregroundStyle(HomePalette.lavender)
                 Spacer(minLength: 8)
-                Text(value).font(.headline)
+                Text(title).font(.headline)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
@@ -458,12 +462,15 @@ struct TaskWorkspaceView: View {
             }
             if input.action == .rewrite {
                 Picker("Tone", selection: $tone) {
-                    ForEach(["Professional", "Friendly", "Direct"], id: \.self) { Text($0) }
+                    Text("Professional").tag("Professional")
+                    Text("Friendly").tag("Friendly")
+                    Text("Direct").tag("Direct")
                 }
             }
             if input.action == .summarize || input.action == .rewrite {
                 Picker("Length", selection: $detail) {
-                    ForEach(["Short", "Detailed"], id: \.self) { Text($0) }
+                    Text("Short").tag("Short")
+                    Text("Detailed").tag("Detailed")
                 }
             }
             if isImporting { ProgressView("Reading content…") }
@@ -492,7 +499,7 @@ struct TaskWorkspaceView: View {
             Text("Select from your gallery or take a new photo")
                 .font(.subheadline).foregroundStyle(.secondary)
             PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                Label("Choose Photo", systemImage: "photo")
+                Label(String(localized: "Choose Photo"), systemImage: "photo")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -548,7 +555,7 @@ struct TaskWorkspaceView: View {
                 .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 12))
             Button("View source") { showsSource = true }
             HStack {
-                Button(savedID == nil ? "Save" : "Saved", systemImage: savedID == nil ? "bookmark" : "checkmark") { save() }
+                Button(savedID == nil ? String(localized: "Save") : String(localized: "Saved"), systemImage: savedID == nil ? "bookmark" : "checkmark") { save() }
                     .disabled(savedID != nil)
                 Button("Copy", systemImage: "doc.on.doc") { UIPasteboard.general.string = result }
                 ShareLink(item: result) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -621,7 +628,7 @@ struct TaskWorkspaceView: View {
             savedID = item.id
         } catch {
             modelContext.delete(item)
-            errorMessage = "Couldn’t save this result: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn’t save this result: \(error.localizedDescription)")
         }
     }
 }
@@ -631,8 +638,8 @@ private enum WorkspaceError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unavailable: "Local AI isn’t ready. Enable Apple Intelligence or download a local model in Settings."
-        case .emptyResult: "No result was generated. Try again."
+        case .unavailable: String(localized: "Local AI isn’t ready. Enable Apple Intelligence or download a local model in Settings.")
+        case .emptyResult: String(localized: "No result was generated. Try again.")
         }
     }
 }

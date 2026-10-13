@@ -18,11 +18,11 @@ struct LicensesView: View {
                     Text(model.provider).font(.caption).foregroundStyle(.secondary)
                     Text(model.license).font(.footnote)
                     #if DEBUG && targetEnvironment(simulator)
-                    Text(appState.previewDownloadedModels.contains(model) ? "Downloaded (preview)" : "Not downloaded")
+                    Text(appState.previewDownloadedModels.contains(model) ? String(localized: "Downloaded (preview)") : String(localized: "Not downloaded"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     #else
-                    Text(appState.downloadedModelIDs.contains(model.id) ? "Downloaded" : "Not downloaded")
+                    Text(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Downloaded") : String(localized: "Not downloaded"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     #endif

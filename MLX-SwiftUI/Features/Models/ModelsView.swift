@@ -30,12 +30,12 @@ struct ModelsView: View {
     private var displayedDefaultLabel: String {
         #if DEBUG && targetEnvironment(simulator)
         if appState.modelPreviewScenario != .actual {
-            return "Default"
+            return String(localized: "Default")
         }
         #endif
-        guard appState.hasUsableDefaultModel else { return "Unavailable" }
-        if appState.usesFoundationModel { return "Default" }
-        return appState.prefersFoundationModel ? "MLX fallback" : "Default"
+        guard appState.hasUsableDefaultModel else { return String(localized: "Unavailable") }
+        if appState.usesFoundationModel { return String(localized: "Default") }
+        return appState.prefersFoundationModel ? String(localized: "MLX fallback") : String(localized: "Default")
     }
 
     private var displayedDefaultName: String {
@@ -110,7 +110,7 @@ struct ModelsView: View {
                     }) {
                         VStack(alignment: .leading, spacing: 16) {
                             Text(appState.downloadedModels.count == AppState.modelLimit
-                                 ? "All model slots are used" : "Suggested model")
+                                 ? String(localized: "All model slots are used") : String(localized: "Suggested model"))
                                 .font(.title2.bold())
                             suggestedCard(suggestion)
                         }
@@ -165,7 +165,7 @@ struct ModelsView: View {
             ) {
                 Button("OK", role: .cancel) { appState.dismissDownloadError() }
             } message: {
-                Text(appState.downloadError ?? "The model could not be downloaded.")
+                Text(appState.downloadError ?? String(localized: "The model could not be downloaded."))
             }
             .alert(
                 "Model deletion failed",
@@ -176,7 +176,7 @@ struct ModelsView: View {
             ) {
                 Button("OK", role: .cancel) { appState.dismissDeletionError() }
             } message: {
-                Text(appState.deletionError ?? "The model could not be deleted.")
+                Text(appState.deletionError ?? String(localized: "The model could not be deleted."))
             }
             .confirmationDialog(
                 "Model limit reached",
@@ -254,7 +254,7 @@ struct ModelsView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Storage")
                             .foregroundStyle(.secondary)
-                        Text(String(format: "%.2f GB", displayedStorageUsed))
+                        Text("\(displayedStorageUsed, format: .number.precision(.fractionLength(2))) GB")
                             .fontWeight(.semibold)
                     }
                 }
@@ -270,7 +270,7 @@ struct ModelsView: View {
                 }
             }
             .frame(height: 6)
-            .accessibilityLabel("Model storage, \(String(format: "%.2f", displayedStorageUsed)) gigabytes")
+            .accessibilityLabel("Model storage, \(displayedStorageUsed, format: .number.precision(.fractionLength(2))) gigabytes")
         }
         .padding(20)
         .modelCardBackground()
@@ -287,7 +287,7 @@ struct ModelsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Apple Foundation Models")
                         .font(.headline)
-                    Text(displayedFoundationAvailable ? "Built into this iPhone" : "Unavailable on this device")
+                    Text(displayedFoundationAvailable ? String(localized: "Built into this iPhone") : String(localized: "Unavailable on this device"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -313,8 +313,8 @@ struct ModelsView: View {
                     .foregroundStyle(.secondary)
                 #else
                 Text(appState.downloadedModels.isEmpty
-                     ? "Download an MLX model to start chatting on this iPhone."
-                     : "New chats will try \(appState.activeModel.name) on this iPhone. If it cannot load, the app will show an error.")
+                     ? String(localized: "Download an MLX model to start chatting on this iPhone.")
+                     : String(localized: "New chats will try \(appState.activeModel.name) on this iPhone. If it cannot load, the app will show an error."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 #endif
@@ -364,7 +364,7 @@ struct ModelsView: View {
                             .font(.headline)
                             .lineLimit(2)
                         if model.id == appState.activeModelID && !appState.usesFoundationModel {
-                            Text(appState.prefersFoundationModel ? "Fallback" : "Default")
+                            Text(appState.prefersFoundationModel ? String(localized: "Fallback") : String(localized: "Default"))
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(accent)
                                 .padding(.horizontal, 8)

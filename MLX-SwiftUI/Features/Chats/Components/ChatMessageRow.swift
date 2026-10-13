@@ -95,7 +95,7 @@ struct ChatMessageRow: View {
 
     private var displayText: String {
         if message.text.isEmpty && message.role == .assistant && isSending {
-            return "Thinking..."
+            return String(localized: "Thinking...")
         }
         return message.text
     }

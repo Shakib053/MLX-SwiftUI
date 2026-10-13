@@ -1,0 +1,31 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "MLX-SwiftUI"
+          }
+        }
+      },
+      "shouldTranslate": false
+    },
+    "NSCameraUsageDescription": {
+      "comment": "Camera permission explanation shown by iOS.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take photos to read visible text on your device."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

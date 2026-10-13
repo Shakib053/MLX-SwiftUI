@@ -33,34 +33,34 @@ final class ChatViewModel {
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
-        let modelName = LocalModel.catalog.first { $0.id == currentModelID }?.shortName ?? "model"
+        let modelName = LocalModel.catalog.first { $0.id == currentModelID }?.shortName ?? String(localized: "model")
         return state == .downloading
-            ? "Downloading \(modelName) for offline chat"
-            : "Preparing \(modelName)..."
+            ? String(localized: "Downloading \(modelName) for offline chat")
+            : String(localized: "Preparing \(modelName)...")
     }
 
     var loadingMessage: String {
         #if DEBUG && targetEnvironment(simulator)
-        return "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone."
+        return String(localized: "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone.")
         #else
-        return "The selected model downloads once and is reused from the device cache on later launches."
+        return String(localized: "The selected model downloads once and is reused from the device cache on later launches.")
         #endif
     }
 
     var headerSubtitle: String {
         if backendMode == .foundation {
-            return "Apple Foundation Models • On device"
+            return String(localized: "Apple Foundation Models • On device")
         }
         if backendMode == .local {
-            return "Private on-device chat"
+            return String(localized: "Private on-device chat")
         }
         if case .failed = state {
-            return "Model unavailable"
+            return String(localized: "Model unavailable")
         }
         if downloadProgress > 0, downloadProgress < 1 {
-            return "Loading local model \(Int(downloadProgress * 100))%"
+            return String(localized: "Loading local model \(Int(downloadProgress * 100))%")
         }
-        return "Preparing on-device model"
+        return String(localized: "Preparing on-device model")
     }
 
     private var backend: (any ChatBackend)?
@@ -83,7 +83,7 @@ final class ChatViewModel {
     }
 
     var conversationTitle: String {
-        conversation?.title ?? "New Conversation"
+        conversation?.title ?? String(localized: "New Conversation")
     }
 
     var hasConversation: Bool {
@@ -331,8 +331,8 @@ final class ChatViewModel {
             return
         }
         let message = localModelError.map {
-            "\($0) Apple Foundation Models are also unavailable on this device."
-        } ?? "Apple Foundation Models are unavailable on this device."
+            String(localized: "\($0) Apple Foundation Models are also unavailable on this device.")
+        } ?? String(localized: "Apple Foundation Models are unavailable on this device.")
         state = .failed(message)
     }
 
@@ -480,7 +480,7 @@ final class ChatViewModel {
             if error is CancellationError || Task.isCancelled {
                 handleStreamCancellation()
             } else if let lastIndex = messages.indices.last {
-                messages[lastIndex].text = "Error: \(error.localizedDescription)"
+                messages[lastIndex].text = String(localized: "Error: \(error.localizedDescription)")
             }
         }
     }
@@ -646,7 +646,7 @@ extension ChatViewModel {
 
     private func ensureConversation() {
         guard conversation == nil, let modelContext else { return }
-        let firstPrompt = messages.first(where: { $0.role == .user })?.text ?? "New Conversation"
+        let firstPrompt = messages.first(where: { $0.role == .user })?.text ?? String(localized: "New Conversation")
         let newConversation = Conversation(
             title: firstPrompt.truncated(to: 60),
             modelID: currentModelID,
@@ -706,7 +706,7 @@ extension ChatViewModel {
     @discardableResult
     private func saveContext() -> Bool {
         guard let modelContext else {
-            persistenceError = "Could not save conversation history because storage is unavailable."
+            persistenceError = String(localized: "Could not save conversation history because storage is unavailable.")
             return false
         }
         do {
@@ -715,7 +715,7 @@ extension ChatViewModel {
             persistenceError = nil
             return true
         } catch {
-            persistenceError = "Could not save conversation history: \(error.localizedDescription)"
+            persistenceError = String(localized: "Could not save conversation history: \(error.localizedDescription)")
             AppLogger.chat.error("Failed to persist conversation history: \(error.localizedDescription, privacy: .public)")
             return false
         }
@@ -754,7 +754,7 @@ extension ChatViewModel {
                 historyLimitReached = messages != loadedMessages
             }
         } catch {
-            persistenceError = "Could not load this conversation: \(error.localizedDescription)"
+            persistenceError = String(localized: "Could not load this conversation: \(error.localizedDescription)")
         }
     }
 

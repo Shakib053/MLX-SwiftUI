@@ -18,7 +18,7 @@ struct ModelMark: View {
 
 struct ModelStat: View {
     let icon: String
-    let label: String
+    let label: LocalizedStringKey
     let value: String
 
     var body: some View {

@@ -40,7 +40,7 @@ struct ModelCatalogView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(appState.downloadedModelIDs.contains(model.id) ? "Downloaded" : "Compatible")
+                Text(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Downloaded") : String(localized: "Compatible"))
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.green)
             }
@@ -52,7 +52,7 @@ struct ModelCatalogView: View {
                     Text("Details")
                 }
                     .buttonStyle(.bordered)
-                Button(appState.downloadedModelIDs.contains(model.id) ? "Installed" : "Download") {
+                Button(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Installed") : String(localized: "Download")) {
                     beginDownload(model)
                 }
                 .buttonStyle(.borderedProminent)

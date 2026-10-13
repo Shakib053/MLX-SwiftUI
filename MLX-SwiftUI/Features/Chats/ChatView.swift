@@ -131,7 +131,7 @@ struct ChatView: View {
         )) {
             Button("OK", role: .cancel) { viewModel.persistenceError = nil }
         } message: {
-            Text(viewModel.persistenceError ?? "Please try again.")
+            Text(viewModel.persistenceError ?? String(localized: "Please try again."))
         }
         .task {
             if !initialPrompt.isEmpty { composerText = initialPrompt }
@@ -193,11 +193,11 @@ struct ChatView: View {
                         viewModel.togglePin()
                     } label: {
                         Label(
-                            viewModel.isPinned ? "Unpin" : "Pin",
+                            viewModel.isPinned ? String(localized: "Unpin") : String(localized: "Pin"),
                             systemImage: viewModel.isPinned ? "pin.slash" : "pin"
                         )
                     }
-                    .disabled(viewModel.conversationTitle == "New Conversation")
+                    .disabled(!viewModel.hasConversation)
                     Button(role: .destructive) {
                         showsDeleteConfirmation = true
                     } label: {
@@ -413,7 +413,7 @@ private struct ChatModelSwitchStatusView: View {
                     ProgressView()
                         .controlSize(.small)
                 }
-                Text(state == .downloading ? "Downloading \(modelName)…" : "Loading \(modelName)…")
+                Text(state == .downloading ? String(localized: "Downloading \(modelName)…") : String(localized: "Loading \(modelName)…"))
                     .font(.caption)
                 Spacer()
             }

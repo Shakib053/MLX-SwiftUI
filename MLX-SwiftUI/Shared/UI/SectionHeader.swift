@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct SectionHeader: View {
-    let title: String
-    var actionTitle: String?
+    let title: LocalizedStringKey
+    var actionTitle: LocalizedStringKey?
     var action: (() -> Void)?
 
     var body: some View {

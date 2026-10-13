@@ -1,0 +1,1355 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%@ / 10,000" : {
+
+    },
+    "%@ • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ • %2$@"
+          }
+        }
+      }
+    },
+    "%@ • On device" : {
+
+    },
+    "%@ Apple Foundation Models are also unavailable on this device." : {
+
+    },
+    "%@ could not load" : {
+
+    },
+    "%@ GB" : {
+
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld / 10,000 characters" : {
+
+    },
+    "%lld characters found" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld character found"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld characters found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld in / %lld out" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld in / %2$lld out"
+          }
+        }
+      }
+    },
+    "%lld of %lld models" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld models"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+      "shouldTranslate" : false
+    },
+    "• %lld tokens total" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "• %lld token total"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "• %lld tokens total"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A compact general-purpose model suited to quick questions, summaries, and lightweight coding help." : {
+
+    },
+    "A compact QAT-quantized assistant from Google for writing help, summaries, and general conversation." : {
+
+    },
+    "A connection is needed for the download. After that, prompts and responses run on this device." : {
+
+    },
+    "A model is needed to continue this chat" : {
+
+    },
+    "A stronger multilingual assistant for writing, summaries, retrieval, and general conversation." : {
+
+    },
+    "About" : {
+
+    },
+    "About %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "About %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Actual Simulator" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actual Simulator"
+          }
+        }
+      }
+    },
+    "Add an image" : {
+
+    },
+    "Add content" : {
+
+    },
+    "Add model" : {
+
+    },
+    "Add some text to get started" : {
+
+    },
+    "After download" : {
+
+    },
+    "AI can miss details. Check the source before using important information." : {
+
+    },
+    "All model slots are used" : {
+
+    },
+    "Analyze Document" : {
+
+    },
+    "Apache 2.0. The MLX Community conversion is based on Qwen3." : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Apple Foundation Models" : {
+      "comment" : "Product name or contact address; keep unchanged.",
+      "shouldTranslate" : false
+    },
+    "Apple Foundation Models (preview)" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Foundation Models (preview)"
+          }
+        }
+      }
+    },
+    "Apple Foundation Models • On device" : {
+
+    },
+    "Apple Foundation Models are unavailable here. Local MLX models require a physical iPhone." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Foundation Models are unavailable here. Local MLX models require a physical iPhone."
+          }
+        }
+      }
+    },
+    "Apple Foundation Models are unavailable on this device." : {
+
+    },
+    "Apple Foundation Models are unavailable on this iPhone. Choose a local model." : {
+
+    },
+    "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Foundation Models are used when available. Local MLX models run on a physical iPhone."
+          }
+        }
+      }
+    },
+    "Apple Foundation Models fallback • On device" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Foundation Models fallback • On device"
+          }
+        }
+      }
+    },
+    "Apple Foundation Models isn’t available here. Download a model once to use chat offline." : {
+
+    },
+    "Apple Foundation Models isn’t available on this device. Download a model once to use chat and AI tools offline." : {
+
+    },
+    "Apple Foundation Models runs when available. Otherwise, choose an MLX model to download. You can keep up to three downloaded models." : {
+
+    },
+    "Ask AI" : {
+
+    },
+    "Attach file" : {
+
+    },
+    "Built in" : {
+
+    },
+    "Built into this iPhone" : {
+
+    },
+    "Built into this iPhone (preview)" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built into this iPhone (preview)"
+          }
+        }
+      }
+    },
+    "Cached model" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cached model"
+          }
+        }
+      }
+    },
+    "Camera photo" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Change added content" : {
+
+    },
+    "Changing the default does not affect existing conversations." : {
+
+    },
+    "Chat with your local model" : {
+
+    },
+    "Choose a document to continue" : {
+
+    },
+    "Choose a model" : {
+
+    },
+    "Choose a model for new chats" : {
+
+    },
+    "Choose a photo to continue" : {
+
+    },
+    "Choose an image" : {
+
+    },
+    "Choose another model" : {
+
+    },
+    "Choose another photo" : {
+
+    },
+    "Choose document" : {
+
+    },
+    "Choose from Photos or capture with Camera." : {
+
+    },
+    "Choose Model" : {
+
+    },
+    "Choose or download a model" : {
+
+    },
+    "Choose PDF or text file" : {
+
+    },
+    "Choose Photo" : {
+
+    },
+    "Choose photo or screenshot" : {
+
+    },
+    "Choose your model" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Compatible" : {
+
+    },
+    "Compose Feedback Email" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Conversation options" : {
+
+    },
+    "Conversation scenario" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conversation scenario"
+          }
+        }
+      }
+    },
+    "Conversation title" : {
+
+    },
+    "Copy" : {
+
+    },
+    "Copy response" : {
+
+    },
+    "Could not load model" : {
+
+    },
+    "Could not load this conversation: %@" : {
+
+    },
+    "Could not save conversation history because storage is unavailable." : {
+
+    },
+    "Could not save conversation history: %@" : {
+
+    },
+    "Couldn’t add content" : {
+
+    },
+    "Couldn’t save conversation" : {
+
+    },
+    "Couldn’t save this result: %@" : {
+
+    },
+    "Couldn’t update conversations" : {
+
+    },
+    "credential theft or malicious cyber activity" : {
+
+    },
+    "Currently Active" : {
+
+    },
+    "Dark" : {
+
+    },
+    "Dates, details & tasks" : {
+
+    },
+    "Decisions, owners and action items" : {
+
+    },
+    "Default" : {
+
+    },
+    "Default Model" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete Conversation?" : {
+
+    },
+    "Delete Saved Result?" : {
+
+    },
+    "Delete this conversation?" : {
+
+    },
+    "Detailed" : {
+
+    },
+    "Details" : {
+
+    },
+    "Direct" : {
+
+    },
+    "Document" : {
+
+    },
+    "Done" : {
+
+    },
+    "Download" : {
+
+    },
+    "Download %@" : {
+
+    },
+    "Download an MLX model to start chatting on this iPhone." : {
+
+    },
+    "Download size is approximate. Additional space may be needed to install and run the model." : {
+
+    },
+    "Downloaded" : {
+
+    },
+    "Downloaded (preview)" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloaded (preview)"
+          }
+        }
+      }
+    },
+    "Downloaded MLX models" : {
+
+    },
+    "DOWNLOADED MLX MODELS" : {
+
+    },
+    "Downloaded model preview · %@" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloaded model preview · %@"
+          }
+        }
+      }
+    },
+    "Downloading" : {
+
+    },
+    "Downloading %@ for offline chat" : {
+
+    },
+    "Downloading %@…" : {
+
+    },
+    "Edit original content" : {
+
+    },
+    "Error: %@" : {
+
+    },
+    "explicit sexual content" : {
+
+    },
+    "Extract" : {
+
+    },
+    "Extract and understand text from images, screenshots, and photos using local AI models." : {
+
+    },
+    "Extract text from images and photos" : {
+
+    },
+    "Fallback" : {
+
+    },
+    "Fast" : {
+
+    },
+    "Find dates and what needs doing" : {
+
+    },
+    "Fits" : {
+
+    },
+    "Foundation Models + Gemma" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundation Models + Gemma"
+          }
+        }
+      }
+    },
+    "Foundation Models + Qwen + Gemma" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundation Models + Qwen + Gemma"
+          }
+        }
+      }
+    },
+    "Foundation Models are unavailable here. Local MLX models require a physical iPhone." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundation Models are unavailable here. Local MLX models require a physical iPhone."
+          }
+        }
+      }
+    },
+    "Foundation Models only" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundation Models only"
+          }
+        }
+      }
+    },
+    "Foundation Models unavailable • %@ fallback" : {
+
+    },
+    "Friendly" : {
+
+    },
+    "From screenshot to next steps" : {
+
+    },
+    "Full summary" : {
+
+    },
+    "Gemma Terms of Use. The MLX Community conversion is based on Google Gemma 3." : {
+
+    },
+    "General" : {
+
+    },
+    "Generate summary" : {
+
+    },
+    "Get started with your AI tasks" : {
+
+    },
+    "Get the key points instantly" : {
+
+    },
+    "Haptic feedback" : {
+
+    },
+    "hate or targeted harassment" : {
+
+    },
+    "History" : {
+
+    },
+    "Home" : {
+
+    },
+    "How can I help?" : {
+
+    },
+    "I can’t help create explicit sexual content. I can help with a non-explicit or educational alternative." : {
+
+    },
+    "I can’t help create or describe sexual content involving minors." : {
+
+    },
+    "I can’t help create threats, hateful content, or targeted harassment. I can help rewrite this in a respectful and non-targeted way." : {
+
+    },
+    "I can’t help make, extract, or increase the potency of illegal drugs. I can help with health, treatment, or harm-prevention information." : {
+
+    },
+    "I can’t help steal credentials, take over accounts, or create malware or phishing tools. I can help with defensive security and account protection." : {
+
+    },
+    "I can’t help with instructions to harm someone, build a weapon, or use one to injure people. I can help with safety, prevention, or legal information." : {
+
+    },
+    "I’m sorry you’re dealing with this. I can’t help with instructions for self-harm. Please contact local emergency services or a trusted person who can stay with you right now." : {
+
+    },
+    "illegal drug production" : {
+
+    },
+    "Image" : {
+
+    },
+    "Import" : {
+
+    },
+    "Improve your writing style" : {
+
+    },
+    "Include your device, iOS version, app version, active model, and steps to reproduce the issue." : {
+
+    },
+    "Installed" : {
+
+    },
+    "Key points only" : {
+
+    },
+    "Know where chat runs" : {
+
+    },
+    "Length" : {
+
+    },
+    "License" : {
+
+    },
+    "License terms" : {
+
+    },
+    "Light" : {
+
+    },
+    "Llama 3.2 Community License. Include the required Llama attribution and usage notice." : {
+
+    },
+    "Loading %@…" : {
+
+    },
+    "Loading local model %lld%%" : {
+
+    },
+    "Local AI isn’t ready. Enable Apple Intelligence or download a local model in Settings." : {
+
+    },
+    "Local AI on Your iPhone" : {
+
+    },
+    "Local download failure" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local download failure"
+          }
+        }
+      }
+    },
+    "Local MLX models require a physical iPhone" : {
+
+    },
+    "Local MLX models require a physical iPhone." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local MLX models require a physical iPhone."
+          }
+        }
+      }
+    },
+    "Local model downloads are available on a physical iPhone." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local model downloads are available on a physical iPhone."
+          }
+        }
+      }
+    },
+    "Make sense of meeting notes" : {
+
+    },
+    "Manage downloads in the Models tab." : {
+
+    },
+    "Manage models" : {
+
+    },
+    "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting." : {
+
+    },
+    "Message MLX Chat" : {
+
+    },
+    "Messages are processed on this device and saved in your local history." : {
+
+    },
+    "MLX" : {
+      "comment" : "Product name or contact address; keep unchanged.",
+      "shouldTranslate" : false
+    },
+    "MLX fallback" : {
+
+    },
+    "MLX fallback: %@" : {
+
+    },
+    "model" : {
+
+    },
+    "Model availability preview. MLX models are not downloaded or runnable in Simulator." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model availability preview. MLX models are not downloaded or runnable in Simulator."
+          }
+        }
+      }
+    },
+    "Model Catalog" : {
+
+    },
+    "Model deletion failed" : {
+
+    },
+    "Model Details" : {
+
+    },
+    "Model download failed" : {
+
+    },
+    "Model Licenses" : {
+
+    },
+    "Model limit reached" : {
+
+    },
+    "Model screens" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model screens"
+          }
+        }
+      }
+    },
+    "Model Setup" : {
+
+    },
+    "Model source" : {
+
+    },
+    "Model storage, %@ gigabytes" : {
+
+    },
+    "Model unavailable" : {
+
+    },
+    "model.focus.light" : {
+      "comment" : "A lightweight AI model, not the light appearance theme.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
+    "Models" : {
+
+    },
+    "New chats will try %@ on this iPhone. If it cannot load, the app will show an error." : {
+
+    },
+    "New Conversation" : {
+
+    },
+    "No History" : {
+
+    },
+    "No MLX model downloaded" : {
+
+    },
+    "No MLX models downloaded" : {
+
+    },
+    "No model available in Simulator" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No model available in Simulator"
+          }
+        }
+      }
+    },
+    "No readable text was found. Try another image or document." : {
+
+    },
+    "No response yet" : {
+
+    },
+    "No result was generated. Try again." : {
+
+    },
+    "No Results" : {
+
+    },
+    "Not downloaded" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Offline" : {
+
+    },
+    "OK" : {
+
+    },
+    "Older messages remain in this chat but may be omitted from new replies." : {
+
+    },
+    "Older messages were removed to keep this chat within the device limit." : {
+
+    },
+    "On device" : {
+
+    },
+    "On Device" : {
+
+    },
+    "On this iPhone" : {
+
+    },
+    "Opens a new chat using your preferred model" : {
+
+    },
+    "Optional question about the document" : {
+
+    },
+    "OR" : {
+
+    },
+    "Page %lld:\n%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Page %1$lld:\n%2$@"
+          }
+        }
+      }
+    },
+    "Paste" : {
+
+    },
+    "Paste or type" : {
+
+    },
+    "Paste or type the text you want to summarize..." : {
+
+    },
+    "Pin" : {
+
+    },
+    "PINNED" : {
+
+    },
+    "Please try again." : {
+
+    },
+    "Preparing %@..." : {
+
+    },
+    "Preparing on-device model" : {
+
+    },
+    "Preview only. Local MLX models cannot run in Simulator." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview only. Local MLX models cannot run in Simulator."
+          }
+        }
+      }
+    },
+    "Preview: model availability is simulated in Settings." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview: model availability is simulated in Settings."
+          }
+        }
+      }
+    },
+    "Privacy" : {
+
+    },
+    "Private by default" : {
+
+    },
+    "Private by design" : {
+
+    },
+    "Private on-device chat" : {
+
+    },
+    "Private tool results are saved only when you choose Save. Chat uses an available on-device model and shows which one is in use." : {
+
+    },
+    "Private tools use an available on-device model. Ask AI opens chat, which shows which model is in use." : {
+
+    },
+    "Production requirement" : {
+
+    },
+    "Professional" : {
+
+    },
+    "Prompts and model output stay on this device while a local model is selected." : {
+
+    },
+    "Quality" : {
+
+    },
+    "Quantization" : {
+
+    },
+    "Quick Actions" : {
+
+    },
+    "Read Image Text" : {
+
+    },
+    "Reading content…" : {
+
+    },
+    "Reads visible text. Photo scene descriptions are not available yet." : {
+
+    },
+    "Ready to use" : {
+
+    },
+    "RECENT" : {
+
+    },
+    "Regenerate response" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %@" : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Conversation" : {
+
+    },
+    "Replace" : {
+
+    },
+    "Response stopped — regenerate to continue" : {
+
+    },
+    "Result" : {
+
+    },
+    "Result ready" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry download" : {
+
+    },
+    "Rewrite" : {
+
+    },
+    "Run LLMs directly on your iPhone with MLX. Private, fast and always available." : {
+
+    },
+    "Safety filter" : {
+
+    },
+    "Sample meeting notes" : {
+
+    },
+    "Sample screenshot" : {
+
+    },
+    "Save" : {
+
+    },
+    "Saved" : {
+
+    },
+    "SAVED RESULTS" : {
+
+    },
+    "Saved results and conversations will appear here." : {
+
+    },
+    "Search history" : {
+
+    },
+    "Search supported models" : {
+
+    },
+    "Select from your gallery or take a new photo" : {
+
+    },
+    "Selected image" : {
+
+    },
+    "self-harm assistance" : {
+
+    },
+    "Send Feedback" : {
+
+    },
+    "Set Up AI" : {
+
+    },
+    "Set up on-device AI" : {
+
+    },
+    "Set up on-device AI to use this tool" : {
+
+    },
+    "Settings" : {
+
+    },
+    "sexual content involving minors" : {
+
+    },
+    "Share" : {
+
+    },
+    "Short" : {
+
+    },
+    "Shorten to 10,000 characters before continuing." : {
+
+    },
+    "Simulated local model download failure" : {
+
+    },
+    "Simulator Testing" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulator Testing"
+          }
+        }
+      }
+    },
+    "Slow download (60 seconds)" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slow download (60 seconds)"
+          }
+        }
+      }
+    },
+    "Source" : {
+
+    },
+    "Source text" : {
+
+    },
+    "Start new conversation" : {
+
+    },
+    "Start Using MLX Chat" : {
+
+    },
+    "Start with on-device AI" : {
+
+    },
+    "Stop" : {
+
+    },
+    "Storage" : {
+
+    },
+    "Suggested model" : {
+
+    },
+    "Suggested template" : {
+
+    },
+    "Summarize" : {
+
+    },
+    "Summarize and analyze your documents" : {
+
+    },
+    "Summary length" : {
+
+    },
+    "Support email" : {
+
+    },
+    "support@localmind.app" : {
+      "comment" : "Product name or contact address; keep unchanged.",
+      "shouldTranslate" : false
+    },
+    "Switching models does not delete chats. When all slots are full, choose one to remove before adding another." : {
+
+    },
+    "System" : {
+
+    },
+    "System follows the iPhone appearance automatically." : {
+
+    },
+    "Take Photo" : {
+
+    },
+    "Text" : {
+
+    },
+    "Text to summarize" : {
+
+    },
+    "The app downloads the MLX Community checkpoint for %@. Display the exact model revision, license text, and required notices." : {
+
+    },
+    "The model could not be deleted." : {
+
+    },
+    "The model could not be downloaded." : {
+
+    },
+    "The model returned an empty response." : {
+
+    },
+    "The scenario applies to the next new conversation. Apple Foundation Models are used when available; local MLX loading is simulated. Model screens preview changes display only and never download MLX models." : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scenario applies to the next new conversation. Apple Foundation Models are used when available; local MLX loading is simulated. Model screens preview changes display only and never download MLX models."
+          }
+        }
+      }
+    },
+    "The selected model downloads once and is reused from the device cache on later launches." : {
+
+    },
+    "There are no saved results or conversations matching “%@”." : {
+
+    },
+    "Thinking..." : {
+
+    },
+    "This content is too long for one chat request. Shorten it to 10,000 characters." : {
+
+    },
+    "This file could not be read. Choose a PDF, TXT, or Markdown file." : {
+
+    },
+    "This permanently deletes the conversation and its messages from this device." : {
+
+    },
+    "This removes the saved result and its source from this device." : {
+
+    },
+    "Tone" : {
+
+    },
+    "Try again" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "TRY IT WITH A SAMPLE" : {
+
+    },
+    "Turn long text into a clear, short summary, privately on your iPhone." : {
+
+    },
+    "Unavailable" : {
+
+    },
+    "Unavailable in Simulator" : {
+      "comment" : "Simulator-only interface text. Keep this entry when extracting for a device build.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable in Simulator"
+          }
+        }
+      }
+    },
+    "Unavailable on this device" : {
+
+    },
+    "Unpin" : {
+
+    },
+    "Use" : {
+
+    },
+    "Use %@" : {
+
+    },
+    "Use This Model" : {
+
+    },
+    "Used for new chats" : {
+
+    },
+    "Version" : {
+
+    },
+    "View extracted text" : {
+
+    },
+    "View source" : {
+
+    },
+    "violent or weapon-related instructions" : {
+
+    },
+    "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in." : {
+
+    },
+    "Working on your content…" : {
+
+    },
+    "You can keep up to three downloaded models. Remove one to continue." : {
+
+    },
+    "Your chats and private tools use an available on-device model. Task results are saved only when you choose Save." : {
+
+    },
+    "Your device. Local models. Powerful AI." : {
+
+    },
+    "Your document" : {
+
+    },
+    "Your image" : {
+
+    },
+    "Your text" : {
+
+    }
+  },
+  "version" : "1.0"
+}
