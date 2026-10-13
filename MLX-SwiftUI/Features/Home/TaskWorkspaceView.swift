@@ -173,7 +173,9 @@ struct TaskWorkspaceView: View {
         })
         #endif
     }
+}
 
+private extension TaskWorkspaceView {
     private var extractView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
