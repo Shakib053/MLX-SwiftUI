@@ -5,20 +5,20 @@ struct OnboardingView: View {
     @State private var page = 0
 
     private let pages = [
-        (
-            "lock.fill",
-            "Start with on-device AI",
-            "Private tools use an available on-device model. Ask AI opens chat, which shows which model is in use."
+        OnboardingPage(
+            symbol: "lock.fill",
+            title: "Start with on-device AI",
+            message: "Private tools use an available on-device model. Ask AI opens chat, which shows which model is in use."
         ),
-        (
-            "cpu",
-            "Choose your model",
-            "Apple Foundation Models runs when available. Otherwise, choose an MLX model to download. You can keep up to three downloaded models."
+        OnboardingPage(
+            symbol: "cpu",
+            title: "Choose your model",
+            message: "Apple Foundation Models runs when available. Otherwise, choose an MLX model to download. You can keep up to three downloaded models."
         ),
-        (
-            "checkmark.shield.fill",
-            "Know where chat runs",
-            "Private tool results are saved only when you choose Save. Chat uses an available on-device model and shows which one is in use."
+        OnboardingPage(
+            symbol: "checkmark.shield.fill",
+            title: "Know where chat runs",
+            message: "Private tool results are saved only when you choose Save. Chat uses an available on-device model and shows which one is in use."
         )
     ]
 
@@ -32,14 +32,14 @@ struct OnboardingView: View {
                             Circle()
                                 .fill(.indigo.opacity(0.14))
                                 .frame(width: 150, height: 150)
-                            Image(systemName: pages[index].0)
+                            Image(systemName: pages[index].symbol)
                                 .font(.system(size: 62, weight: .medium))
                                 .foregroundStyle(.indigo)
                         }
-                        Text(pages[index].1)
+                        Text(pages[index].title)
                             .font(.largeTitle.bold())
                             .multilineTextAlignment(.center)
-                        Text(pages[index].2)
+                        Text(pages[index].message)
                             .font(.title3)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -50,7 +50,7 @@ struct OnboardingView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
 
-            Button(page == pages.count - 1 ? "Start Using MLX Chat" : "Continue") {
+            Button(page == pages.count - 1 ? String(localized: "Start Using MLX Chat") : String(localized: "Continue")) {
                 if page < pages.count - 1 {
                     withAnimation { page += 1 }
                 } else {
@@ -67,4 +67,10 @@ struct OnboardingView: View {
         }
         .background(AppBackground())
     }
+}
+
+private struct OnboardingPage {
+    let symbol: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
 }

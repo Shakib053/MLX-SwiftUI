@@ -87,11 +87,11 @@ final class AppState {
     }
 
     var defaultModelName: String {
-        if usesFoundationModel { return "Apple Foundation Models" }
+        if usesFoundationModel { return String(localized: "Apple Foundation Models") }
         #if targetEnvironment(simulator)
-        return foundationModelAvailable ? "Apple Foundation Models" : "Unavailable in Simulator"
+        return foundationModelAvailable ? String(localized: "Apple Foundation Models") : String(localized: "Unavailable in Simulator")
         #else
-        return downloadedModelIDs.isEmpty ? "No MLX model downloaded" : activeModel.name
+        return downloadedModelIDs.isEmpty ? String(localized: "No MLX model downloaded") : activeModel.name
         #endif
     }
 
@@ -131,7 +131,7 @@ final class AppState {
         }
 
         #if targetEnvironment(simulator)
-        downloadError = "Local model downloads are available on a physical iPhone."
+        downloadError = String(localized: "Local model downloads are available on a physical iPhone.")
         return
         #else
         do {

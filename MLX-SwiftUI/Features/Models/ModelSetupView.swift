@@ -48,9 +48,9 @@ struct ModelSetupView: View {
                 } else {
                     Section {
                         Button(appState.downloadedModelIDs.contains(selectedModel.id)
-                               ? "Use \(selectedModel.shortName)"
+                               ? String(localized: "Use \(selectedModel.shortName)")
                                : appState.downloadError == nil
-                                   ? "Download \(selectedModel.shortName)" : "Retry download") {
+                                   ? String(localized: "Download \(selectedModel.shortName)") : String(localized: "Retry download")) {
                             beginSetup()
                         }
                     } footer: {

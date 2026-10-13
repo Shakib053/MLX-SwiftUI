@@ -21,23 +21,22 @@ struct ModelDetailView: View {
                 HStack {
                     ModelStat(icon: "arrow.down", label: "Download", value: model.sizeLabel)
                     ModelStat(icon: "cube", label: "Quantization", value: model.quantization)
-                    ModelStat(icon: "wifi.slash", label: "After download", value: "Offline")
+                    ModelStat(icon: "wifi.slash", label: "After download", value: String(localized: "Offline"))
                 }
 
                 detailSection(
                     "Privacy",
-                    text: "Prompts and model output stay on this device while a local model is selected."
+                    text: String(localized: "Prompts and model output stay on this device while a local model is selected.")
                 )
                 detailSection("License", text: model.license)
                 detailSection(
                     "Production requirement",
-                    text: "The app downloads the MLX Community checkpoint for \(model.repositoryID). " +
-                        "Display the exact model revision, license text, and required notices."
+                    text: String(localized: "The app downloads the MLX Community checkpoint for \(model.repositoryID). Display the exact model revision, license text, and required notices.")
                 )
 
                 if appState.downloadedModelIDs.contains(model.id) {
                     Button(model.id == appState.activeModelID && !appState.prefersFoundationModel
-                           ? "Currently Active" : "Use This Model") {
+                           ? String(localized: "Currently Active") : String(localized: "Use This Model")) {
                         appState.activate(model)
                         dismiss()
                     }
@@ -54,7 +53,7 @@ struct ModelDetailView: View {
         .toolbar(.hidden, for: .tabBar)
     }
 
-    private func detailSection(_ title: String, text: String) -> some View {
+    private func detailSection(_ title: LocalizedStringKey, text: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title).font(.headline)
             Text(text).foregroundStyle(.secondary)

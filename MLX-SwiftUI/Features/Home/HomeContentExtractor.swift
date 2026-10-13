@@ -10,9 +10,9 @@ enum HomeImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noText: "No readable text was found. Try another image or document."
-        case .unreadableFile: "This file could not be read. Choose a PDF, TXT, or Markdown file."
-        case .tooLong: "This content is too long for one chat request. Shorten it to 10,000 characters."
+        case .noText: String(localized: "No readable text was found. Try another image or document.")
+        case .unreadableFile: String(localized: "This file could not be read. Choose a PDF, TXT, or Markdown file.")
+        case .tooLong: String(localized: "This content is too long for one chat request. Shorten it to 10,000 characters.")
         }
     }
 }
@@ -28,7 +28,7 @@ enum HomeContentExtractor {
             text = (0..<document.pageCount).compactMap { index in
                 guard let pageText = document.page(at: index)?.string,
                       !pageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-                return "Page \(index + 1):\n\(pageText)"
+                return String(localized: "Page \(index + 1):\n\(pageText)")
             }.joined(separator: "\n\n")
         } else {
             guard let decoded = String(data: data, encoding: .utf8) else {

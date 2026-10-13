@@ -32,7 +32,7 @@ struct HomeView: View {
     @State private var errorMessage: String?
     @State private var isImporting = false
     @State private var sourceKind: WorkspaceSourceKind = .text
-    @State private var sourceTitle = "Text"
+    @State private var sourceTitle = String(localized: "Text")
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -65,7 +65,7 @@ struct HomeView: View {
                                 .foregroundStyle(.indigo)
                             VStack(alignment: .leading) {
                                 Text(appState.defaultModelName).font(.subheadline.weight(.semibold))
-                                Text(appState.hasUsableDefaultModel ? "Ready to use" : "Choose or download a model")
+                                Text(appState.hasUsableDefaultModel ? String(localized: "Ready to use") : String(localized: "Choose or download a model"))
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
@@ -106,7 +106,7 @@ struct HomeView: View {
                         }
                         content = try await HomeContentExtractor.image(from: data)
                         sourceKind = .image
-                        sourceTitle = "Selected image"
+                        sourceTitle = String(localized: "Selected image")
                         finishImport()
                     } catch {
                         errorMessage = error.localizedDescription
@@ -143,11 +143,11 @@ struct HomeView: View {
     }
 
     private var backendStatus: String {
-        if appState.usesFoundationModel { return "On Device" }
+        if appState.usesFoundationModel { return String(localized: "On Device") }
         #if targetEnvironment(simulator)
-        return appState.hasUsableDefaultModel ? "On Device" : "Unavailable"
+        return appState.hasUsableDefaultModel ? String(localized: "On Device") : String(localized: "Unavailable")
         #else
-        return appState.hasUsableDefaultModel ? "On Device" : "Set Up AI"
+        return appState.hasUsableDefaultModel ? String(localized: "On Device") : String(localized: "Set Up AI")
         #endif
     }
 
@@ -208,8 +208,8 @@ struct HomeView: View {
                 workspace = WorkspaceInput(
                     action: .extract,
                     kind: .image,
-                    title: "Sample screenshot",
-                    text: "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting."
+                    title: String(localized: "Sample screenshot"),
+                    text: String(localized: "Meeting on Friday, October 9 at 2 PM. Send the draft to Maya by Wednesday, October 7. Alex will review it before the meeting.")
                 )
             }
             Divider()
@@ -217,8 +217,8 @@ struct HomeView: View {
                 workspace = WorkspaceInput(
                     action: .extract,
                     kind: .text,
-                    title: "Sample meeting notes",
-                    text: "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in."
+                    title: String(localized: "Sample meeting notes"),
+                    text: String(localized: "We agreed to launch the beta next month. Maya will finalize the copy. Alex will test onboarding. Review progress at Friday's check-in.")
                 )
             }
         }
@@ -226,7 +226,7 @@ struct HomeView: View {
         .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 15))
     }
 
-    private func sample(_ title: String, subtitle: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func sample(_ title: LocalizedStringKey, subtitle: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: symbol)
@@ -255,7 +255,7 @@ struct HomeView: View {
                             content = newValue
                             if !isImporting {
                                 sourceKind = .text
-                                sourceTitle = "Text"
+                                sourceTitle = String(localized: "Text")
                             }
                         }
                     ))
@@ -313,7 +313,7 @@ struct HomeView: View {
         )) {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "Please try again.")
+            Text(errorMessage ?? String(localized: "Please try again."))
         }
     }
 
@@ -355,22 +355,22 @@ private enum HomeAction: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .summarize: "Summarize"
-        case .rewrite: "Rewrite"
-        case .extract: "Extract"
-        case .understandImage: "Read Image Text"
-        case .analyzeDocument: "Analyze Document"
-        case .askAI: "Ask AI"
+        case .summarize: String(localized: "Summarize")
+        case .rewrite: String(localized: "Rewrite")
+        case .extract: String(localized: "Extract")
+        case .understandImage: String(localized: "Read Image Text")
+        case .analyzeDocument: String(localized: "Analyze Document")
+        case .askAI: String(localized: "Ask AI")
         }
     }
     var subtitle: String {
         switch self {
-        case .summarize: "Get the key points instantly"
-        case .rewrite: "Improve your writing style"
-        case .extract: "Dates, details & tasks"
-        case .understandImage: "Extract text from images and photos"
-        case .analyzeDocument: "Summarize and analyze your documents"
-        case .askAI: "Chat with your local model"
+        case .summarize: String(localized: "Get the key points instantly")
+        case .rewrite: String(localized: "Improve your writing style")
+        case .extract: String(localized: "Dates, details & tasks")
+        case .understandImage: String(localized: "Extract text from images and photos")
+        case .analyzeDocument: String(localized: "Summarize and analyze your documents")
+        case .askAI: String(localized: "Chat with your local model")
         }
     }
     var symbol: String {

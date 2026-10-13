@@ -16,7 +16,7 @@ final class Conversation {
 
     init(
         id: UUID = UUID(),
-        title: String = "New Conversation",
+        title: String = String(localized: "New Conversation"),
         createdAt: Date = .now,
         updatedAt: Date = .now,
         modelID: String,

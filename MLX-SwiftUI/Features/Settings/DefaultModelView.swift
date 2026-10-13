@@ -17,7 +17,7 @@ struct DefaultModelView: View {
                 #if DEBUG && targetEnvironment(simulator)
                 if appState.modelPreviewScenario != .actual {
                     modelRow(icon: "apple.intelligence", title: "Apple Foundation Models",
-                             detail: "Built into this iPhone (preview)", selected: true)
+                             detail: String(localized: "Built into this iPhone (preview)"), selected: true)
                 } else {
                     foundationModelButton
                 }
@@ -44,7 +44,7 @@ struct DefaultModelView: View {
                 if appState.modelPreviewScenario != .actual {
                     ForEach(appState.previewDownloadedModels) { model in
                         modelRow(icon: "cpu", title: model.name,
-                                 detail: "Downloaded model preview · \(model.sizeLabel)", selected: false)
+                                 detail: String(localized: "Downloaded model preview · \(model.sizeLabel)"), selected: false)
                     }
                 } else {
                     Text("Local MLX models require a physical iPhone.")
@@ -106,8 +106,8 @@ struct DefaultModelView: View {
                 icon: "apple.intelligence",
                 title: "Apple Foundation Models",
                 detail: appState.foundationModelAvailable
-                    ? "Built into this iPhone"
-                    : "Unavailable on this device",
+                    ? String(localized: "Built into this iPhone")
+                    : String(localized: "Unavailable on this device"),
                 selected: appState.usesFoundationModel
             )
         }

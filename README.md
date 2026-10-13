@@ -72,3 +72,11 @@ MLX-SwiftUI
 - Additional model families and configurable model limits.
 - Better error handling.
 - Performance optimization.
+
+## Localization
+
+The app uses Apple's native String Catalogs. `MLX-SwiftUI/Localizable.xcstrings` contains app text, and `MLX-SwiftUI/InfoPlist.xcstrings` contains the camera permission description. English is the source language. Additional languages can be added in Xcode's catalog editor; no localization package or custom language manager is required.
+
+To add a language, open each catalog in Xcode, click **+** in the language sidebar, select the language, and enter its translations. Build in Xcode to update extracted strings. For command-line extraction, use `xcodebuild -exportLocalizations -project MLX-SwiftUI.xcodeproj -localizationPath /tmp/MLX-SwiftUI-localizations -exportLanguage en CODE_SIGNING_ALLOWED=NO`. Test using **Product > Scheme > Edit Scheme > Run > Options > App Language**, including the double-length and right-to-left pseudolanguages for layout checks. The app uses the user's system or per-app language preference when translations are available.
+
+Keep literal SwiftUI labels such as `Text("Settings")` as they are. Use `LocalizedStringKey` for reusable view parameters containing interface labels, and `String(localized: "…")` when app code needs a translated `String`, including status messages and errors. Preserve interpolation so translations can reorder values, and use catalog plural variants for counts. Picker tags, persistence identifiers, model names, and AI prompt instructions remain stable; user content and generated responses are not translated by the catalog. Existing saved conversation titles and task content retain their stored text.

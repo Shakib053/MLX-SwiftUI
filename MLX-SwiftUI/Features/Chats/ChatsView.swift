@@ -104,7 +104,7 @@ struct ChatsView: View {
             )) {
                 Button("OK", role: .cancel) { persistenceError = nil }
             } message: {
-                Text(persistenceError ?? "Please try again.")
+                Text(persistenceError ?? String(localized: "Please try again."))
             }
             .alert("Delete Saved Result?", isPresented: Binding(
                 get: { resultToDelete != nil },
@@ -132,7 +132,7 @@ struct ChatsView: View {
                         Image(systemName: "bookmark")
                         VStack(alignment: .leading) {
                             Text(item.title).font(.headline)
-                            Text(WorkspaceAction(rawValue: item.actionRawValue)?.title ?? "Result")
+                            Text(WorkspaceAction(rawValue: item.actionRawValue)?.title ?? String(localized: "Result"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -157,20 +157,20 @@ struct ChatsView: View {
             }
 
             if !recentConversations.isEmpty {
-                sectionHeader("RECENT")
+                sectionHeader("RECENT", showsClear: true)
                 conversationList(recentConversations)
             }
         }
     }
 
-    private func sectionHeader(_ title: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, showsClear: Bool = false) -> some View {
         HStack {
             Text(title)
                 .font(.caption.weight(.bold))
                 .tracking(1.1)
                 .foregroundStyle(.secondary)
             Spacer()
-            if title == "RECENT" {
+            if showsClear {
                 Button("Clear") {
                     for conversation in recentConversations {
                         modelContext.delete(conversation)
@@ -260,11 +260,11 @@ struct ChatsView: View {
             }
 
             VStack(spacing: 7) {
-                Text(searchText.isEmpty ? "No History" : "No Results")
+                Text(searchText.isEmpty ? String(localized: "No History") : String(localized: "No Results"))
                     .font(.title2.weight(.bold))
                 Text(searchText.isEmpty
-                     ? "Saved results and conversations will appear here."
-                     : "There are no saved results or conversations matching “\(searchText)”.")
+                     ? String(localized: "Saved results and conversations will appear here.")
+                     : String(localized: "There are no saved results or conversations matching “\(searchText)”."))
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -302,15 +302,15 @@ struct ChatsView: View {
     }
 
     private var preferredModelStatus: String {
-        if appState.usesFoundationModel { return "Apple Foundation Models • On device" }
+        if appState.usesFoundationModel { return String(localized: "Apple Foundation Models • On device") }
         #if targetEnvironment(simulator)
         return appState.foundationModelAvailable
-            ? "Apple Foundation Models fallback • On device"
-            : "No model available in Simulator"
+            ? String(localized: "Apple Foundation Models fallback • On device")
+            : String(localized: "No model available in Simulator")
         #else
         return appState.prefersFoundationModel
-            ? "Foundation Models unavailable • \(appState.activeModel.shortName) fallback"
-            : "\(appState.activeModel.shortName) • On device"
+            ? String(localized: "Foundation Models unavailable • \(appState.activeModel.shortName) fallback")
+            : String(localized: "\(appState.activeModel.shortName) • On device")
         #endif
     }
 
@@ -343,7 +343,7 @@ private struct ConversationRow: View {
 
                 Text(conversation.latestMessage?.text.isEmpty == false
                      ? conversation.latestMessage?.text ?? ""
-                     : "No response yet")
+                     : String(localized: "No response yet"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -364,7 +364,7 @@ private struct ConversationRow: View {
     }
 
     private var statusText: String {
-        "On device"
+        String(localized: "On device")
     }
 
     private var avatarColor: Color {

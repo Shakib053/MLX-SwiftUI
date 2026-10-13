@@ -7,9 +7,9 @@ enum ChatBackendError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyResponse:
-            return "The model returned an empty response."
+            return String(localized: "The model returned an empty response.")
         case .simulatedLocalModelLoadFailure:
-            return "Simulated local model download failure"
+            return String(localized: "Simulated local model download failure")
         }
     }
 }
@@ -42,10 +42,10 @@ enum SimulatorDownloadScenario: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .normal: "Apple Foundation Models"
-        case .slow: "Slow download (60 seconds)"
-        case .cached: "Cached model"
-        case .localFailure: "Local download failure"
+        case .normal: String(localized: "Apple Foundation Models")
+        case .slow: String(localized: "Slow download (60 seconds)")
+        case .cached: String(localized: "Cached model")
+        case .localFailure: String(localized: "Local download failure")
         }
     }
 
@@ -110,7 +110,7 @@ extension ChatMessage {
     var modelDisplayName: String? {
         guard role == .assistant, !modelID.isEmpty else { return nil }
         if modelID == Self.safetyModelID {
-            return "Safety filter"
+            return String(localized: "Safety filter")
         }
         if modelID == "hosted" {
             return "Apple Foundation Models"

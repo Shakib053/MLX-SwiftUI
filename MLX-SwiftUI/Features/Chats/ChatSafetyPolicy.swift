@@ -12,38 +12,43 @@ enum ChatSafetyCategory: String, CaseIterable, Equatable, Sendable {
     var title: String {
         switch self {
         case .sexualContentInvolvingMinors:
-            return "sexual content involving minors"
+            return String(localized: "sexual content involving minors")
         case .explicitSexualContent:
-            return "explicit sexual content"
+            return String(localized: "explicit sexual content")
         case .violenceOrWeapons:
-            return "violent or weapon-related instructions"
+            return String(localized: "violent or weapon-related instructions")
         case .selfHarm:
-            return "self-harm assistance"
+            return String(localized: "self-harm assistance")
         case .illegalDrugProduction:
-            return "illegal drug production"
+            return String(localized: "illegal drug production")
         case .hateOrTargetedHarassment:
-            return "hate or targeted harassment"
+            return String(localized: "hate or targeted harassment")
         case .credentialTheftOrMaliciousCyberActivity:
-            return "credential theft or malicious cyber activity"
+            return String(localized: "credential theft or malicious cyber activity")
         }
     }
 
     var refusalMessage: String {
         switch self {
         case .sexualContentInvolvingMinors:
-            return "I can’t help create or describe sexual content involving minors."
+            return String(localized: "I can’t help create or describe sexual content involving minors.")
         case .explicitSexualContent:
-            return "I can’t help create explicit sexual content. I can help with a non-explicit or educational alternative."
+            return String(localized: "I can’t help create explicit sexual content. I can help with a non-explicit or educational alternative.")
         case .violenceOrWeapons:
-            return "I can’t help with instructions to harm someone, build a weapon, or use one to injure people. I can help with safety, prevention, or legal information."
+            return String(localized: "I can’t help with instructions to harm someone, build a weapon, or use one to injure people. I can help with safety, prevention, or legal information.")
         case .selfHarm:
-            return "I’m sorry you’re dealing with this. I can’t help with instructions for self-harm. Please contact local emergency services or a trusted person who can stay with you right now."
+            return String(
+                localized: """
+                I’m sorry you’re dealing with this. I can’t help with instructions for self-harm. \
+                Please contact local emergency services or a trusted person who can stay with you right now.
+                """
+            )
         case .illegalDrugProduction:
-            return "I can’t help make, extract, or increase the potency of illegal drugs. I can help with health, treatment, or harm-prevention information."
+            return String(localized: "I can’t help make, extract, or increase the potency of illegal drugs. I can help with health, treatment, or harm-prevention information.")
         case .hateOrTargetedHarassment:
-            return "I can’t help create threats, hateful content, or targeted harassment. I can help rewrite this in a respectful and non-targeted way."
+            return String(localized: "I can’t help create threats, hateful content, or targeted harassment. I can help rewrite this in a respectful and non-targeted way.")
         case .credentialTheftOrMaliciousCyberActivity:
-            return "I can’t help steal credentials, take over accounts, or create malware or phishing tools. I can help with defensive security and account protection."
+            return String(localized: "I can’t help steal credentials, take over accounts, or create malware or phishing tools. I can help with defensive security and account protection.")
         }
     }
 }
