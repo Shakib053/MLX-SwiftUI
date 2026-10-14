@@ -23,6 +23,67 @@ enum WorkspaceSourceKind: String, Hashable {
     case text, image, document
 }
 
+private struct RewriteOptionsView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Binding var tone: String
+    @Binding var detail: String
+
+    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tone").font(.headline)
+                LazyVGrid(columns: columns, spacing: 10) {
+                    option("Professional", subtitle: "Polished and clear", symbol: "briefcase", selection: $tone)
+                    option("Friendly", subtitle: "Warm and approachable", symbol: "face.smiling", selection: $tone)
+                    option("Direct", subtitle: "Straight to the point", symbol: "arrow.right", selection: $tone)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Length").font(.headline)
+                HStack(spacing: 10) {
+                    option("Short", subtitle: "Key points only", symbol: "text.alignleft", selection: $detail)
+                    option("Detailed", subtitle: "Full rewrite", symbol: "text.book.closed", selection: $detail)
+                }
+            }
+        }
+    }
+
+    private func option(
+        _ value: String,
+        subtitle: LocalizedStringKey,
+        symbol: String,
+        selection: Binding<String>
+    ) -> some View {
+        let isSelected = selection.wrappedValue == value
+        return Button { selection.wrappedValue = value } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: symbol)
+                    .foregroundStyle(HomePalette.lavender)
+                Spacer(minLength: 8)
+                Text(LocalizedStringKey(value)).font(.headline)
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+            .padding(14)
+            .background(
+                isSelected
+                    ? HomePalette.lavender.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    : (colorScheme == .dark ? HomePalette.background : Color.clear),
+                in: RoundedRectangle(cornerRadius: 16)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(isSelected ? HomePalette.lavender : HomePalette.border)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
 struct WorkspaceInput: Hashable, Identifiable {
     let id = UUID()
     let action: WorkspaceAction
@@ -359,15 +420,7 @@ private extension TaskWorkspaceView {
                 .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border, lineWidth: 1))
 
-                Picker("Tone", selection: $tone) {
-                    Text("Professional").tag("Professional")
-                    Text("Friendly").tag("Friendly")
-                    Text("Direct").tag("Direct")
-                }
-                Picker("Length", selection: $detail) {
-                    Text("Short").tag("Short")
-                    Text("Detailed").tag("Detailed")
-                }
+                RewriteOptionsView(tone: $tone, detail: $detail)
 
                 Button(action: run) {
                     Label("Rewrite", systemImage: "sparkles")
