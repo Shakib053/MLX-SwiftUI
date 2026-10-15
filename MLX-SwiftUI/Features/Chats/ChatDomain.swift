@@ -2,12 +2,15 @@ import Foundation
 
 enum ChatBackendError: LocalizedError {
     case emptyResponse
+    case promptTooLong
     case simulatedLocalModelLoadFailure
 
     var errorDescription: String? {
         switch self {
         case .emptyResponse:
             return String(localized: "The model returned an empty response.")
+        case .promptTooLong:
+            return String(localized: "This message is too long for the selected model. Shorten it and try again.")
         case .simulatedLocalModelLoadFailure:
             return String(localized: "Simulated local model download failure")
         }
@@ -75,11 +78,6 @@ struct ChatMessage: Identifiable, Equatable {
     var promptTokens: Int?
     var completionTokens: Int?
 
-    var totalTokens: Int? {
-        guard let promptCount = promptTokens, let completionCount = completionTokens else { return nil }
-        return promptCount + completionCount
-    }
-
     init(
         id: UUID = UUID(),
         role: Role,
@@ -131,74 +129,5 @@ extension String {
         guard length > 0 else { return "" }
         guard count > length else { return self }
         return String(prefix(length - 1)) + "…"
-    }
-}
-
-enum ChatHistoryPolicy {
-    // These limits keep the SwiftData store and the chat list bounded on device.
-    static let maxStoredMessages = 200
-    static let maxMessageCharacters = 20_000
-    static let maxStoredCharacters = 500_000
-
-    // Rehydrating the entire store into an LLM context can exceed a model's context
-    // window even when the store itself is healthy.
-    static let maxFoundationMessages = 12
-    static let maxModelMessages = 60
-    static let maxModelCharacters = 120_000
-
-    static func normalized(_ messages: [ChatMessage]) -> [ChatMessage] {
-        messages.map { message in
-            ChatMessage(
-                id: message.id,
-                role: message.role,
-                text: message.text.truncated(to: maxMessageCharacters),
-                modelID: message.modelID,
-                isInterrupted: message.isInterrupted
-            )
-        }
-    }
-
-    static func storedMessages(_ messages: [ChatMessage]) -> [ChatMessage] {
-        trim(normalized(messages), maxMessages: maxStoredMessages, maxCharacters: maxStoredCharacters)
-    }
-
-    static func modelMessages(_ messages: [ChatMessage], maxMessages: Int = maxModelMessages) -> [ChatMessage] {
-        trim(normalized(messages), maxMessages: maxMessages, maxCharacters: maxModelCharacters)
-    }
-
-    /// History seeded into a freshly loaded model. Trailing empty or interrupted
-    /// assistant turns are dropped so a model switch never replays a cancelled
-    /// partial reply to the next model as if it were a complete answer.
-    static func modelSeed(_ messages: [ChatMessage]) -> [ChatMessage] {
-        var seeded = modelMessages(messages)
-        while let last = seeded.last,
-              last.text.isEmpty || (last.role == .assistant && last.isInterrupted) {
-            seeded.removeLast()
-        }
-        return seeded
-    }
-
-    private static func trim(
-        _ messages: [ChatMessage],
-        maxMessages: Int,
-        maxCharacters: Int
-    ) -> [ChatMessage] {
-        guard !messages.isEmpty else { return [] }
-
-        var result: [ChatMessage] = []
-        var characterCount = 0
-        for message in messages.reversed() {
-            guard result.count < maxMessages else { break }
-            let nextCount = characterCount + message.text.count
-            guard nextCount <= maxCharacters || result.isEmpty else { break }
-            result.append(message)
-            characterCount = nextCount
-        }
-
-        result.reverse()
-        while result.first?.role == .assistant {
-            result.removeFirst()
-        }
-        return result
     }
 }

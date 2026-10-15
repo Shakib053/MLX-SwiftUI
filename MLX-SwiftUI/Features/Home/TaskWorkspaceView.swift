@@ -786,10 +786,13 @@ private extension TaskWorkspaceView {
                     guard appState.downloadedModelIDs.contains(appState.activeModelID) else { throw WorkspaceError.unavailable }
                     let model = try await MLXModelLoader.load(configuration: appState.activeModel.configuration, progressHandler: { _ in })
                     try Task.checkCancellation()
-                    backend = LocalMLXChatBackend(model: model, instructions: ChatRequest.defaultSystemPrompt, additionalContext: [:])
+                    backend = LocalMLXChatBackend(model: model)
                     #endif
                 }
-                let request = ChatRequest(prompt: prompt(for: source))
+                let request = ChatRequest(
+                    prompt: prompt(for: source),
+                    contextWindowTokens: appState.activeModel.contextWindowTokens
+                )
                 var output = ""
                 for try await event in backend.streamResponse(for: request) {
                     try Task.checkCancellation()

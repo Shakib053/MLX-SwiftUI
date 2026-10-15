@@ -40,12 +40,7 @@ struct ChatMessageRow: View {
             }
 
             if message.role == .assistant, let promptTokens = message.promptTokens, let completionTokens = message.completionTokens {
-                HStack(spacing: 6) {
-                    Label("\(promptTokens) in / \(completionTokens) out", systemImage: "gauge.with.dots.needle.bottom.50percent")
-                    if let totalTokens = message.totalTokens {
-                        Text("• \(totalTokens) tokens total")
-                    }
-                }
+                Label("Question: \(promptTokens) • Generated: \(completionTokens) tokens", systemImage: "gauge.with.dots.needle.bottom.50percent")
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
             }
