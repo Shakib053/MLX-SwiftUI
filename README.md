@@ -1,22 +1,19 @@
 # MLX-SwiftUI
 
-Native iOS chat app that runs a local LLM experience with SwiftUI, Apple MLX, and Apple Foundation Models as an on-device fallback.
+Native iOS AI app for chatting and working with text, images, and documents using SwiftUI, Apple MLX, and Apple Foundation Models.
 
 ## Overview
 
-MLX-SwiftUI is a compact AI chat application built to demonstrate practical local language model integration on iOS. On physical devices, the app can load Qwen3 0.6B 4-bit, Gemma 3 1B 4-bit, or Llama 3.2 1B 4-bit through MLX. When a local model cannot be used, the app falls back to Apple Foundation Models when they are available.
+MLX-SwiftUI is a local-first AI workspace for iOS. It offers chat alongside focused tools for summarizing, rewriting, extracting details, reading text from images, and analyzing documents. On physical devices, it can use Apple Foundation Models when available or download an MLX model from its catalog.
 
 ## Features
 
-- On-device chat interface built with SwiftUI.
-- Qwen3 0.6B 4-bit model loading through MLX.
-- Gemma 3 1B QAT 4-bit and Llama 3.2 1B 4-bit model downloads.
-- Persistent model selection with up to two locally cached models.
-- Apple Foundation Models fallback that keeps chat processing on device.
-- Async model initialization and prompt handling.
-- Loading, ready, error, and retry UI states.
-- Clean chat composer with user and assistant message bubbles.
-- Local-first interaction flow on physical devices.
+- **Chat:** Stream responses, continue saved conversations, regenerate a response, and switch between available models.
+- **Task workspace:** Summarize or rewrite text, extract dates and action items, read text from photos, and analyze imported documents. Save useful results for later.
+- **History:** Search saved conversations and task results; rename, pin, or delete conversations.
+- **Model catalog:** Choose from Qwen 3 0.6B, Gemma 3 1B, and Llama 3.2 1B 4-bit MLX models on physical devices. Track downloads and retry failed loads.
+- **On-device options:** Use Apple Foundation Models when available, or select a downloaded MLX model as the default for new chats.
+- **Personalization:** Choose system, light, or dark appearance and toggle haptic feedback.
 
 ## Project Structure
 
@@ -32,6 +29,7 @@ MLX-SwiftUI
 │   └── Models
 ├── Features
 │   ├── Chats
+│   ├── Home
 │   ├── Models
 │   ├── Onboarding
 │   └── Settings
@@ -51,7 +49,7 @@ MLX-SwiftUI
 
 - `MLXSwiftUIApp` defines the app entry point and launches the main SwiftUI scene.
 - `ContentView` owns application state, appearance, and onboarding presentation.
-- `MainTabView` owns type-safe navigation between Chats, Models, and Settings.
+- `MainTabView` owns type-safe navigation between Home, Models, History, and Settings.
 - Each folder under `Features` owns its screens, state, and feature-specific components.
 - `ChatViewModel` selects the chat backend and coordinates model initialization, prompts, streaming responses, and chat state.
 - `Core/Models` contains application-wide domain models, while `Shared/UI` contains presentation primitives used by multiple features.
@@ -64,14 +62,6 @@ MLX-SwiftUI
 3. Build and run the app on an iPhone, iPad, or simulator.
 4. On physical devices, the model may need to download on first launch. Later launches reuse the cached model.
 5. On simulator, the app uses Apple Foundation Models when they are available; it does not call a hosted chat provider.
-
-## Future Improvements
-
-- Streaming responses.
-- Chat history persistence.
-- Additional model families and configurable model limits.
-- Better error handling.
-- Performance optimization.
 
 ## Localization
 
