@@ -213,26 +213,32 @@ struct ChatView: View {
 
     private var conversationView: some View {
         VStack(spacing: 0) {
-            if viewModel.historyLimitReached {
-                Label(
-                    "Older messages were removed to keep this chat within the device limit.",
-                    systemImage: "info.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+            if let promptError = viewModel.promptError {
+                Label(promptError, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
             }
-
-            if viewModel.olderMessagesOmittedFromContext {
+            if let usage = viewModel.contextUsage {
                 Label(
-                    "Older messages remain in this chat but may be omitted from new replies.",
-                    systemImage: "info.circle"
+                    "About \(usage.inputTokens.formatted()) / \(usage.windowTokens.formatted()) context tokens used as input",
+                    systemImage: "gauge.with.dots.needle.bottom.50percent"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+                if usage.omittedMessages > 0 {
+                    Label(
+                        "Earlier messages remain in this chat but were not sent to the model.",
+                        systemImage: "info.circle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                }
             }
 
             ScrollViewReader { proxy in
@@ -349,7 +355,8 @@ struct ChatView: View {
     }
 
     private func resetComposerAndFocus() {
-        composerText = ""
+        composerText = viewModel.rejectedPrompt ?? ""
+        viewModel.rejectedPrompt = nil
         composerID = UUID()
         Task { @MainActor in
             await Task.yield()

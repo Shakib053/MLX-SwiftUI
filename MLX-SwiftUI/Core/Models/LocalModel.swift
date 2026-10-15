@@ -73,7 +73,7 @@ struct LocalModel: Identifiable, Equatable {
         license: String(localized: "Gemma Terms of Use. The MLX Community conversion is based on Google Gemma 3."),
         colors: [.blue, .cyan],
         configuration: LLMRegistry.gemma3_1B_qat_4bit,
-        contextWindowTokens: 8192
+        contextWindowTokens: 32768
     )
 
     static let llama = LocalModel(

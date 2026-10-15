@@ -29,7 +29,9 @@ final class ChatViewModel {
     var isRenaming = false
     var renameText = ""
     var persistenceError: String?
-    var historyLimitReached = false
+    var promptError: String?
+    var rejectedPrompt: String?
+    var contextUsage: ChatContextUsage?
     private(set) var loadedModelID: String?
 
     var loadingTitle: String {
@@ -71,7 +73,6 @@ final class ChatViewModel {
     private var currentModelID = LocalModel.qwen.id
     private var availableModelIDs: Set<String> = []
     private var streamedResponseText = ""
-    private var streamedCharacterCount = 0
     private var pendingStreamFlushTask: Task<Void, Never>?
     private var responseStreamFilter = ChatResponseSanitizer.StreamFilter()
     private var modelContext: SwiftData.ModelContext?
@@ -98,16 +99,6 @@ final class ChatViewModel {
     /// active model while an existing conversation restores its recorded model.
     var currentModel: LocalModel {
         LocalModel.catalog.first { $0.id == currentModelID } ?? .qwen
-    }
-
-    var olderMessagesOmittedFromContext: Bool {
-        messages.count > modelHistoryLimit
-    }
-
-    private var modelHistoryLimit: Int {
-        backendMode == .foundation
-            ? ChatHistoryPolicy.maxFoundationMessages
-            : ChatHistoryPolicy.maxModelMessages
     }
 
     /// Identifier recorded on assistant messages produced by the current backend.
@@ -183,6 +174,7 @@ final class ChatViewModel {
         localLoadingTask?.cancel()
         responseTask?.cancel()
         backend = nil
+        contextUsage = nil
         #if !targetEnvironment(simulator)
         // The old container was just released; drop its cached GPU allocations
         // so the incoming model starts with a clean memory budget.
@@ -207,6 +199,7 @@ final class ChatViewModel {
         localLoadingTask?.cancel()
         responseTask?.cancel()
         backend = nil
+        contextUsage = nil
         backendMode = nil
         #if !targetEnvironment(simulator)
         MLX.Memory.clearCache()
@@ -278,19 +271,8 @@ final class ChatViewModel {
                         }
                     }
                 )
-                let localHistory = ChatHistoryPolicy.modelSeed(self.messages)
-                    .compactMap { message -> Chat.Message? in
-                        guard !message.text.isEmpty else { return nil }
-                        switch message.role {
-                        case .user: return .user(message.text)
-                        case .assistant: return .assistant(message.text)
-                        }
-                    }
                 let localBackend = LocalMLXChatBackend(
-                    model: container,
-                    history: localHistory,
-                    instructions: ChatRequest.defaultSystemPrompt,
-                    additionalContext: ["enable_thinking": true]
+                    model: container
                 )
                 self.localDownloadCompleted(with: localBackend, modelID: model.id)
                 #endif
@@ -373,7 +355,6 @@ final class ChatViewModel {
     func sendPrompt(_ text: String) -> Bool {
         let prompt = text
             .trimmingCharacters(in: .whitespacesAndNewlines)
-            .truncated(to: ChatHistoryPolicy.maxMessageCharacters)
         guard !prompt.isEmpty, !isSending else { return false }
 
         if case .blocked(let category) = ChatSafetyGate.evaluate(prompt) {
@@ -384,9 +365,11 @@ final class ChatViewModel {
         guard let backend else { return false }
 
         isSending = true
+        contextUsage = nil
+        promptError = nil
+        rejectedPrompt = nil
         messages.append(ChatMessage(role: .user, text: prompt))
         messages.append(ChatMessage(role: .assistant, text: "", modelID: assistantModelID))
-        applyHistoryLimit()
 
         ensureConversation()
         persistMessages(force: true)
@@ -406,7 +389,6 @@ final class ChatViewModel {
                 modelID: ChatMessage.safetyModelID
             )
         )
-        applyHistoryLimit()
         ensureConversation()
         persistMessages(force: true)
     }
@@ -430,7 +412,6 @@ final class ChatViewModel {
                     modelID: ChatMessage.safetyModelID
                 )
             )
-            applyHistoryLimit()
             persistMessages(force: true)
             return true
         }
@@ -439,15 +420,11 @@ final class ChatViewModel {
             messages.removeLast()
         }
         isSending = true
+        contextUsage = nil
         messages.append(ChatMessage(role: .assistant, text: "", modelID: assistantModelID))
-        applyHistoryLimit()
         persistMessages(force: true)
         responseTask = Task { [weak self] in
-            await self?.generateResponse(
-                for: lastUserMessage.text,
-                using: backend,
-                rebuildLocalSession: true
-            )
+            await self?.generateResponse(for: lastUserMessage.text, using: backend, isRegeneration: true)
         }
         return true
     }
@@ -455,22 +432,20 @@ final class ChatViewModel {
     private func generateResponse(
         for prompt: String,
         using backend: any ChatBackend,
-        rebuildLocalSession: Bool = false
+        isRegeneration: Bool = false
     ) async {
         defer { finishStreaming() }
 
         do {
             try Task.checkCancellation()
+            var priorMessages = Array(messages.dropLast())
+            if priorMessages.last?.role == .user { priorMessages.removeLast() }
             let request = ChatRequest(
                 prompt: prompt,
-                history: ChatHistoryPolicy.modelMessages(
-                    Array(messages.dropLast(2)),
-                    maxMessages: modelHistoryLimit
-                ),
-                rebuildLocalSession: rebuildLocalSession
+                history: priorMessages,
+                contextWindowTokens: backendMode == .local ? currentModel.contextWindowTokens : nil
             )
             streamedResponseText = ""
-            streamedCharacterCount = 0
             responseStreamFilter = ChatResponseSanitizer.StreamFilter()
             let stream = backend.streamResponse(for: request)
             let usage = try await consumeResponseStream(stream)
@@ -479,6 +454,17 @@ final class ChatViewModel {
             cancelPendingStreamFlush()
             if error is CancellationError || Task.isCancelled {
                 handleStreamCancellation()
+            } else if let backendError = error as? ChatBackendError,
+                      case .promptTooLong = backendError {
+                messages.removeLast()
+                if !isRegeneration { messages.removeLast() }
+                rejectedPrompt = prompt
+                promptError = backendError.localizedDescription
+                if messages.isEmpty {
+                    deleteConversation()
+                } else {
+                    persistMessages(force: true)
+                }
             } else if let lastIndex = messages.indices.last {
                 messages[lastIndex].text = String(localized: "Error: \(error.localizedDescription)")
             }
@@ -499,6 +485,8 @@ final class ChatViewModel {
                     appendStreamedChunk(visibleText)
                     scheduleStreamedTextFlush()
                 }
+            case .context(let usage):
+                contextUsage = usage
             case .usage(let promptTokens, let completionTokens):
                 receivedPromptTokens = promptTokens
                 receivedCompletionTokens = completionTokens
@@ -558,15 +546,7 @@ private extension ChatViewModel {
     /// straight into `messages` thrashes SwiftUI and SwiftData. Batching updates to
     /// ~20 per second keeps streaming smooth instead of flickering.
     func appendStreamedChunk(_ chunk: String) {
-        let remainingCapacity = ChatHistoryPolicy.maxMessageCharacters - streamedCharacterCount
-        guard remainingCapacity > 0 else { return }
-        if chunk.count <= remainingCapacity {
-            streamedResponseText += chunk
-            streamedCharacterCount += chunk.count
-        } else {
-            streamedResponseText += chunk.prefix(remainingCapacity)
-            streamedCharacterCount = ChatHistoryPolicy.maxMessageCharacters
-        }
+        streamedResponseText += chunk
     }
 
     func scheduleStreamedTextFlush() {
@@ -593,7 +573,6 @@ private extension ChatViewModel {
     func finishStreaming() {
         cancelPendingStreamFlush()
         streamedResponseText = ""
-        streamedCharacterCount = 0
         responseStreamFilter = ChatResponseSanitizer.StreamFilter()
         isSending = false
         responseTask = nil
@@ -658,11 +637,6 @@ extension ChatViewModel {
 
     private func persistMessages(force: Bool = false) {
         guard let conversation else { return }
-        let limitedMessages = ChatHistoryPolicy.storedMessages(messages)
-        if limitedMessages != messages {
-            historyLimitReached = true
-            messages = limitedMessages
-        }
         conversation.modelID = currentModelID
         conversation.backendMode = backendMode
         conversation.updatedAt = .now
@@ -721,14 +695,6 @@ extension ChatViewModel {
         }
     }
 
-    private func applyHistoryLimit() {
-        let limitedMessages = ChatHistoryPolicy.storedMessages(messages)
-        if limitedMessages != messages {
-            messages = limitedMessages
-            historyLimitReached = true
-        }
-    }
-
     private func loadConversationIfPresent(context: SwiftData.ModelContext) {
         guard let conversationID else { return }
         var descriptor = FetchDescriptor<Conversation>(
@@ -750,8 +716,7 @@ extension ChatViewModel {
                         completionTokens: $0.completionTokens
                     )
                 }
-                messages = ChatHistoryPolicy.storedMessages(loadedMessages)
-                historyLimitReached = messages != loadedMessages
+                messages = loadedMessages
             }
         } catch {
             persistenceError = String(localized: "Could not load this conversation: \(error.localizedDescription)")
