@@ -24,6 +24,6 @@ struct MainTabView: View {
                 SettingsView(showOnboarding: showOnboarding)
             }
         }
-        .tint(.indigo)
+        .tint(AppPalette.accent)
     }
 }

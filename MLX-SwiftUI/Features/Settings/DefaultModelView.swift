@@ -93,6 +93,8 @@ struct DefaultModelView: View {
                 #endif
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(AppBackground())
         .navigationTitle("Default Model")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)

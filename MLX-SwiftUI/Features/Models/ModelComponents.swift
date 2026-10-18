@@ -23,7 +23,7 @@ struct ModelStat: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).foregroundStyle(.indigo)
+            Image(systemName: icon).foregroundStyle(AppPalette.accent)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label).font(.caption2).foregroundStyle(.secondary)
                 Text(value).font(.caption.weight(.semibold)).lineLimit(1)

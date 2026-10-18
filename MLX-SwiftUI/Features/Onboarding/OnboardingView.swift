@@ -30,11 +30,11 @@ struct OnboardingView: View {
                     VStack(spacing: 24) {
                         ZStack {
                             Circle()
-                                .fill(.indigo.opacity(0.14))
+                                .fill(AppPalette.accent.opacity(0.14))
                                 .frame(width: 150, height: 150)
                             Image(systemName: pages[index].symbol)
                                 .font(.system(size: 62, weight: .medium))
-                                .foregroundStyle(.indigo)
+                                .foregroundStyle(AppPalette.accent)
                         }
                         Text(pages[index].title)
                             .font(.largeTitle.bold())
@@ -60,9 +60,7 @@ struct OnboardingView: View {
             .font(.headline)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.roundedRectangle(radius: 15))
-            .tint(.indigo)
+            .appPrimaryButton()
             .padding(24)
         }
         .background(AppBackground())

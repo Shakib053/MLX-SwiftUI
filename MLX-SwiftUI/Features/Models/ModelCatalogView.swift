@@ -55,12 +55,12 @@ struct ModelCatalogView: View {
                 Button(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Installed") : String(localized: "Download")) {
                     beginDownload(model)
                 }
-                .buttonStyle(.borderedProminent)
+                .appPrimaryButton()
                 .disabled(appState.downloadedModelIDs.contains(model.id))
             }
         }
         .padding(16)
-        .glassCard(cornerRadius: 20)
+        .appCard(cornerRadius: 20)
     }
 
     private func beginDownload(_ model: LocalModel) {

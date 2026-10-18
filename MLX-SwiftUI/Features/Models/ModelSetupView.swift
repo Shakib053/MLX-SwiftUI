@@ -64,6 +64,8 @@ struct ModelSetupView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
             .navigationTitle("Model Setup")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

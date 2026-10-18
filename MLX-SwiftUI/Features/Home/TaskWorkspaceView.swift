@@ -17,6 +17,26 @@ enum WorkspaceAction: String, Hashable, CaseIterable {
         case .analyzeDocument: String(localized: "Analyze Document")
         }
     }
+
+    var symbol: String {
+        switch self {
+        case .summarize: "text.alignleft"
+        case .rewrite: "pencil.line"
+        case .extract: "checklist"
+        case .understandImage: "photo"
+        case .analyzeDocument: "doc.text"
+        }
+    }
+
+    var subtitle: LocalizedStringKey {
+        switch self {
+        case .summarize: "Turn long text into a clear, short summary, privately on your iPhone."
+        case .rewrite: "Make your text clearer, shorter, more professional, or in a different style."
+        case .extract: "Turn your text into structured information with AI."
+        case .understandImage: "Extract and understand text from images, screenshots, and photos using local AI models."
+        case .analyzeDocument: "Find key points and answers in your documents, privately on your iPhone."
+        }
+    }
 }
 
 enum WorkspaceSourceKind: String, Hashable {
@@ -61,7 +81,7 @@ private struct RewriteOptionsView: View {
         return Button { selection.wrappedValue = value } label: {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: symbol)
-                    .foregroundStyle(HomePalette.lavender)
+                    .foregroundStyle(AppPalette.accent)
                 Spacer(minLength: 8)
                 Text(LocalizedStringKey(value)).font(.headline)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
@@ -70,13 +90,13 @@ private struct RewriteOptionsView: View {
             .padding(14)
             .background(
                 isSelected
-                    ? HomePalette.lavender.opacity(colorScheme == .dark ? 0.25 : 0.12)
-                    : (colorScheme == .dark ? HomePalette.background : Color.clear),
+                    ? AppPalette.accent.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    : (colorScheme == .dark ? AppPalette.background : Color.clear),
                 in: RoundedRectangle(cornerRadius: 16)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(isSelected ? HomePalette.lavender : HomePalette.border)
+                    .strokeBorder(isSelected ? AppPalette.accent : AppPalette.border)
             )
         }
         .buttonStyle(.plain)
@@ -147,32 +167,29 @@ struct TaskWorkspaceView: View {
             } else if input.action == .rewrite && result.isEmpty && !isWorking {
                 rewriteView
             } else {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(spacing: 12) {
-                    Image(systemName: input.action == .understandImage ? "photo" : "sparkles")
-                        .font(.title2).foregroundStyle(.indigo)
-                        .frame(width: 48, height: 48)
-                        .background(.indigo.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                    Text(input.action.title).font(.title.bold())
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        workspaceHeader
+                        if !result.isEmpty {
+                            resultSection
+                        } else if isWorking {
+                            workingSection
+                        } else {
+                            inputSection
+                        }
+                    }
+                    .padding(20)
+                    .frame(maxWidth: 650, alignment: .leading)
+                    .frame(maxWidth: .infinity)
                 }
-                if input.action == .understandImage {
-                    Text("Extract and understand text from images, screenshots, and photos using local AI models.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }
-
-                if !result.isEmpty { resultSection } else if isWorking { workingSection } else { inputSection }
             }
-            .padding(20)
-            .frame(maxWidth: 650, alignment: .leading)
-            .frame(maxWidth: .infinity)
         }
         .navigationTitle(input.action.title)
         .navigationBarTitleDisplayMode(.inline)
-            }
-        }
-        .background(HomePalette.background)
-        .tint(HomePalette.lavender)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.visible, for: .tabBar)
+        .background(AppPalette.background)
+        .tint(AppPalette.accent)
         .onAppear {
             if sourceTitle.isEmpty {
                 text = input.text
@@ -240,24 +257,10 @@ private extension TaskWorkspaceView {
     private var extractView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                workspaceHeader(title: "Extract", subtitle: "Turn your text into structured information with AI.")
+                workspaceHeader
 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("SOURCE TEXT")
-                            .font(.caption2.weight(.bold))
-                            .tracking(1)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button {
-                            if let pasted = UIPasteboard.general.string { text = pasted }
-                        } label: {
-                            Label("Paste", systemImage: "doc.on.clipboard")
-                                .font(.caption.weight(.medium))
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(HomePalette.lavender)
-                    }
+                    sourceTextHeading
                     sourceTextEditor(placeholder: "Paste text to extract key information...", accessibilityLabel: "Text to extract")
                         .frame(height: 210)
                     characterCount
@@ -269,8 +272,7 @@ private extension TaskWorkspaceView {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(HomePalette.lavender)
+                .appPrimaryButton()
                 .disabled(!canRun)
 
                 Label("Extract names, dates, key points, and more.", systemImage: "lightbulb")
@@ -278,7 +280,7 @@ private extension TaskWorkspaceView {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
-                    .background(HomePalette.lavender.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+                    .background(AppPalette.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
 
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 #if !targetEnvironment(simulator)
@@ -298,7 +300,7 @@ private extension TaskWorkspaceView {
     private var summarizeView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                workspaceHeader(title: "Summarize", subtitle: "Turn long text into a clear, short summary, privately on your iPhone.")
+                workspaceHeader
 
                 HStack(spacing: 4) {
                     summaryTab(.text, title: "Text", symbol: "doc.text")
@@ -306,7 +308,7 @@ private extension TaskWorkspaceView {
                     summaryTab(.image, title: "Image", symbol: "photo")
                 }
                 .padding(5)
-                .background(colorScheme == .dark ? HomePalette.card : HomePalette.lavender.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+                .background(colorScheme == .dark ? AppPalette.card : AppPalette.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -323,29 +325,18 @@ private extension TaskWorkspaceView {
                                     .font(.caption.weight(.medium))
                             }
                             .buttonStyle(.bordered)
-                            .tint(HomePalette.lavender)
+                            .tint(AppPalette.accent)
                         }
                     }
                     if summarySource == .text {
                         sourceTextEditor(placeholder: "Paste text to summarize...", accessibilityLabel: "Text to summarize")
                             .frame(height: 210)
                     } else if summarySource == .document {
-                        VStack(alignment: .leading, spacing: 14) {
-                            if !text.isEmpty {
-                                Label(sourceTitle, systemImage: "doc.text").lineLimit(1)
-                                Button("View source") { showsSource = true }
-                            }
-                            Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
-                                .buttonStyle(.borderedProminent)
-                                .tint(HomePalette.lavender)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 170, alignment: .center)
-                        .padding(16)
-                        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                        documentPicker
                     } else {
-                        summaryImagePicker
+                        sourceImagePicker
                             .padding(16)
-                            .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                            .appCard(cornerRadius: 16)
                     }
                     characterCount
                 }
@@ -364,8 +355,7 @@ private extension TaskWorkspaceView {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(HomePalette.lavender)
+                .appPrimaryButton()
                 .disabled(!canRun)
 
                 if isImporting { ProgressView("Reading content…") }
@@ -386,39 +376,15 @@ private extension TaskWorkspaceView {
 
     private var rewriteView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                workspaceHeader(title: "Rewrite", subtitle: "Make your text clearer, shorter, more professional, or in a different style.")
+            VStack(alignment: .leading, spacing: 22) {
+                workspaceHeader
 
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $text)
-                        .scrollContentBackground(.hidden)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 12)
-                        .padding(.bottom, 38)
-                        .accessibilityLabel("Text to rewrite")
-                    if text.isEmpty {
-                        Text("Paste your text here...\n(e.g. email, message, article, or any text)")
-                            .font(.subheadline)
-                            .lineSpacing(4)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 17)
-                            .padding(.top, 18)
-                            .allowsHitTesting(false)
-                    }
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.text")
-                        characterCount
-                        Spacer()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                    .allowsHitTesting(false)
+                VStack(alignment: .leading, spacing: 8) {
+                    sourceTextHeading
+                    sourceTextEditor(placeholder: "Paste text to rewrite...", accessibilityLabel: "Text to rewrite")
+                        .frame(height: 210)
+                    characterCount
                 }
-                .frame(height: 200)
-                .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border, lineWidth: 1))
 
                 RewriteOptionsView(tone: $tone, detail: $detail)
 
@@ -428,8 +394,7 @@ private extension TaskWorkspaceView {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(HomePalette.lavender)
+                .appPrimaryButton()
                 .disabled(!canRun)
 
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
@@ -453,22 +418,40 @@ private extension TaskWorkspaceView {
             && text.count <= 10_000 && !isImporting && appState.hasUsableDefaultModel
     }
 
+    private var sourceTextHeading: some View {
+        HStack {
+            Text("SOURCE TEXT")
+                .font(.caption2.weight(.bold))
+                .tracking(1)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                if let pasted = UIPasteboard.general.string { text = pasted }
+            } label: {
+                Label("Paste", systemImage: "doc.on.clipboard")
+                    .font(.caption.weight(.medium))
+            }
+            .buttonStyle(.bordered)
+            .tint(AppPalette.accent)
+        }
+    }
+
     private var characterCount: some View {
         Text("\(text.count.formatted()) / 10,000 characters")
             .font(.caption)
             .foregroundStyle(text.count > 10_000 ? .red : .secondary)
     }
 
-    private func workspaceHeader(title: LocalizedStringKey, subtitle: LocalizedStringKey) -> some View {
+    private var workspaceHeader: some View {
         HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "sparkles")
+            Image(systemName: input.action.symbol)
                 .font(.title2)
-                .foregroundStyle(colorScheme == .dark ? .white : HomePalette.lavender)
+                .foregroundStyle(AppPalette.accent)
                 .frame(width: 52, height: 52)
-                .background(HomePalette.lavender.opacity(colorScheme == .dark ? 0.75 : 0.12), in: RoundedRectangle(cornerRadius: 14))
+                .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.title.bold())
-                Text(subtitle)
+                Text(input.action.title).font(.title.bold())
+                Text(input.action.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -482,7 +465,7 @@ private extension TaskWorkspaceView {
                 VStack(spacing: 10) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 36, weight: .light))
-                        .foregroundStyle(HomePalette.lavender.opacity(0.7))
+                        .foregroundStyle(AppPalette.accent.opacity(0.7))
                     Text(placeholder)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -496,11 +479,14 @@ private extension TaskWorkspaceView {
             TextEditor(text: $text)
                 .padding(12)
                 .scrollContentBackground(.hidden)
-                .opacity(text.isEmpty ? 0.12 : 1)
                 .accessibilityLabel(accessibilityLabel)
         }
-        .background(HomePalette.card.opacity(colorScheme == .dark ? 1 : 0.55), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(HomePalette.border))
+        .background(AppPalette.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(AppPalette.border)
+                .allowsHitTesting(false)
+        }
     }
 
     private func summaryTab(_ kind: WorkspaceSourceKind, title: LocalizedStringKey, symbol: String) -> some View {
@@ -514,20 +500,34 @@ private extension TaskWorkspaceView {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(summarySource == kind ? HomePalette.lavender : Color.clear, in: RoundedRectangle(cornerRadius: 16))
+                .background(summarySource == kind ? AppPalette.accentFill : Color.clear, in: RoundedRectangle(cornerRadius: 16))
                 .foregroundStyle(summarySource == kind ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
     }
 
-    private var summaryImagePicker: some View {
+    private var documentPicker: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if !text.isEmpty {
+                Label(sourceTitle, systemImage: "doc.text").lineLimit(1)
+                Button("View source") { showsSource = true }
+            }
+            Button("Choose document", systemImage: "doc.badge.plus") { showsFileImporter = true }
+                .appPrimaryButton()
+        }
+        .frame(maxWidth: .infinity, minHeight: 170, alignment: .center)
+        .padding(16)
+        .appCard(cornerRadius: 16)
+    }
+
+    private var sourceImagePicker: some View {
         VStack(spacing: 16) {
             if text.isEmpty {
                 Image(systemName: "photo.badge.plus")
                     .font(.system(size: 42))
-                    .foregroundStyle(HomePalette.lavender)
+                    .foregroundStyle(AppPalette.accent)
                     .frame(width: 88, height: 88)
-                    .background(HomePalette.lavender.opacity(0.1), in: Circle())
+                    .background(AppPalette.accent.opacity(0.1), in: Circle())
                 VStack(spacing: 4) {
                     Text("Add an image").font(.title3.bold())
                     Text("Choose from Photos or capture with Camera.")
@@ -538,9 +538,9 @@ private extension TaskWorkspaceView {
                 HStack(spacing: 12) {
                     Image(systemName: "text.viewfinder")
                         .font(.title2)
-                        .foregroundStyle(HomePalette.lavender)
+                        .foregroundStyle(AppPalette.accent)
                         .frame(width: 56, height: 56)
-                        .background(HomePalette.lavender.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                        .background(AppPalette.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(sourceTitle).font(.headline).lineLimit(1)
                         Label("\(text.count) characters found", systemImage: "checkmark")
@@ -557,8 +557,7 @@ private extension TaskWorkspaceView {
                         .minimumScaleFactor(0.8)
                 }
                 .frame(maxWidth: .infinity)
-                .buttonStyle(.borderedProminent)
-                .tint(HomePalette.lavender)
+                .appPrimaryButton()
                 if text.isEmpty {
                     Button {
                         showsCamera = true
@@ -595,7 +594,7 @@ private extension TaskWorkspaceView {
     private func lengthCard(_ value: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, symbol: String) -> some View {
         Button { detail = value } label: {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: symbol).foregroundStyle(HomePalette.lavender)
+                Image(systemName: symbol).foregroundStyle(AppPalette.accent)
                 Spacer(minLength: 8)
                 Text(title).font(.headline)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
@@ -604,16 +603,16 @@ private extension TaskWorkspaceView {
             .padding(14)
             .background(
                 detail == value
-                    ? HomePalette.lavender.opacity(colorScheme == .dark ? 0.25 : 0.12)
-                    : (colorScheme == .dark ? HomePalette.background : Color.clear),
+                    ? AppPalette.accent.opacity(colorScheme == .dark ? 0.25 : 0.12)
+                    : (colorScheme == .dark ? AppPalette.background : Color.clear),
                 in: RoundedRectangle(cornerRadius: 16)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .strokeBorder(
                         detail == value
-                            ? HomePalette.lavender
-                            : (colorScheme == .dark ? HomePalette.border : Color.secondary.opacity(0.25))
+                            ? AppPalette.accent
+                            : AppPalette.border
                     )
             )
         }
@@ -629,24 +628,25 @@ private extension TaskWorkspaceView {
                     continueAfterModelSetup = true
                     showsModelSetup = true
                 }
-                    .buttonStyle(.borderedProminent)
+                    .appPrimaryButton()
             }
             #endif
-            if sourceKind != .text && !text.isEmpty {
+            if input.action != .analyzeDocument && sourceKind != .text && !text.isEmpty {
                 Label(sourceTitle, systemImage: sourceKind == .document ? "doc.text" : "text.viewfinder")
                 Button("View source") { showsSource = true }
+            }
+            if input.action == .analyzeDocument {
+                documentPicker
             }
             if input.action == .understandImage && text.isEmpty {
                 imageChooser
             }
-            TextEditor(text: $text)
-                .frame(minHeight: input.action == .understandImage ? 120 : 180)
-                .padding(8)
-                .scrollContentBackground(.hidden)
-                .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityLabel("Source text")
-            Text("\(text.count) / 10,000 characters")
-                .font(.caption).foregroundStyle(text.count > 10_000 ? .red : .secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                sourceTextHeading
+                sourceTextEditor(placeholder: "Paste or import source text...", accessibilityLabel: "Source text")
+                    .frame(height: 210)
+                characterCount
+            }
 
             if input.action == .understandImage {
                 if !text.isEmpty {
@@ -658,9 +658,9 @@ private extension TaskWorkspaceView {
                     .font(.caption).foregroundStyle(.secondary)
             }
             if input.action == .analyzeDocument {
-                Button("Choose document", systemImage: "doc") { showsFileImporter = true }
                 TextField("Optional question about the document", text: $question)
-                    .textFieldStyle(.roundedBorder)
+                    .padding(14)
+                    .appCard(cornerRadius: 16)
             }
             if input.action == .rewrite {
                 Picker("Tone", selection: $tone) {
@@ -686,41 +686,20 @@ private extension TaskWorkspaceView {
                 #endif
             }
             Button(action: run) {
-                Text(input.action.title).frame(maxWidth: .infinity)
+                Label(input.action.title, systemImage: "sparkles")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 10_000 || isImporting || !appState.hasUsableDefaultModel)
+            .appPrimaryButton()
+            .disabled(!canRun)
         }
     }
 
     private var imageChooser: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "photo.badge.plus")
-                .font(.system(size: 44)).foregroundStyle(.indigo)
-            Text("Choose an image").font(.headline)
-            Text("Select from your gallery or take a new photo")
-                .font(.subheadline).foregroundStyle(.secondary)
-            PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                Label(String(localized: "Choose Photo"), systemImage: "photo")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.indigo)
-            .padding(.top, 8)
-            Text("OR").font(.caption).foregroundStyle(.secondary)
-            Button {
-                showsCamera = true
-            } label: {
-                Label("Take Photo", systemImage: "camera")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(24)
-        .background(colorScheme == .dark ? HomePalette.card : Color.indigo.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.indigo.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [5])))
+        sourceImagePicker
+            .padding(16)
+            .appCard(cornerRadius: 16)
     }
 
     private func importImage(_ data: Data, title: String) {
@@ -750,11 +729,11 @@ private extension TaskWorkspaceView {
     private var resultSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Result ready", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(input.action == .summarize ? .blue : .green)
+                .foregroundStyle(.green)
             Text(result).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(colorScheme == .dark ? HomePalette.card : Color(uiColor: .quaternarySystemFill), in: RoundedRectangle(cornerRadius: 12))
+                .appCard(cornerRadius: 16)
             Button("View source") { showsSource = true }
             HStack {
                 Button(savedID == nil ? String(localized: "Save") : String(localized: "Saved"), systemImage: savedID == nil ? "bookmark" : "checkmark") { save() }
@@ -867,7 +846,7 @@ struct SavedTaskResultView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle(item.title)
-        .background(HomePalette.background)
+        .background(AppPalette.background)
         .sheet(isPresented: $showsSource) {
             NavigationStack {
                 ScrollView { Text(item.sourceText).frame(maxWidth: .infinity, alignment: .leading).padding() }

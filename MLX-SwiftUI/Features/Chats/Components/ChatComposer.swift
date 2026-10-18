@@ -90,7 +90,7 @@ struct ChatComposer: View {
                     Image(systemName: isSending ? "hourglass" : "arrow.up")
                         .font(.system(size: 18, weight: .bold))
                         .frame(width: 44, height: 44)
-                        .background(.indigo)
+                        .background(AppPalette.accentFill)
                         .foregroundStyle(.white)
                         .clipShape(Circle())
                 }
