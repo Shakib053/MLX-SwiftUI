@@ -238,9 +238,6 @@
     "Ask AI" : {
 
     },
-    "Attach file" : {
-
-    },
     "Built in" : {
 
     },
@@ -323,9 +320,6 @@
 
     },
     "Compatible" : {
-
-    },
-    "Compose Feedback Email" : {
 
     },
     "Continue" : {
@@ -510,6 +504,17 @@
     },
     "Fallback" : {
 
+    },
+    "Feedback for MLX Chat\n\nDevice:\nVersion:\nModel:\nSteps to reproduce:\n" : {
+      "comment" : "Template shared by the user when reporting an issue. Keep the field labels and line breaks clear.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feedback for MLX Chat\n\nDevice:\nVersion:\nModel:\nSteps to reproduce:\n"
+          }
+        }
+      }
     },
     "Fast" : {
 
@@ -1109,6 +1114,9 @@
     "Share" : {
 
     },
+    "Share Feedback" : {
+
+    },
     "Short" : {
 
     },
@@ -1182,13 +1190,6 @@
     },
     "Summary length" : {
 
-    },
-    "Support email" : {
-
-    },
-    "support@localmind.app" : {
-      "comment" : "Product name or contact address; keep unchanged.",
-      "shouldTranslate" : false
     },
     "System" : {
 

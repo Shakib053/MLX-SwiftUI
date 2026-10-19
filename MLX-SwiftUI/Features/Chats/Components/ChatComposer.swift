@@ -1,5 +1,4 @@
 import SwiftUI
-import OSLog
 
 struct ChatComposer: View {
     @Binding var text: String
@@ -63,16 +62,6 @@ struct ChatComposer: View {
             }
 
             HStack(alignment: .bottom, spacing: 9) {
-                Button {
-                    AppLogger.chat.info("Attach file tapped. ChatRequest currently accepts text only; connect a system fileImporter when multimodal context is supported.")
-                } label: {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Attach file")
-
                 TextField("Message MLX Chat", text: textBinding, axis: .vertical)
                     .focused(isFocused)
                     .lineLimit(1...5)
