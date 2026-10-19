@@ -70,6 +70,9 @@ struct ChatsView: View {
                     .onTapGesture { isSearchFocused = false }
             }
             .navigationTitle("History")
+            .onChange(of: appState.selectedTab) { _, selectedTab in
+                if selectedTab != .history { isSearchFocused = false }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -78,6 +81,10 @@ struct ChatsView: View {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Start new conversation")
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { isSearchFocused = false }
                 }
             }
             .navigationDestination(isPresented: $startsNewChat) {
@@ -238,6 +245,7 @@ struct ChatsView: View {
                 .focused($isSearchFocused)
                 .textInputAutocapitalization(.never)
                 .submitLabel(.search)
+                .onSubmit { isSearchFocused = false }
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
