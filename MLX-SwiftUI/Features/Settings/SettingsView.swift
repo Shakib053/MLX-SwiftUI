@@ -36,7 +36,7 @@ struct SettingsView: View {
                     } label: {
                         SettingsRow(
                             icon: "cpu",
-                            color: .purple,
+                            color: AppPalette.accent,
                             title: "Default Model",
                             subtitle: "Used for new chats",
                             value: appState.prefersFoundationModel && !appState.foundationModelAvailable && appState.hasUsableDefaultModel
@@ -71,6 +71,8 @@ struct SettingsView: View {
                 SimulatorTestingSection()
                 #endif
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
             .navigationTitle("Settings")
         }
     }

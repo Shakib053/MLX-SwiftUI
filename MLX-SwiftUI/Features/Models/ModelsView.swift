@@ -5,7 +5,7 @@ struct ModelsView: View {
     @State private var showsCatalog = false
     @State private var replacementTarget: LocalModel?
 
-    private let accent = Color(red: 0.43, green: 0.42, blue: 1)
+    private let accent = AppPalette.accent
 
     private var displayedModels: [LocalModel] {
         #if DEBUG && targetEnvironment(simulator)
@@ -128,16 +128,17 @@ struct ModelsView: View {
                     .foregroundStyle(.secondary)
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .modelCardBackground()
+                    .appCard()
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     #endif
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
             .background(AppBackground())
             .navigationTitle("Models")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 #if !targetEnvironment(simulator)
                 ToolbarItem(placement: .topBarTrailing) {
@@ -273,7 +274,7 @@ struct ModelsView: View {
             .accessibilityLabel("Model storage, \(displayedStorageUsed, format: .number.precision(.fractionLength(2))) gigabytes")
         }
         .padding(20)
-        .modelCardBackground()
+        .appCard()
     }
 
     private var foundationModelCard: some View {
@@ -283,7 +284,7 @@ struct ModelsView: View {
                     .font(.title2)
                     .foregroundStyle(.white)
                     .frame(width: 54, height: 54)
-                    .background(accent.gradient, in: RoundedRectangle(cornerRadius: 16))
+                    .background(AppPalette.accentFill, in: RoundedRectangle(cornerRadius: 16))
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Apple Foundation Models")
                         .font(.headline)
@@ -321,7 +322,7 @@ struct ModelsView: View {
             }
         }
         .padding(18)
-        .modelCardBackground()
+        .appCard()
     }
 
     private var simulatorUnavailableView: some View {
@@ -350,7 +351,7 @@ struct ModelsView: View {
             .font(.subheadline.weight(.semibold))
         }
         .padding(18)
-        .modelCardBackground()
+        .appCard()
     }
     #endif
 
@@ -398,7 +399,7 @@ struct ModelsView: View {
             .font(.subheadline.weight(.semibold))
         }
         .padding(18)
-        .modelCardBackground()
+        .appCard()
     }
 
     private func suggestedCard(_ model: LocalModel) -> some View {
@@ -435,15 +436,14 @@ struct ModelsView: View {
                     .buttonStyle(.bordered)
                     .tint(accent)
                     Button("Download") { beginDownload(model) }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
+                        .appPrimaryButton()
                 }
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
             }
         }
         .padding(18)
-        .modelCardBackground()
+        .appCard()
     }
 
     private func beginDownload(_ model: LocalModel) {
@@ -451,19 +451,6 @@ struct ModelsView: View {
             replacementTarget = model
         } else {
             Task { await appState.download(model) }
-        }
-    }
-}
-
-private extension View {
-    func modelCardBackground() -> some View {
-        background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.primary.opacity(0.1))
-                }
         }
     }
 }

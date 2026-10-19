@@ -40,7 +40,7 @@ struct ModelDetailView: View {
                         appState.activate(model)
                         dismiss()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .appPrimaryButton()
                     .frame(maxWidth: .infinity)
                     .disabled(model.id == appState.activeModelID && !appState.prefersFoundationModel)
                 }

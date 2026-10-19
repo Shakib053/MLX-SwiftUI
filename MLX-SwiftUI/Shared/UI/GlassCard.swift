@@ -1,11 +1,18 @@
 import SwiftUI
 
 extension View {
-    func glassCard(cornerRadius: CGFloat) -> some View {
-        background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    func appPrimaryButton() -> some View {
+        buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle(radius: 16))
+            .tint(AppPalette.accentFill)
+    }
+
+    func appCard(cornerRadius: CGFloat = 20) -> some View {
+        background(AppPalette.card, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(.primary.opacity(0.07))
+                    .stroke(AppPalette.border)
+                    .allowsHitTesting(false)
             }
     }
 }

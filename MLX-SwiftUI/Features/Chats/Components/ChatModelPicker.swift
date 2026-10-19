@@ -17,7 +17,7 @@ struct ChatModelPicker: View {
                         Label("Apple Foundation Models", systemImage: "sparkles")
                         Spacer()
                         if selectedBackend == .foundation {
-                            Image(systemName: "checkmark").foregroundStyle(.indigo)
+                            Image(systemName: "checkmark").foregroundStyle(AppPalette.accent)
                         }
                     }
                 }
@@ -59,13 +59,15 @@ struct ChatModelPicker: View {
                             }
                             Spacer()
                             if model.id == selectedModelID && selectedBackend == .local {
-                                Image(systemName: "checkmark").foregroundStyle(.indigo)
+                                Image(systemName: "checkmark").foregroundStyle(AppPalette.accent)
                             }
                         }
                     }
                 }
                 #endif
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
             .navigationTitle("Choose Model")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -56,7 +56,7 @@ struct ChatMessageRow: View {
 
     private var bubble: some View {
         Text(displayText)
-            .font(.system(.body, design: .rounded))
+            .font(.system(.body, design: .default))
             .foregroundStyle(.primary)
             .padding(14)
             .background(message.role == .user ? style.userBubbleFill : style.assistantBubbleFill)

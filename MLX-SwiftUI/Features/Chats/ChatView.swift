@@ -59,7 +59,7 @@ struct ChatView: View {
                         Text("Apple Foundation Models isn’t available here. Download a model once to use chat offline.")
                     } actions: {
                         Button("Choose a model") { showsModelSetup = true }
-                            .buttonStyle(.borderedProminent)
+                            .appPrimaryButton()
                     }
                 case .failed(let message):
                     ChatErrorView(

@@ -139,7 +139,7 @@ struct ChatsView: View {
                         Image(systemName: "chevron.right")
                     }
                     .padding()
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                    .appCard()
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
@@ -178,7 +178,7 @@ struct ChatsView: View {
                     saveChanges()
                 }
                 .font(.subheadline)
-                .foregroundStyle(.indigo)
+                .foregroundStyle(AppPalette.accent)
             }
         }
         .padding(.horizontal, 2)
@@ -213,7 +213,7 @@ struct ChatsView: View {
                 }
             }
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .appCard()
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
@@ -241,10 +241,11 @@ struct ChatsView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .background(AppPalette.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(.primary.opacity(0.06))
+                .stroke(AppPalette.border)
+                .allowsHitTesting(false)
         }
     }
 
@@ -252,11 +253,11 @@ struct ChatsView: View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(.indigo.opacity(0.12))
+                    .fill(AppPalette.accent.opacity(0.12))
                     .frame(width: 92, height: 92)
                 Image(systemName: "bubble.left.and.text.bubble.right")
                     .font(.system(size: 38, weight: .medium))
-                    .foregroundStyle(.indigo)
+                    .foregroundStyle(AppPalette.accent)
             }
 
             VStack(spacing: 7) {
@@ -278,9 +279,7 @@ struct ChatsView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
             }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.roundedRectangle(radius: 14))
-            .tint(.indigo)
+            .appPrimaryButton()
             .accessibilityHint("Opens a new chat using your preferred model")
 
             Label(preferredModelStatus, systemImage: preferredModelSymbol)
@@ -289,11 +288,7 @@ struct ChatsView: View {
         }
         .padding(28)
         .frame(maxWidth: 440)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.primary.opacity(0.07))
-        }
+        .appCard()
         .padding(.top, 40)
     }
 
@@ -367,9 +362,5 @@ private struct ConversationRow: View {
         String(localized: "On device")
     }
 
-    private var avatarColor: Color {
-        let palette: [Color] = [.indigo, .blue, .orange, .green, .pink, .purple]
-        let index = abs(conversation.id.hashValue) % palette.count
-        return palette[index]
-    }
+    private var avatarColor: Color { AppPalette.accentFill }
 }

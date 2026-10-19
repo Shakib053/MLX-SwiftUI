@@ -3,22 +3,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UIKit
 
-enum HomePalette {
-    static let background = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(red: 0.055, green: 0.055, blue: 0.075, alpha: 1) : .systemBackground
-    })
-    static let card = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(red: 0.105, green: 0.105, blue: 0.135, alpha: 1) : .secondarySystemBackground
-    })
-    static let border = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(red: 0.17, green: 0.17, blue: 0.21, alpha: 1) : UIColor.systemIndigo.withAlphaComponent(0.12)
-    })
-    static let violet = Color(red: 0.29, green: 0.24, blue: 0.88)
-    static let lavender = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(red: 0.56, green: 0.52, blue: 1, alpha: 1) : .systemIndigo
-    })
-}
-
 struct HomeView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.colorScheme) private var colorScheme
@@ -62,7 +46,7 @@ struct HomeView: View {
                     } label: {
                         HStack {
                             Image(systemName: "cpu")
-                                .foregroundStyle(.indigo)
+                                .foregroundStyle(AppPalette.accent)
                             VStack(alignment: .leading) {
                                 Text(appState.defaultModelName).font(.subheadline.weight(.semibold))
                                 Text(appState.hasUsableDefaultModel ? String(localized: "Ready to use") : String(localized: "Choose or download a model"))
@@ -72,7 +56,7 @@ struct HomeView: View {
                             Image(systemName: "chevron.right").font(.caption)
                         }
                         .padding(14)
-                        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 16))
+                        .appCard()
                     }
                     .buttonStyle(.plain)
                     Text("TRY IT WITH A SAMPLE")
@@ -81,13 +65,13 @@ struct HomeView: View {
                         .foregroundStyle(.secondary)
                     samples
                 }
-                .padding(18)
+                .padding(20)
                 .padding(.bottom, 80)
                 .frame(maxWidth: 520)
                 .frame(maxWidth: .infinity)
             }
-            .background(HomePalette.background)
-            .tint(HomePalette.lavender)
+            .background(AppPalette.background)
+            .tint(AppPalette.accent)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { prompt in
                 ChatView(initialPrompt: prompt)
@@ -122,7 +106,7 @@ struct HomeView: View {
         HStack(spacing: 12) {
             Image(systemName: "cpu")
                 .font(.system(size: 32, weight: .medium))
-                .foregroundStyle(.indigo)
+                .foregroundStyle(AppPalette.accent)
             VStack(alignment: .leading, spacing: 2) {
                 Text("MLX").font(.title.bold())
                 Text("Local AI on Your iPhone")
@@ -133,7 +117,7 @@ struct HomeView: View {
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
                 .padding(.horizontal, 10).padding(.vertical, 7)
-                .background(.green.opacity(colorScheme == .dark ? 0.16 : 0.1), in: Capsule())
+                .background((appState.hasUsableDefaultModel ? Color.green : Color.orange).opacity(colorScheme == .dark ? 0.16 : 0.1), in: Capsule())
             Button { appState.selectedTab = .settings } label: {
                 Image(systemName: "gearshape").font(.title3)
             }
@@ -169,10 +153,8 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .background(
-            colorScheme == .dark
-                ? LinearGradient(colors: [HomePalette.violet], startPoint: .topLeading, endPoint: .bottomTrailing)
-                : LinearGradient(colors: [.blue, .indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: colorScheme == .dark ? 28 : 20)
+            AppPalette.accentFill,
+            in: RoundedRectangle(cornerRadius: 20)
         )
     }
 
@@ -198,8 +180,8 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .padding(14)
-        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: colorScheme == .dark ? 20 : 16))
-        .overlay(RoundedRectangle(cornerRadius: colorScheme == .dark ? 20 : 16).stroke(HomePalette.border))
+        .appCard()
+        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 
     private var samples: some View {
@@ -223,7 +205,7 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, 13)
-        .background(HomePalette.card, in: RoundedRectangle(cornerRadius: 15))
+        .appCard()
     }
 
     private func sample(_ title: LocalizedStringKey, subtitle: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
@@ -231,7 +213,7 @@ struct HomeView: View {
             HStack(spacing: 10) {
                 Image(systemName: symbol)
                     .frame(width: 30, height: 30)
-                    .background(.indigo.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                    .background(AppPalette.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(.caption)
                     Text(subtitle).font(.caption2).foregroundStyle(.secondary)
@@ -383,16 +365,7 @@ private enum HomeAction: String, CaseIterable, Identifiable {
         case .askAI: "bubble.left"
         }
     }
-    var tint: Color {
-        switch self {
-        case .understandImage: .indigo
-        case .analyzeDocument: .mint
-        case .askAI: .blue
-        case .summarize: .purple
-        case .rewrite: .pink
-        case .extract: .orange
-        }
-    }
+    var tint: Color { AppPalette.accent }
     var workspaceAction: WorkspaceAction? {
         WorkspaceAction(rawValue: rawValue)
     }

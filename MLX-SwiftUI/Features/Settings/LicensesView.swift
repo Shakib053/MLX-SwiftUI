@@ -32,6 +32,8 @@ struct LicensesView: View {
                 .padding(.vertical, 6)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(AppBackground())
         .navigationTitle("Model Licenses")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
