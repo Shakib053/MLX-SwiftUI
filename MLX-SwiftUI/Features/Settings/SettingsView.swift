@@ -44,13 +44,13 @@ struct SettingsView: View {
                                 : displayedDefaultModelName
                         )
                     }
-
-                    Toggle(isOn: $appState.hapticsEnabled) {
-                        Label("Haptic feedback", systemImage: "waveform")
-                    }
                 }
 
                 Section("About") {
+                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                    }
+
                     NavigationLink {
                         FeedbackView()
                     } label: {
