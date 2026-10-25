@@ -44,10 +44,6 @@ struct SettingsView: View {
                                 : displayedDefaultModelName
                         )
                     }
-
-                    Toggle(isOn: $appState.hapticsEnabled) {
-                        Label("Haptic feedback", systemImage: "waveform")
-                    }
                 }
 
                 Section("About") {

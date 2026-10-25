@@ -21,7 +21,6 @@ final class AppState {
             UserDefaults.standard.set(appearance.rawValue, forKey: "appAppearance")
         }
     }
-    var hapticsEnabled = true
     var downloadedModelIDs: [String]
     var activeModelID: String
     var downloadingModelID: String?
