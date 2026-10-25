@@ -51,6 +51,10 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
+                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                    }
+
                     NavigationLink {
                         FeedbackView()
                     } label: {
