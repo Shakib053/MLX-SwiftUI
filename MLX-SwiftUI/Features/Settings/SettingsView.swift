@@ -47,7 +47,7 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    Link(destination: URL(string: "https://shakib053.github.io/MLX-SwiftUI-Privacy-Policy/")!) {
+                    Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
 
