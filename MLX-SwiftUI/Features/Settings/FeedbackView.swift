@@ -1,25 +1,141 @@
 import SwiftUI
+import UIKit
 
 struct FeedbackView: View {
+    @Environment(AppState.self) private var appState
+    @State private var feedbackType: FeedbackType = .problem
+    @State private var message = ""
+    @State private var includeDeviceDetails = true
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Label("Suggested template", systemImage: "doc.text")
-                .font(.headline)
-                .foregroundStyle(AppPalette.accent)
-            Text("Include your device, iOS version, app version, active model, and steps to reproduce the issue.")
-                .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                        .font(.title2)
+                        .foregroundStyle(AppPalette.accent)
+                        .frame(width: 52, height: 52)
+                        .appCard(cornerRadius: 16)
 
-            ShareLink(item: String(localized: "Feedback for MLX Chat\n\nDevice:\nVersion:\nModel:\nSteps to reproduce:\n")) {
-                Label("Share Feedback", systemImage: "square.and.arrow.up")
+                    Text("Help us improve MLX Chat")
+                        .font(.title2.bold())
+                    Text("Tell us what happened or share an idea. You can review your message before choosing where to send it.")
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Feedback type")
+                        .font(.headline)
+                    Picker("Feedback type", selection: $feedbackType) {
+                        ForEach(FeedbackType.allCases) { type in
+                            Text(type.shortTitle).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(feedbackType == .problem ? "What happened?" : "What would you like to see?")
+                        .font(.headline)
+                    ZStack(alignment: .topLeading) {
+                        if message.isEmpty {
+                            Text(feedbackType == .problem
+                                 ? "Describe the issue and the steps to reproduce it..."
+                                 : "Describe your idea and how it would help...")
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 8)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $message)
+                            .frame(minHeight: 150)
+                            .scrollContentBackground(.hidden)
+                            .accessibilityLabel(feedbackType == .problem ? "Describe the problem" : "Describe your suggestion")
+                    }
+                    .padding(12)
+                    .appCard(cornerRadius: 16)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle(isOn: $includeDeviceDetails) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Include device details")
+                                .font(.headline)
+                            Text("Helps us understand issues with a specific device or model.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .tint(AppPalette.accentFill)
+
+                    if includeDeviceDetails {
+                        Text(deviceDetails)
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(AppPalette.background, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+                .padding(16)
+                .appCard(cornerRadius: 16)
             }
-            .appPrimaryButton()
-
-            Spacer()
+            .padding(20)
         }
-        .padding(20)
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 8) {
+                ShareLink(item: feedbackText) {
+                    Label("Share Feedback", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
+                }
+                .appPrimaryButton()
+                .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                Text("Choose a destination in the share sheet. Nothing is sent automatically.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial)
+        }
         .background(AppBackground())
         .navigationTitle("Send Feedback")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+    }
+
+    private var deviceDetails: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
+        return "Device: \(UIDevice.current.model)\niOS: \(UIDevice.current.systemVersion)\nApp: \(version)\nModel: \(appState.defaultModelName)"
+    }
+
+    private var feedbackText: String {
+        let content = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let details = includeDeviceDetails ? "\n\n\(deviceDetails)" : ""
+        return "MLX Chat — \(feedbackType.title)\n\n\(content)\(details)"
+    }
+}
+
+private enum FeedbackType: String, CaseIterable, Identifiable {
+    case problem
+    case suggestion
+
+    var id: Self { self }
+
+    var shortTitle: String {
+        switch self {
+        case .problem: String(localized: "Problem")
+        case .suggestion: String(localized: "Suggestion")
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .problem: String(localized: "Report a problem")
+        case .suggestion: String(localized: "Suggest an improvement")
+        }
     }
 }
