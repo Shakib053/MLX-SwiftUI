@@ -47,24 +47,11 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
-                        Label("Privacy Policy", systemImage: "hand.raised")
-                    }
-
                     NavigationLink {
-                        FeedbackView()
+                        AboutView()
                     } label: {
-                        Label("Send Feedback", systemImage: "bubble.left")
+                        Label("About MLX-SwiftUI", systemImage: "info.circle")
                     }
-
-                    NavigationLink {
-                        LicensesView()
-                            .environment(appState)
-                    } label: {
-                        Label("Model Licenses", systemImage: "doc.text")
-                    }
-
-                    LabeledContent("Version", value: appVersion)
                 }
 
                 #if DEBUG && targetEnvironment(simulator)
@@ -75,12 +62,6 @@ struct SettingsView: View {
             .background(AppBackground())
             .navigationTitle("Settings")
         }
-    }
-
-    private var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "\(version) (\(build))"
     }
 
     private var displayedDefaultModelName: String {
