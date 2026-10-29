@@ -155,6 +155,7 @@ struct TaskWorkspaceView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var showsCamera = false
     @State private var task: Task<Void, Never>?
+    @State private var documentImportTask: Task<Void, Never>?
     @State private var savedID: UUID?
     @State private var summarySource: WorkspaceSourceKind = .text
 
@@ -198,7 +199,11 @@ struct TaskWorkspaceView: View {
                 summarySource = input.kind
             }
         }
-        .onDisappear { task?.cancel() }
+        .onDisappear {
+            task?.cancel()
+            documentImportTask?.cancel()
+            isImporting = false
+        }
         .sheet(isPresented: $showsCamera) {
             CameraPicker { image in
                 guard let data = image.jpegData(compressionQuality: 0.9) else { return }
@@ -207,17 +212,21 @@ struct TaskWorkspaceView: View {
         }
         .fileImporter(isPresented: $showsFileImporter, allowedContentTypes: [.pdf, .plainText, .init(filenameExtension: "md") ?? .plainText]) { selection in
             guard case .success(let url) = selection else { return }
+            documentImportTask?.cancel()
             isImporting = true
-            Task {
+            documentImportTask = Task {
                 do {
                     let imported = try await HomeContentExtractor.document(from: url)
+                    try Task.checkCancellation()
                     text = imported
                     sourceTitle = url.lastPathComponent
                     sourceKind = .document
                     errorMessage = nil
                 } catch {
+                    guard !Task.isCancelled else { return }
                     errorMessage = error.localizedDescription
                 }
+                guard !Task.isCancelled else { return }
                 isImporting = false
             }
         }
