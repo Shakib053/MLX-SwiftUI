@@ -54,6 +54,18 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Extended Features") {
+                    NavigationLink {
+                        FeedbackView()
+                    } label: {
+                        Label("Send Feedback", systemImage: "bubble.left")
+                    }
+
+                    Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                    }
+                }
+
                 #if DEBUG && targetEnvironment(simulator)
                 SimulatorTestingSection()
                 #endif

@@ -32,24 +32,6 @@ struct AboutView: View {
             Section("Details") {
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0")
             }
-
-            Section("Support & legal") {
-                NavigationLink {
-                    FeedbackView()
-                } label: {
-                    Label("Send Feedback", systemImage: "bubble.left")
-                }
-
-                Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
-                    Label("Privacy Policy", systemImage: "hand.raised")
-                }
-
-                NavigationLink {
-                    LicensesView()
-                } label: {
-                    Label("Model Licenses", systemImage: "doc.text")
-                }
-            }
         }
         .scrollContentBackground(.hidden)
         .background(AppBackground())
