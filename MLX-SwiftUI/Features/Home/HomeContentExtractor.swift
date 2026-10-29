@@ -40,6 +40,24 @@ enum HomeContentExtractor {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
 
+        let data = try readDocumentData(from: url)
+        let text: String
+        if url.pathExtension.lowercased() == "pdf" {
+            text = try extractPDFText(from: data)
+        } else {
+            guard let decoded = String(data: data, encoding: .utf8) else {
+                throw HomeImportError.unreadableFile
+            }
+            text = decoded
+        }
+        try Task.checkCancellation()
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw HomeImportError.noText }
+        guard trimmed.count <= 10_000 else { throw HomeImportError.tooLong }
+        return trimmed
+    }
+
+    nonisolated private static func readDocumentData(from url: URL) throws -> Data {
         // Bound the actual read, including files whose reported size changes.
         let byteLimit = 10_000_000
         let handle = try FileHandle(forReadingFrom: url)
@@ -52,42 +70,31 @@ enum HomeContentExtractor {
             data.append(chunk)
             guard data.count <= byteLimit else { throw HomeImportError.fileTooLarge }
         }
-        try Task.checkCancellation()
+        return data
+    }
 
-        let text: String
-        if url.pathExtension.lowercased() == "pdf" {
-            guard let document = PDFDocument(data: data), !document.isLocked else {
-                throw HomeImportError.unreadableFile
-            }
-            guard document.pageCount <= 100 else { throw HomeImportError.tooManyPages }
-            var extracted = ""
-            for index in 0..<document.pageCount {
-                try Task.checkCancellation()
-                let pageText: String? = autoreleasepool {
-                    document.page(at: index)?.string?.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                try Task.checkCancellation()
-                guard let pageText, !pageText.isEmpty else { continue }
-                guard pageText.count <= 10_000 else { throw HomeImportError.tooLong }
-                let section = String(localized: "Page \(index + 1):\n\(pageText)")
-                let separator = extracted.isEmpty ? "" : "\n\n"
-                guard extracted.count + separator.count + section.count <= 10_000 else {
-                    throw HomeImportError.tooLong
-                }
-                extracted += separator + section
-            }
-            text = extracted
-        } else {
-            guard let decoded = String(data: data, encoding: .utf8) else {
-                throw HomeImportError.unreadableFile
-            }
-            text = decoded
+    nonisolated private static func extractPDFText(from data: Data) throws -> String {
+        guard let document = PDFDocument(data: data), !document.isLocked else {
+            throw HomeImportError.unreadableFile
         }
-        try Task.checkCancellation()
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw HomeImportError.noText }
-        guard trimmed.count <= 10_000 else { throw HomeImportError.tooLong }
-        return trimmed
+        guard document.pageCount <= 100 else { throw HomeImportError.tooManyPages }
+        var extracted = ""
+        for index in 0..<document.pageCount {
+            try Task.checkCancellation()
+            let pageText: String? = autoreleasepool {
+                document.page(at: index)?.string?.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            try Task.checkCancellation()
+            guard let pageText, !pageText.isEmpty else { continue }
+            guard pageText.count <= 10_000 else { throw HomeImportError.tooLong }
+            let section = String(localized: "Page \(index + 1):\n\(pageText)")
+            let separator = extracted.isEmpty ? "" : "\n\n"
+            guard extracted.count + separator.count + section.count <= 10_000 else {
+                throw HomeImportError.tooLong
+            }
+            extracted += separator + section
+        }
+        return extracted
     }
 
     static func image(from data: Data) async throws -> String {
