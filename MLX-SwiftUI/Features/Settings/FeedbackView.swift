@@ -3,9 +3,13 @@ import UIKit
 
 struct FeedbackView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.openURL) private var openURL
     @State private var feedbackType: FeedbackType = .problem
     @State private var message = ""
     @State private var includeDeviceDetails = true
+    @State private var showMailUnavailable = false
+
+    private let supportEmail = "nusratjahan.iosdev@gmail.com"
 
     var body: some View {
         ScrollView {
@@ -19,8 +23,11 @@ struct FeedbackView: View {
 
                     Text("Help us improve MLX Chat")
                         .font(.title2.bold())
-                    Text("Tell us what happened or share an idea. You can review your message before choosing where to send it.")
+                    Text("Tell us what happened or share an idea. Your email app will open so you can review and send your message.")
                         .foregroundStyle(.secondary)
+                    Text(supportEmail)
+                        .font(.subheadline)
+                        .textSelection(.enabled)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -84,14 +91,18 @@ struct FeedbackView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                ShareLink(item: feedbackText) {
-                    Label("Share Feedback", systemImage: "square.and.arrow.up")
+                Button {
+                    openURL(emailURL) { accepted in
+                        if !accepted { showMailUnavailable = true }
+                    }
+                } label: {
+                    Label("Email Support", systemImage: "envelope")
                         .frame(maxWidth: .infinity)
                 }
                 .appPrimaryButton()
                 .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Text("Choose a destination in the share sheet. Nothing is sent automatically.")
+                Text("Addressed to \(supportEmail). Nothing is sent automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -102,9 +113,14 @@ struct FeedbackView: View {
             .background(.regularMaterial)
         }
         .background(AppBackground())
-        .navigationTitle("Send Feedback")
+        .navigationTitle("Contact Us")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .alert("Email Unavailable", isPresented: $showMailUnavailable) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("No email app is available. Copy \(supportEmail) and email us from another device.")
+        }
     }
 
     private var deviceDetails: String {
@@ -116,6 +132,17 @@ struct FeedbackView: View {
         let content = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let details = includeDeviceDetails ? "\n\n\(deviceDetails)" : ""
         return "MLX Chat — \(feedbackType.title)\n\n\(content)\(details)"
+    }
+
+    private var emailURL: URL {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = supportEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "MLX Chat — \(feedbackType.title)"),
+            URLQueryItem(name: "body", value: feedbackText)
+        ]
+        return components.url!
     }
 }
 

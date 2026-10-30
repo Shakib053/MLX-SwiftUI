@@ -1,4 +1,3 @@
-import FoundationModels
 import PhotosUI
 import SwiftData
 import SwiftUI
@@ -765,7 +764,7 @@ private extension TaskWorkspaceView {
         task = Task { @MainActor in
             do {
                 let backend: any ChatBackend
-                if appState.prefersFoundationModel && SystemLanguageModel.default.isAvailable {
+                if appState.usesFoundationModel {
                     backend = FoundationChatBackend()
                 } else {
                     #if targetEnvironment(simulator)

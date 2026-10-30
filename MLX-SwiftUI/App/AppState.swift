@@ -82,7 +82,7 @@ final class AppState {
     }
 
     var usesFoundationModel: Bool {
-        prefersFoundationModel && foundationModelAvailable
+        foundationModelAvailable && (prefersFoundationModel || downloadedModelIDs.isEmpty)
     }
 
     var defaultModelName: String {

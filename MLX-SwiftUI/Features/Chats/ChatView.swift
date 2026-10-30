@@ -66,7 +66,7 @@ struct ChatView: View {
                         message: message,
                         style: style,
                         retry: {
-                            if appState.prefersFoundationModel {
+                            if appState.usesFoundationModel {
                                 viewModel.switchToFoundationModel()
                             } else {
                                 viewModel.retryDownload()

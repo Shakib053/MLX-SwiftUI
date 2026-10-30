@@ -294,16 +294,18 @@ struct ModelsView: View {
                 }
                 Spacer(minLength: 0)
                 if displayedFoundationAvailable {
-                    Text("Default")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(accent.opacity(0.2), in: Capsule())
-                } else if appState.foundationModelAvailable {
-                    Button("Use") { appState.prefersFoundationModel = true }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(accent)
+                    if appState.usesFoundationModel || !appState.foundationModelAvailable {
+                        Text("Default")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(accent.opacity(0.2), in: Capsule())
+                    } else {
+                        Button("Use") { appState.prefersFoundationModel = true }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(accent)
+                    }
                 }
             }
 

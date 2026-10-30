@@ -318,7 +318,7 @@ struct ChatsView: View {
     }
 
     private var preferredModelSymbol: String {
-        appState.prefersFoundationModel ? "sparkles" : "lock.fill"
+        appState.usesFoundationModel ? "sparkles" : "lock.fill"
     }
 }
 

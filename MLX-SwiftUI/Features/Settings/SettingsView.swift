@@ -58,7 +58,7 @@ struct SettingsView: View {
                     NavigationLink {
                         FeedbackView()
                     } label: {
-                        Label("Send Feedback", systemImage: "bubble.left")
+                        Label("Contact Us", systemImage: "envelope")
                     }
 
                     Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
