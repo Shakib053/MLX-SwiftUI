@@ -152,9 +152,11 @@ struct TaskWorkspaceView: View {
     @State private var showsModelSetup = false
     @State private var continueAfterModelSetup = false
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var imagePreview: UIImage?
     @State private var showsCamera = false
     @State private var task: Task<Void, Never>?
     @State private var documentImportTask: Task<Void, Never>?
+    @State private var imageImportTask: Task<Void, Never>?
     @State private var savedID: UUID?
     @State private var summarySource: WorkspaceSourceKind = .text
 
@@ -201,6 +203,7 @@ struct TaskWorkspaceView: View {
         .onDisappear {
             task?.cancel()
             documentImportTask?.cancel()
+            imageImportTask?.cancel()
             isImporting = false
         }
         .sheet(isPresented: $showsCamera) {
@@ -271,7 +274,7 @@ private extension TaskWorkspaceView {
                     sourceTextHeading
                     sourceTextEditor(placeholder: "Paste text to extract key information...", accessibilityLabel: "Text to extract")
                         .frame(height: 210)
-                    characterCount
+                    wordCount
                 }
 
                 Button(action: run) {
@@ -346,7 +349,7 @@ private extension TaskWorkspaceView {
                             .padding(16)
                             .appCard(cornerRadius: 16)
                     }
-                    characterCount
+                    wordCount
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -391,7 +394,7 @@ private extension TaskWorkspaceView {
                     sourceTextHeading
                     sourceTextEditor(placeholder: "Paste text to rewrite...", accessibilityLabel: "Text to rewrite")
                         .frame(height: 210)
-                    characterCount
+                    wordCount
                 }
 
                 RewriteOptionsView(tone: $tone, detail: $detail)
@@ -423,7 +426,7 @@ private extension TaskWorkspaceView {
 
     private var canRun: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && text.count <= 10_000 && !isImporting && appState.hasUsableDefaultModel
+            && !isImporting && appState.hasUsableDefaultModel
     }
 
     private var sourceTextHeading: some View {
@@ -444,10 +447,10 @@ private extension TaskWorkspaceView {
         }
     }
 
-    private var characterCount: some View {
-        Text("\(text.count.formatted()) / 10,000 characters")
+    private var wordCount: some View {
+        Text("\(text.split(whereSeparator: \.isWhitespace).count.formatted()) words")
             .font(.caption)
-            .foregroundStyle(text.count > 10_000 ? .red : .secondary)
+            .foregroundStyle(.secondary)
     }
 
     private var workspaceHeader: some View {
@@ -499,6 +502,9 @@ private extension TaskWorkspaceView {
 
     private func summaryTab(_ kind: WorkspaceSourceKind, title: LocalizedStringKey, symbol: String) -> some View {
         Button {
+            imageImportTask?.cancel()
+            imagePreview = nil
+            isImporting = false
             summarySource = kind
             text = ""
             sourceTitle = ""
@@ -530,7 +536,19 @@ private extension TaskWorkspaceView {
 
     private var sourceImagePicker: some View {
         VStack(spacing: 16) {
-            if text.isEmpty {
+            if let imagePreview {
+                Image(uiImage: imagePreview)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityLabel("Selected image preview")
+                if !text.isEmpty {
+                    Label("\(text.count) characters found", systemImage: "checkmark")
+                        .font(.caption).foregroundStyle(.green)
+                }
+            } else if text.isEmpty {
                 Image(systemName: "photo.badge.plus")
                     .font(.system(size: 42))
                     .foregroundStyle(AppPalette.accent)
@@ -559,14 +577,14 @@ private extension TaskWorkspaceView {
             }
             HStack(spacing: 10) {
                 PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label(text.isEmpty ? String(localized: "Choose Photo") : String(localized: "Replace"), systemImage: text.isEmpty ? "photo" : "arrow.triangle.2.circlepath")
+                    Label(imagePreview == nil ? String(localized: "Choose Photo") : String(localized: "Replace"), systemImage: imagePreview == nil ? "photo" : "arrow.triangle.2.circlepath")
                         .frame(maxWidth: .infinity)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
                 .frame(maxWidth: .infinity)
                 .appPrimaryButton()
-                if text.isEmpty {
+                if imagePreview == nil {
                     Button {
                         showsCamera = true
                     } label: {
@@ -579,9 +597,13 @@ private extension TaskWorkspaceView {
                     .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                 } else {
                     Button(role: .destructive) {
+                        imageImportTask?.cancel()
                         text = ""
                         sourceTitle = ""
                         sourceKind = .image
+                        imagePreview = nil
+                        errorMessage = nil
+                        isImporting = false
                     } label: {
                         Label("Remove", systemImage: "trash")
                             .frame(maxWidth: .infinity)
@@ -639,29 +661,24 @@ private extension TaskWorkspaceView {
                     .appPrimaryButton()
             }
             #endif
-            if input.action != .analyzeDocument && sourceKind != .text && !text.isEmpty {
+            if input.action != .analyzeDocument && input.action != .understandImage && sourceKind != .text && !text.isEmpty {
                 Label(sourceTitle, systemImage: sourceKind == .document ? "doc.text" : "text.viewfinder")
                 Button("View source") { showsSource = true }
             }
             if input.action == .analyzeDocument {
                 documentPicker
             }
-            if input.action == .understandImage && text.isEmpty {
+            if input.action == .understandImage {
                 imageChooser
             }
             VStack(alignment: .leading, spacing: 8) {
                 sourceTextHeading
                 sourceTextEditor(placeholder: "Paste or import source text...", accessibilityLabel: "Source text")
                     .frame(height: 210)
-                characterCount
+                wordCount
             }
 
             if input.action == .understandImage {
-                if !text.isEmpty {
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        Label("Choose another photo", systemImage: "photo")
-                    }
-                }
                 Text("Reads visible text. Photo scene descriptions are not available yet.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -711,16 +728,23 @@ private extension TaskWorkspaceView {
     }
 
     private func importImage(_ data: Data, title: String) {
+        imageImportTask?.cancel()
+        imagePreview = UIImage(data: data)
+        text = ""
+        sourceTitle = title
+        sourceKind = .image
+        errorMessage = nil
         isImporting = true
-        Task {
+        imageImportTask = Task {
             do {
-                text = try await HomeContentExtractor.image(from: data)
-                sourceTitle = title
-                sourceKind = .image
-                errorMessage = nil
+                let recognized = try await HomeContentExtractor.image(from: data)
+                try Task.checkCancellation()
+                text = recognized
             } catch {
+                guard !Task.isCancelled else { return }
                 errorMessage = error.localizedDescription
             }
+            guard !Task.isCancelled else { return }
             isImporting = false
         }
     }
@@ -758,7 +782,7 @@ private extension TaskWorkspaceView {
 
     private func run() {
         let source = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !source.isEmpty, source.count <= 10_000 else { return }
+        guard !source.isEmpty else { return }
         errorMessage = nil
         isWorking = true
         task = Task { @MainActor in
