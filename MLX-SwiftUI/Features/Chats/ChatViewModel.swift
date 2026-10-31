@@ -455,7 +455,7 @@ final class ChatViewModel {
             if error is CancellationError || Task.isCancelled {
                 handleStreamCancellation()
             } else if let backendError = error as? ChatBackendError,
-                      case .promptTooLong = backendError {
+                      backendError == .promptTooLong || backendError == .invalidFoundationContext {
                 messages.removeLast()
                 if !isRegeneration { messages.removeLast() }
                 rejectedPrompt = prompt
