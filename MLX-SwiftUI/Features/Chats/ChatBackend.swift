@@ -76,6 +76,7 @@ struct FoundationChatBackend: ChatBackend {
     private func selectContext(for request: ChatRequest) async throws -> (String, ChatContextUsage) {
         let model = SystemLanguageModel.default
         let window = model.contextSize
+        guard window > 256 else { throw ChatBackendError.invalidFoundationContext }
         let reserve = min(1_024, window / 4) + 128
         var history: [ChatMessage] = []
         var candidate = request.history.count
@@ -86,12 +87,21 @@ struct FoundationChatBackend: ChatBackend {
         }
         func count(_ prompt: String) async throws -> Int {
             if #available(iOS 26.4, *) {
-                return try await model.tokenCount(for: prompt)
+                let tokens = try await model.tokenCount(for: prompt)
+                // A token count larger than the text itself plus framing overhead is unusable.
+                if tokens >= 0, tokens <= prompt.utf8.count + 256 {
+                    return tokens
+                }
             }
             return (prompt.count + 2) / 3
         }
         var inputCount = try await count(formattedPrompt([]))
-        guard inputCount + reserve <= window else { throw ChatBackendError.promptTooLong }
+        guard inputCount + reserve <= window else {
+            if request.prompt.utf8.count + reserve <= window {
+                throw ChatBackendError.invalidFoundationContext
+            }
+            throw ChatBackendError.promptTooLong
+        }
         while candidate >= 2 {
             guard request.history[candidate - 2].role == .user,
                   request.history[candidate - 1].role == .assistant,

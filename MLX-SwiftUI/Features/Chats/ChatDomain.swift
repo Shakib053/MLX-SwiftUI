@@ -1,8 +1,9 @@
 import Foundation
 
-enum ChatBackendError: LocalizedError {
+enum ChatBackendError: LocalizedError, Equatable {
     case emptyResponse
     case promptTooLong
+    case invalidFoundationContext
     case simulatedLocalModelLoadFailure
 
     var errorDescription: String? {
@@ -11,6 +12,8 @@ enum ChatBackendError: LocalizedError {
             return String(localized: "The model returned an empty response.")
         case .promptTooLong:
             return String(localized: "This message is too long for the selected model. Shorten it and try again.")
+        case .invalidFoundationContext:
+            return String(localized: "Apple Foundation Models could not determine the available context. Try again.")
         case .simulatedLocalModelLoadFailure:
             return String(localized: "Simulated local model download failure")
         }
