@@ -78,7 +78,8 @@ final class AppState {
     }
 
     var foundationModelAvailable: Bool {
-        SystemLanguageModel.default.isAvailable
+        guard #available(iOS 26, *) else { return false }
+        return SystemLanguageModel.default.isAvailable
     }
 
     var usesFoundationModel: Bool {

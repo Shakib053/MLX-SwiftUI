@@ -73,7 +73,7 @@ MLX-SwiftUI/
 ### Requirements
 
 - Xcode with the iOS 26 SDK.
-- An iPhone or iPad running iOS 26 for on-device MLX inference, or a simulator for UI exploration.
+- An iPhone or iPad running iOS 18 or later for on-device MLX inference, or a simulator for UI exploration. Apple Foundation Models requires iOS 26 or later and a supported device.
 - Network access and enough free storage to download a model when using MLX on a physical device.
 
 ### Run the app

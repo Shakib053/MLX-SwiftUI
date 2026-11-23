@@ -788,7 +788,7 @@ private extension TaskWorkspaceView {
         task = Task { @MainActor in
             do {
                 let backend: any ChatBackend
-                if appState.usesFoundationModel {
+                if #available(iOS 26, *), appState.usesFoundationModel {
                     backend = FoundationChatBackend()
                 } else {
                     #if targetEnvironment(simulator)
