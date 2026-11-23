@@ -220,7 +220,7 @@ final class ChatViewModel {
     }
 
     private func startFoundationModel() -> Bool {
-        guard SystemLanguageModel.default.isAvailable else { return false }
+        guard #available(iOS 26, *), SystemLanguageModel.default.isAvailable else { return false }
         backend = FoundationChatBackend()
         backendMode = .foundation
         state = .ready

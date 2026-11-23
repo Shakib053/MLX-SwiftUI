@@ -48,6 +48,7 @@ protocol ChatBackend {
     func streamResponse(for request: ChatRequest) -> ChatTextStream
 }
 
+@available(iOS 26, *)
 struct FoundationChatBackend: ChatBackend {
     func streamResponse(for request: ChatRequest) -> ChatTextStream {
         AsyncThrowingStream { continuation in
