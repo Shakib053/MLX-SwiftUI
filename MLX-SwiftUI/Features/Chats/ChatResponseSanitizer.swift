@@ -117,7 +117,7 @@ enum ChatResponseSanitizer {
         return restored
     }
 
-    private static func extractingFinalAnswer(from text: String) -> String {
+    static func extractingFinalAnswer(from text: String) -> String {
         if let finalThinkTag = text.range(of: "</think>", options: [.caseInsensitive, .backwards]) {
             return String(text[finalThinkTag.upperBound...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)

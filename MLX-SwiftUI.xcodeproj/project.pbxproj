@@ -15,17 +15,11 @@
 		4D0C7B9A3C1E4D2C8A0F0005 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0005 /* Tokenizers */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		0C3B37AE2FD1CF730062165A /* MLX-SwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MLX-SwiftUI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C56506C300152A00079AABB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = .swiftlint.yml; sourceTree = "<group>"; };
-		8F0D2AA930168DDF00FD0002 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MLX-SwiftUI/Shared/AppLogger.swift"; sourceTree = SOURCE_ROOT; };
+		8F0D2AA930168DDF00FD0002 /* MLX-SwiftUI/Shared/AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MLX-SwiftUI/Shared/AppLogger.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -76,7 +70,7 @@
 				0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */,
 				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
-				8F0D2AA930168DDF00FD0002 /* AppLogger.swift */,
+				8F0D2AA930168DDF00FD0002 /* MLX-SwiftUI/Shared/AppLogger.swift */,
 				0C3B37B02FD1CF730062165A /* MLX-SwiftUI */,
 				0C3B37AF2FD1CF730062165A /* Products */,
 			);
@@ -202,9 +196,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0C3B37B72FD1CF740062165A /* Debug */ = {
@@ -333,7 +324,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GRW9NYZR4G;
+				DEVELOPMENT_TEAM = MSD82B6S3K;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -368,7 +359,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GRW9NYZR4G;
+				DEVELOPMENT_TEAM = MSD82B6S3K;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;

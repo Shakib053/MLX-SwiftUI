@@ -12,6 +12,7 @@ struct ChatRequest {
     let temperature: Double
     let history: [ChatMessage]
     let contextWindowTokens: Int?
+    let enablesThinking: Bool
 
     init(
         prompt: String,
@@ -19,7 +20,8 @@ struct ChatRequest {
         maxTokens: Int = 2048,
         temperature: Double = 0.7,
         history: [ChatMessage] = [],
-        contextWindowTokens: Int? = nil
+        contextWindowTokens: Int? = nil,
+        enablesThinking: Bool = true
     ) {
         self.prompt = prompt
         self.systemPrompt = systemPrompt
@@ -27,6 +29,7 @@ struct ChatRequest {
         self.temperature = temperature
         self.history = history
         self.contextWindowTokens = contextWindowTokens
+        self.enablesThinking = enablesThinking
     }
 }
 
@@ -181,7 +184,7 @@ final class LocalMLXChatBackend: ChatBackend {
                             maxTokens: min(request.maxTokens, window - usage.inputTokens - 128),
                             temperature: Float(request.temperature)
                         ),
-                        additionalContext: ["enable_thinking": true]
+                        additionalContext: ["enable_thinking": request.enablesThinking]
                     )
                     let promptTokens = try await self.model.perform { _, tokenizer in
                         tokenizer.encode(text: request.prompt).count
@@ -223,7 +226,7 @@ final class LocalMLXChatBackend: ChatBackend {
             chat.append(.user(request.prompt))
             let input = try await model.prepare(input: UserInput(
                 chat: chat,
-                additionalContext: ["enable_thinking": true]
+                additionalContext: ["enable_thinking": request.enablesThinking]
             ))
             return input.text.tokens.size
         }
