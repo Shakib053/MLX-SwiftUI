@@ -10,9 +10,10 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    Label("Private by design", systemImage: "lock.shield")
-                        .font(.headline)
-                    Text("Your chats and private tools use an available on-device model. Task results are saved only when you choose Save.")
+                    Label("Data & privacy", systemImage: "lock.shield")
+                        .font(.title3.bold())
+                        .foregroundStyle(AppPalette.accent)
+                    Text("With an on-device model, prompts and results are processed on this device. Task results enter History when you choose Save.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -54,12 +55,14 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Extended Features") {
+                Section("Support & privacy") {
                     NavigationLink {
                         FeedbackView()
                     } label: {
                         Label("Contact Us", systemImage: "envelope")
                     }
+
+                    Button("Replay introduction", systemImage: "play.circle", action: showOnboarding)
 
                     Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
                         Label("Privacy Policy", systemImage: "hand.raised")

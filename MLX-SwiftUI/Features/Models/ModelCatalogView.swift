@@ -16,6 +16,9 @@ struct ModelCatalogView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
+                if filteredModels.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                }
                 ForEach(filteredModels) { model in
                     modelCard(model)
                 }
@@ -44,19 +47,30 @@ struct ModelCatalogView: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.green)
             }
-            HStack {
-                NavigationLink {
-                    ModelDetailView(model: model)
-                        .environment(appState)
-                } label: {
-                    Text("Details")
+            if appState.downloadingModelID == model.id {
+                ProgressView(value: appState.downloadProgress) {
+                    Text("Downloading")
+                } currentValueLabel: {
+                    Text(appState.downloadProgress, format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
                 }
+                .tint(AppPalette.accent)
+            } else {
+                HStack {
+                    NavigationLink {
+                        ModelDetailView(model: model)
+                            .environment(appState)
+                    } label: {
+                        Text("Details")
+                    }
                     .buttonStyle(.bordered)
-                Button(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Installed") : String(localized: "Download")) {
-                    beginDownload(model)
+                    Spacer()
+                    if !appState.downloadedModelIDs.contains(model.id) {
+                        Button("Download", systemImage: "arrow.down") { beginDownload(model) }
+                            .appPrimaryButton()
+                            .disabled(appState.downloadingModelID != nil)
+                    }
                 }
-                .appPrimaryButton()
-                .disabled(appState.downloadedModelIDs.contains(model.id))
             }
         }
         .padding(16)

@@ -48,6 +48,13 @@ struct ChatsView: View {
                 VStack(spacing: 20) {
                     searchField
 
+                    if !conversations.isEmpty || !savedResults.isEmpty {
+                        Label("Saved on this device", systemImage: "iphone")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     if filteredConversations.isEmpty && filteredResults.isEmpty {
                         emptyState
                             .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
@@ -61,7 +68,8 @@ struct ChatsView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .padding(.vertical, 12)
+                .frame(maxWidth: 650)
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -246,6 +254,15 @@ struct ChatsView: View {
                 .textInputAutocapitalization(.never)
                 .submitLabel(.search)
                 .onSubmit { isSearchFocused = false }
+            if !searchText.isEmpty {
+                Button { searchText = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
@@ -269,7 +286,7 @@ struct ChatsView: View {
             }
 
             VStack(spacing: 7) {
-                Text(searchText.isEmpty ? String(localized: "No History") : String(localized: "No Results"))
+                Text(searchText.isEmpty ? String(localized: "Nothing saved yet") : String(localized: "No Results"))
                     .font(.title2.weight(.bold))
                 Text(searchText.isEmpty
                      ? String(localized: "Saved results and conversations will appear here.")
@@ -297,7 +314,7 @@ struct ChatsView: View {
         .padding(28)
         .frame(maxWidth: 440)
         .appCard()
-        .padding(.top, 40)
+        .padding(.top, 16)
     }
 
     private func startNewChat() {

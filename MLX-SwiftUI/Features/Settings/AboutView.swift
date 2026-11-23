@@ -7,11 +7,11 @@ struct AboutView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "sparkles.rectangle.stack")
                         .font(.system(size: 40))
-                        .foregroundStyle(AppPalette.accent)
                         .frame(width: 80, height: 80)
-                        .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 20))
+                        .foregroundStyle(.white)
+                        .background(AppPalette.hero, in: RoundedRectangle(cornerRadius: 20))
 
-                    Text("MLX-SwiftUI")
+                    Text("MLX Studio")
                         .font(.title2.bold())
 
                     Text("An AI workspace for your iPhone and iPad.")

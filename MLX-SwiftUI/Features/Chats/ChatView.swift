@@ -245,7 +245,7 @@ struct ChatView: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         if viewModel.messages.isEmpty {
-                            ChatConversationEmptyState(backendMode: viewModel.backendMode)
+                            ChatConversationEmptyState()
                         }
                         ForEach(viewModel.messages) { message in
                             ChatMessageRow(

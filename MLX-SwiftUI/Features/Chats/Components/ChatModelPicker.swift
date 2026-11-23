@@ -41,16 +41,9 @@ struct ChatModelPicker: View {
                         HStack(spacing: 12) {
                             Text(model.initials)
                                 .font(.caption.bold())
-                                .foregroundStyle(.white)
+                                .foregroundStyle(AppPalette.accent)
                                 .frame(width: 38, height: 38)
-                                .background(
-                                    LinearGradient(
-                                        colors: model.colors,
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    in: RoundedRectangle(cornerRadius: 11)
-                                )
+                                .background(AppPalette.accent.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
                             VStack(alignment: .leading) {
                                 Text(model.name).foregroundStyle(.primary)
                                 Text("\(model.focus) • \(model.sizeLabel)")
@@ -76,7 +69,8 @@ struct ChatModelPicker: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 
     private func select(_ model: LocalModel) {

@@ -5,7 +5,7 @@ import UIKit
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var path = NavigationPath()
     @State private var workspace: WorkspaceInput?
     @State private var content = ""
@@ -24,45 +24,16 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     contentCard
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Quick Actions").font(.title3.bold())
-                        Text("Get started with your AI tasks")
-                            .font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
-                        ForEach(HomeAction.allCases) { action in
+                    SectionHeader(title: "Tools")
+                        .accessibilityAddTraits(.isHeader)
+                    LazyVGrid(columns: toolColumns, spacing: 12) {
+                        ForEach(HomeAction.allCases.filter { $0 != .askAI }) { action in
                             Button { open(action) } label: { actionCard(action) }
                                 .buttonStyle(.plain)
                         }
                     }
-                    HStack {
-                        Text("Models").font(.title3.bold())
-                        Spacer()
-                        Button("Manage models") { appState.selectedTab = .models }
-                            .font(.caption)
-                    }
-                    Button {
-                        appState.selectedTab = .models
-                    } label: {
-                        HStack {
-                            Image(systemName: "cpu")
-                                .foregroundStyle(AppPalette.accent)
-                            VStack(alignment: .leading) {
-                                Text(appState.defaultModelName).font(.subheadline.weight(.semibold))
-                                Text(appState.hasUsableDefaultModel ? String(localized: "Ready to use") : String(localized: "Choose or download a model"))
-                                    .font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption)
-                        }
-                        .padding(14)
-                        .appCard()
-                    }
-                    .buttonStyle(.plain)
-                    Text("TRY IT WITH A SAMPLE")
-                        .font(.caption2.weight(.bold))
-                        .tracking(1.8)
-                        .foregroundStyle(.secondary)
+                    SectionHeader(title: "Try a sample")
+                        .accessibilityAddTraits(.isHeader)
                     samples
                 }
                 .padding(20)
@@ -102,60 +73,71 @@ struct HomeView: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "cpu")
-                .font(.system(size: 32, weight: .medium))
-                .foregroundStyle(AppPalette.accent)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("MLX").font(.title.bold())
-                Text("Local AI on Your iPhone")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 4)
-            Label(backendStatus, systemImage: appState.hasUsableDefaultModel ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(appState.hasUsableDefaultModel ? .green : .orange)
-                .padding(.horizontal, 10).padding(.vertical, 7)
-                .background((appState.hasUsableDefaultModel ? Color.green : Color.orange).opacity(colorScheme == .dark ? 0.16 : 0.1), in: Capsule())
-            Button { appState.selectedTab = .settings } label: {
-                Image(systemName: "gearshape").font(.title3)
-            }
-            .accessibilityLabel("Settings")
-        }
-        .padding(.bottom, 12)
+    private var toolColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
     }
 
-    private var backendStatus: String {
-        if appState.usesFoundationModel { return String(localized: "On Device") }
-        #if targetEnvironment(simulator)
-        return appState.hasUsableDefaultModel ? String(localized: "On Device") : String(localized: "Unavailable")
-        #else
-        return appState.hasUsableDefaultModel ? String(localized: "On Device") : String(localized: "Set Up AI")
-        #endif
+    private var header: some View {
+        Label("MLX Studio", systemImage: "cpu")
+            .font(.headline)
+            .foregroundStyle(AppPalette.accent)
+            .accessibilityAddTraits(.isHeader)
     }
 
     private var contentCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Your device. Local models. Powerful AI.", systemImage: "sparkles")
-                .font(.headline)
-            Text("Run LLMs directly on your iPhone with MLX. Private, fast and always available.")
-                .font(.subheadline)
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 7) {
+                Text("AI workspace")
+                    .font(.system(.largeTitle, design: .default, weight: .bold))
+                    .accessibilityAddTraits(.isHeader)
+                Text("Chat, work with documents, and save useful results.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.84))
+            }
+
+            Button {
+                appState.selectedTab = .models
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: appState.hasUsableDefaultModel ? "checkmark.circle.fill" : "cpu")
+                        .foregroundStyle(Color(red: 0.50, green: 0.91, blue: 0.76))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(appState.hasUsableDefaultModel ? appState.defaultModelName : String(localized: "Model library"))
+                            .font(.subheadline.weight(.semibold))
+                        Text(appState.hasUsableDefaultModel ? String(localized: "Ready on this device") : String(localized: "No on-device model ready"))
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.82))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                }
+                .padding(12)
+                .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+
+            Button { open(.askAI) } label: {
+                Label("New chat", systemImage: "bubble.left")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .foregroundStyle(AppPalette.accentFill)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+
             if !content.isEmpty {
                 Button("Change added content", systemImage: "pencil") {
                     pendingAction = nil
                     showsContentSheet = true
                 }
-                .font(.caption.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
+                .tint(.white)
             }
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(
-            AppPalette.accentFill,
-            in: RoundedRectangle(cornerRadius: 20)
-        )
+        .padding(22)
+        .background(AppPalette.hero, in: RoundedRectangle(cornerRadius: 24))
     }
 
     private func actionCard(_ action: HomeAction) -> some View {

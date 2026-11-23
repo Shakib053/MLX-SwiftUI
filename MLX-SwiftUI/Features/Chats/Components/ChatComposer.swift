@@ -45,20 +45,23 @@ struct ChatComposer: View {
                         Text(backendMode == .foundation
                              ? "Apple Foundation Models"
                              : activeModel.name)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.semibold))
                     }
+                    .frame(minHeight: 34)
                     .font(.caption.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
+                .accessibilityHint("Choose a model for this chat")
 
                 Spacer()
 
-                Label(
-                    "Private by default",
-                    systemImage: "lock.fill"
-                )
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.secondary)
+                if backendMode != nil {
+                    Image(systemName: "iphone")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("On-device model")
+                }
             }
 
             HStack(alignment: .bottom, spacing: 9) {
@@ -83,6 +86,7 @@ struct ChatComposer: View {
                         .foregroundStyle(.white)
                         .clipShape(Circle())
                 }
+                .accessibilityLabel("Send message")
                 .disabled(trimmedText.isEmpty || isInputBlocked)
                 .opacity(trimmedText.isEmpty || isInputBlocked ? 0.45 : 1)
             }
