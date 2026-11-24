@@ -167,6 +167,7 @@ struct ModelsView: View {
                 }
             }
             .navigationTitle("Models")
+            .mainTabBar()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 #if !targetEnvironment(simulator)

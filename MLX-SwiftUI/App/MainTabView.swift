@@ -27,3 +27,65 @@ struct MainTabView: View {
         .tint(AppPalette.accent)
     }
 }
+
+extension View {
+    func mainTabBar() -> some View {
+        toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                MainTabBar()
+            }
+    }
+}
+
+private struct MainTabBar: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.self) private var environment
+
+    private var tabAppearance: EnvironmentValues {
+        var appearance = environment
+        appearance.colorScheme = appState.appearance.colorScheme ?? environment.colorScheme
+        return appearance
+    }
+
+    var body: some View {
+        let appearance = tabAppearance
+        let background = Color(AppPalette.background.resolve(in: appearance))
+        let accent = Color(AppPalette.accent.resolve(in: appearance))
+
+        HStack(spacing: 4) {
+            tab("Home", systemImage: "house", selection: .home, accent: accent)
+            tab("Models", systemImage: "cpu", selection: .models, accent: accent)
+            tab("History", systemImage: "clock.arrow.circlepath", selection: .history, accent: accent)
+            tab("Settings", systemImage: "gearshape", selection: .settings, accent: accent)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+        .background(alignment: .top) {
+            background.ignoresSafeArea(edges: .bottom)
+        }
+        .overlay(alignment: .top) {
+            Divider()
+        }
+    }
+
+    private func tab(_ title: LocalizedStringKey, systemImage: String, selection: AppTab, accent: Color) -> some View {
+        let isSelected = appState.selectedTab == selection
+
+        return Button {
+            appState.selectedTab = selection
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.caption2.weight(isSelected ? .semibold : .regular))
+            }
+            .foregroundStyle(isSelected ? accent : Color.secondary)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}

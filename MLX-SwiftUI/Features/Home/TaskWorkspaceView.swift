@@ -192,7 +192,7 @@ struct TaskWorkspaceView: View {
         .navigationTitle(input.action.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .toolbar(.visible, for: .tabBar)
+        .mainTabBar()
         .background(AppPalette.background)
         .tint(AppPalette.accent)
         .onAppear {
@@ -885,6 +885,7 @@ struct SavedTaskResultView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle(item.title)
+        .mainTabBar()
         .background(AppPalette.background)
         .sheet(isPresented: $showsSource) {
             NavigationStack {

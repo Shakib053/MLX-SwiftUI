@@ -44,6 +44,7 @@ struct HomeView: View {
             .background(AppPalette.background)
             .tint(AppPalette.accent)
             .toolbar(.hidden, for: .navigationBar)
+            .mainTabBar()
             .navigationDestination(for: String.self) { prompt in
                 ChatView(initialPrompt: prompt)
             }
