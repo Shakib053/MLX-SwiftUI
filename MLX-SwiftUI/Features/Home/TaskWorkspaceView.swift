@@ -44,10 +44,13 @@ enum WorkspaceSourceKind: String, Hashable {
 
 private struct RewriteOptionsView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Binding var tone: String
     @Binding var detail: String
 
-    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -62,7 +65,7 @@ private struct RewriteOptionsView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 Text("Length").font(.headline)
-                HStack(spacing: 10) {
+                LazyVGrid(columns: columns, spacing: 10) {
                     option("Short", subtitle: "Key points only", symbol: "text.alignleft", selection: $detail)
                     option("Detailed", subtitle: "Full rewrite", symbol: "text.book.closed", selection: $detail)
                 }
@@ -237,8 +240,10 @@ struct TaskWorkspaceView: View {
             Task {
                 do {
                     guard let data = try await photo.loadTransferable(type: Data.self) else { throw HomeImportError.noText }
+                    guard selectedPhoto == photo else { return }
                     importImage(data, title: String(localized: "Selected image"))
                 } catch {
+                    guard selectedPhoto == photo else { return }
                     errorMessage = error.localizedDescription
                 }
                 selectedPhoto = nil
@@ -313,13 +318,15 @@ private extension TaskWorkspaceView {
             VStack(alignment: .leading, spacing: 22) {
                 workspaceHeader
 
-                HStack(spacing: 4) {
-                    summaryTab(.text, title: "Text", symbol: "doc.text")
-                    summaryTab(.document, title: "Document", symbol: "folder")
-                    summaryTab(.image, title: "Image", symbol: "photo")
+                Picker("Source type", selection: Binding(
+                    get: { summarySource },
+                    set: changeSummarySource
+                )) {
+                    Text("Text").tag(WorkspaceSourceKind.text)
+                    Text("Document").tag(WorkspaceSourceKind.document)
+                    Text("Image").tag(WorkspaceSourceKind.image)
                 }
-                .padding(5)
-                .background(colorScheme == .dark ? AppPalette.card : AppPalette.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+                .pickerStyle(.segmented)
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -461,13 +468,17 @@ private extension TaskWorkspaceView {
                 .frame(width: 52, height: 52)
                 .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 4) {
-                Text(input.action.title).font(.title.bold())
+                Text(input.action.title)
+                    .font(.title.bold())
+                    .accessibilityAddTraits(.isHeader)
                 Text(input.action.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .appCard()
     }
 
     private func sourceTextEditor(placeholder: LocalizedStringKey, accessibilityLabel: LocalizedStringKey) -> some View {
@@ -475,17 +486,15 @@ private extension TaskWorkspaceView {
             if text.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "doc.text")
-                        .font(.system(size: 36, weight: .light))
+                        .font(.title2.weight(.medium))
                         .foregroundStyle(AppPalette.accent.opacity(0.7))
                     Text(placeholder)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("Text stays on your device.")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
                 }
                 .multilineTextAlignment(.center)
                 .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
             TextEditor(text: $text)
                 .padding(12)
@@ -500,24 +509,18 @@ private extension TaskWorkspaceView {
         }
     }
 
-    private func summaryTab(_ kind: WorkspaceSourceKind, title: LocalizedStringKey, symbol: String) -> some View {
-        Button {
-            imageImportTask?.cancel()
-            imagePreview = nil
-            isImporting = false
-            summarySource = kind
-            text = ""
-            sourceTitle = ""
-            sourceKind = kind
-        } label: {
-            Label(title, systemImage: symbol)
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(summarySource == kind ? AppPalette.accentFill : Color.clear, in: RoundedRectangle(cornerRadius: 16))
-                .foregroundStyle(summarySource == kind ? Color.white : Color.primary)
-        }
-        .buttonStyle(.plain)
+    private func changeSummarySource(_ kind: WorkspaceSourceKind) {
+        guard kind != summarySource else { return }
+        documentImportTask?.cancel()
+        imageImportTask?.cancel()
+        selectedPhoto = nil
+        imagePreview = nil
+        isImporting = false
+        errorMessage = nil
+        summarySource = kind
+        text = ""
+        sourceTitle = ""
+        sourceKind = kind
     }
 
     private var documentPicker: some View {

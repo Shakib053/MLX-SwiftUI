@@ -8,31 +8,30 @@ struct ModelDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 14) {
                     ModelMark(model: model, size: 58)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(model.name).font(.title2.bold())
-                        Text(model.provider).foregroundStyle(.secondary)
-                    }
+                    Text(model.name).font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                    Text(model.provider).font(.subheadline).foregroundStyle(.white.opacity(0.82))
                 }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+                .background(AppPalette.hero, in: RoundedRectangle(cornerRadius: 24))
 
                 Text(model.summary)
 
-                HStack {
-                    ModelStat(icon: "arrow.down", label: "Download", value: model.sizeLabel)
-                    ModelStat(icon: "cube", label: "Quantization", value: model.quantization)
-                    ModelStat(icon: "wifi.slash", label: "After download", value: String(localized: "Offline"))
+                ViewThatFits(in: .horizontal) {
+                    HStack { modelStats }
+                    VStack(spacing: 8) { modelStats }
                 }
+
+                detailSection("Repository", text: model.repositoryID)
 
                 detailSection(
                     "Privacy",
                     text: String(localized: "Prompts and model output stay on this device while a local model is selected.")
                 )
                 detailSection("License", text: model.license)
-                detailSection(
-                    "Production requirement",
-                    text: String(localized: "The app downloads the MLX Community checkpoint for \(model.repositoryID). Display the exact model revision, license text, and required notices.")
-                )
 
                 if appState.downloadedModelIDs.contains(model.id) {
                     Button(model.id == appState.activeModelID && !appState.prefersFoundationModel
@@ -51,6 +50,12 @@ struct ModelDetailView: View {
         .navigationTitle("Model Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+    }
+
+    @ViewBuilder private var modelStats: some View {
+        ModelStat(icon: "arrow.down", label: "Download", value: model.sizeLabel)
+        ModelStat(icon: "cube", label: "Quantization", value: model.quantization)
+        ModelStat(icon: "wifi.slash", label: "After download", value: String(localized: "Offline"))
     }
 
     private func detailSection(_ title: LocalizedStringKey, text: String) -> some View {

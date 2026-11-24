@@ -28,14 +28,12 @@ struct OnboardingView: View {
             TabView(selection: $page) {
                 ForEach(pages.indices, id: \.self) { index in
                     VStack(spacing: 24) {
-                        ZStack {
-                            Circle()
-                                .fill(AppPalette.accent.opacity(0.14))
-                                .frame(width: 150, height: 150)
-                            Image(systemName: pages[index].symbol)
-                                .font(.system(size: 62, weight: .medium))
-                                .foregroundStyle(AppPalette.accent)
-                        }
+                        Image(systemName: pages[index].symbol)
+                            .font(.largeTitle.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 96, height: 96)
+                            .background(AppPalette.hero, in: RoundedRectangle(cornerRadius: 28))
+                            .accessibilityHidden(true)
                         Text(pages[index].title)
                             .font(.largeTitle.bold())
                             .multilineTextAlignment(.center)
@@ -50,7 +48,7 @@ struct OnboardingView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
 
-            Button(page == pages.count - 1 ? String(localized: "Start Using MLX Chat") : String(localized: "Continue")) {
+            Button(page == pages.count - 1 ? String(localized: "Open workspace") : String(localized: "Continue")) {
                 if page < pages.count - 1 {
                     withAnimation { page += 1 }
                 } else {

@@ -99,21 +99,22 @@ struct ChatErrorView: View {
 }
 
 struct ChatConversationEmptyState: View {
-    let backendMode: ChatBackendMode?
-
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "sparkles")
-                .font(.system(size: 34, weight: .medium))
+                .font(.title.weight(.medium))
                 .foregroundStyle(AppPalette.accent)
+                .frame(width: 64, height: 64)
+                .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 19))
+                .accessibilityHidden(true)
             Text("How can I help?")
                 .font(.title2.bold())
-            Text("Messages are processed on this device and saved in your local history.")
+            Text("Start a conversation. You can revisit it in History.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 28)
-        .padding(.vertical, 80)
+        .padding(.vertical, 36)
         .frame(maxWidth: .infinity)
     }
 }

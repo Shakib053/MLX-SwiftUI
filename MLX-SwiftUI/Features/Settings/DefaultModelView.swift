@@ -6,9 +6,10 @@ struct DefaultModelView: View {
     var body: some View {
         Form {
             Section {
-                Label("Choose a model for new chats", systemImage: "bubble.left.and.sparkles")
-                    .font(.headline)
-                Text("Changing the default does not affect existing conversations.")
+                Label("Model for new chats", systemImage: "bubble.left.and.sparkles")
+                    .font(.title3.bold())
+                    .foregroundStyle(AppPalette.accent)
+                Text("Existing conversations keep their current model.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

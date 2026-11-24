@@ -4,6 +4,7 @@ struct ModelsView: View {
     @Environment(AppState.self) private var appState
     @State private var showsCatalog = false
     @State private var replacementTarget: LocalModel?
+    @State private var removalTarget: LocalModel?
 
     private let accent = AppPalette.accent
 
@@ -58,7 +59,7 @@ struct ModelsView: View {
                                 .font(.title2.bold())
                             Spacer()
                             #if !targetEnvironment(simulator)
-                            Button("Add model") { showsCatalog = true }
+                            Button("Browse catalog", systemImage: "arrow.up.right") { showsCatalog = true }
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(accent)
                             #endif
@@ -92,9 +93,9 @@ struct ModelsView: View {
                         installedModelCard(model)
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
-                            .swipeActions(edge: .trailing) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button("Delete", systemImage: "trash", role: .destructive) {
-                                    appState.remove(model)
+                                    removalTarget = model
                                 }
                             }
                     }
@@ -180,6 +181,22 @@ struct ModelsView: View {
                 Text(appState.deletionError ?? String(localized: "The model could not be deleted."))
             }
             .confirmationDialog(
+                "Delete downloaded model?",
+                isPresented: Binding(
+                    get: { removalTarget != nil },
+                    set: { if !$0 { removalTarget = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: removalTarget
+            ) { model in
+                Button("Delete \(model.name)", role: .destructive) {
+                    appState.remove(model)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("You can download this model again from the catalog. Your conversations stay in History.")
+            }
+            .confirmationDialog(
                 "Model limit reached",
                 isPresented: replacementDialogBinding,
                 titleVisibility: .visible
@@ -227,6 +244,7 @@ struct ModelsView: View {
                         .font(.title3.weight(.semibold))
                 }
                 .frame(width: 64, height: 64)
+                .accessibilityHidden(true)
             }
 
             HStack(spacing: 16) {
@@ -263,15 +281,10 @@ struct ModelsView: View {
             }
             .font(.subheadline)
 
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.secondary.opacity(0.25))
-                    Capsule().fill(accent)
-                        .frame(width: geometry.size.width * min(displayedStorageUsed / 3, 1))
-                }
-            }
-            .frame(height: 6)
-            .accessibilityLabel("Model storage, \(displayedStorageUsed, format: .number.precision(.fractionLength(2))) gigabytes")
+            ProgressView(value: Double(displayedModels.count), total: Double(AppState.modelLimit))
+                .tint(accent)
+                .accessibilityLabel("Downloaded model slots")
+                .accessibilityValue("\(displayedModels.count) of \(AppState.modelLimit)")
         }
         .padding(20)
         .appCard()
@@ -396,7 +409,7 @@ struct ModelsView: View {
                 }
                 .foregroundStyle(accent)
                 Spacer()
-                Button("Delete", role: .destructive) { appState.remove(model) }
+                Button("Delete", role: .destructive) { removalTarget = model }
             }
             .font(.subheadline.weight(.semibold))
         }
@@ -439,6 +452,7 @@ struct ModelsView: View {
                     .tint(accent)
                     Button("Download") { beginDownload(model) }
                         .appPrimaryButton()
+                        .disabled(appState.downloadingModelID != nil)
                 }
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)

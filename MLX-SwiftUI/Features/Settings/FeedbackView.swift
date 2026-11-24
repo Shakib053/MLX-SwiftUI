@@ -21,8 +21,8 @@ struct FeedbackView: View {
                         .frame(width: 52, height: 52)
                         .appCard(cornerRadius: 16)
 
-                    Text("Help us improve MLX Chat")
-                        .font(.title2.bold())
+                    Text("Send feedback")
+                        .font(.title.bold())
                     Text("Tell us what happened or share an idea. Your email app will open so you can review and send your message.")
                         .foregroundStyle(.secondary)
                     Text(supportEmail)

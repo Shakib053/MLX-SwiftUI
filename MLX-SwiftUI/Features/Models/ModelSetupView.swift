@@ -10,7 +10,8 @@ struct ModelSetupView: View {
             Form {
                 Section {
                     Label("Set up on-device AI", systemImage: "cpu")
-                        .font(.headline)
+                        .font(.title3.bold())
+                        .foregroundStyle(AppPalette.accent)
                     Text("Apple Foundation Models isn’t available on this device. Download a model once to use chat and AI tools offline.")
                     Text("A connection is needed for the download. After that, prompts and responses run on this device.")
                         .font(.footnote)
@@ -23,7 +24,8 @@ struct ModelSetupView: View {
                             selectedModel = model
                             appState.dismissDownloadError()
                         } label: {
-                            HStack {
+                            HStack(spacing: 12) {
+                                ModelMark(model: model, size: 40)
                                 VStack(alignment: .leading) {
                                     Text(model.name)
                                     Text("About \(model.sizeLabel) · \(model.focus)")
@@ -36,14 +38,20 @@ struct ModelSetupView: View {
                                 }
                             }
                         }
+                        .accessibilityAddTraits(selectedModel.id == model.id ? .isSelected : [])
                         .disabled(appState.downloadingModelID != nil)
                     }
                 }
 
                 if appState.downloadingModelID != nil {
                     Section("Downloading") {
-                        ProgressView(value: appState.downloadProgress)
-                        Text("\(Int(appState.downloadProgress * 100))%")
+                        ProgressView(value: appState.downloadProgress) {
+                            Text("Downloading model")
+                        } currentValueLabel: {
+                            Text(appState.downloadProgress, format: .percent.precision(.fractionLength(0)))
+                                .monospacedDigit()
+                        }
+                        .tint(AppPalette.accent)
                     }
                 } else {
                     Section {
