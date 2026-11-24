@@ -137,12 +137,11 @@ final class AppState {
         do {
             _ = try await MLXModelLoader.load(
                 configuration: model.configuration,
-                progressHandler: { [weak self] progress in
+                progressHandler: { [weak self, modelID = model.id] progress in
+                    let fraction = progress.fractionCompleted
                     Task { @MainActor [weak self] in
-                        self?.downloadProgress = max(
-                            self?.downloadProgress ?? 0,
-                            min(max(progress.fractionCompleted, 0), 1)
-                        )
+                        guard let self, self.downloadingModelID == modelID else { return }
+                        self.downloadProgress = max(self.downloadProgress, min(max(fraction, 0), 1))
                     }
                 }
             )

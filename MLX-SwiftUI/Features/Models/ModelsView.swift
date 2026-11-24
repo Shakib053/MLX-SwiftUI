@@ -5,6 +5,8 @@ struct ModelsView: View {
     @State private var showsCatalog = false
     @State private var replacementTarget: LocalModel?
     @State private var removalTarget: LocalModel?
+    @State private var expandedModelID: String?
+    @State private var feedback: String?
 
     private let accent = AppPalette.accent
 
@@ -106,17 +108,22 @@ struct ModelsView: View {
                             .listRowSeparator(.hidden)
                     }
 
-                    if let suggestion = LocalModel.catalog.first(where: {
-                        !appState.downloadedModelIDs.contains($0.id)
-                    }) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(appState.downloadedModels.count == AppState.modelLimit
-                                 ? String(localized: "All model slots are used") : String(localized: "Suggested model"))
-                                .font(.title2.bold())
-                            suggestedCard(suggestion)
+                    if appState.downloadedModels.count < AppState.modelLimit {
+                        let suggestions = LocalModel.catalog.filter {
+                            !appState.downloadedModelIDs.contains($0.id)
                         }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                        if !suggestions.isEmpty {
+                            Text("Suggested models")
+                                .font(.title2.bold())
+                                .accessibilityAddTraits(.isHeader)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                            ForEach(suggestions) { model in
+                                suggestedCard(model)
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                            }
+                        }
                     }
 
                     Label {
@@ -138,6 +145,27 @@ struct ModelsView: View {
             .scrollContentBackground(.hidden)
             .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
             .background(AppBackground())
+            .safeAreaInset(edge: .bottom) {
+                if let feedback {
+                    Text(feedback)
+                        .font(.footnote.weight(.semibold))
+                        .padding(12)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(.bottom, 8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .task(id: feedback) {
+                guard feedback != nil else { return }
+                do {
+                    try await Task.sleep(for: .seconds(2))
+                    feedback = nil
+                } catch is CancellationError {
+                    return
+                } catch {
+                    feedback = nil
+                }
+            }
             .navigationTitle("Models")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -180,21 +208,22 @@ struct ModelsView: View {
             } message: {
                 Text(appState.deletionError ?? String(localized: "The model could not be deleted."))
             }
-            .confirmationDialog(
-                "Delete downloaded model?",
+            .alert(
+                "Delete “\(removalTarget?.name ?? "")”?",
                 isPresented: Binding(
                     get: { removalTarget != nil },
                     set: { if !$0 { removalTarget = nil } }
                 ),
-                titleVisibility: .visible,
                 presenting: removalTarget
             ) { model in
-                Button("Delete \(model.name)", role: .destructive) {
-                    appState.remove(model)
-                }
                 Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                Text("You can download this model again from the catalog. Your conversations stay in History.")
+                Button("Delete", role: .destructive) {
+                    guard appState.remove(model) else { return }
+                    if expandedModelID == model.id { expandedModelID = nil }
+                    showFeedback(String(localized: "Model deleted · chats kept"))
+                }
+            } message: { model in
+                Text(deletionMessage(for: model))
             }
             .confirmationDialog(
                 "Model limit reached",
@@ -358,12 +387,9 @@ struct ModelsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            inlineDetails(model)
             Divider()
-            NavigationLink("Details") {
-                ModelDetailView(model: model)
-                    .environment(appState)
-            }
-            .font(.subheadline.weight(.semibold))
+            detailsButton(model)
         }
         .padding(18)
         .appCard()
@@ -394,22 +420,26 @@ struct ModelsView: View {
                 }
                 Spacer(minLength: 0)
                 if model.id != appState.activeModelID || appState.prefersFoundationModel {
-                    Button("Use") { appState.activate(model) }
+                    Button("Use") {
+                        appState.activate(model)
+                        showFeedback(String(localized: "\(model.name) is now the default"))
+                    }
+                    .buttonStyle(.borderless)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
+                } else {
+                    Text("In use")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
+            inlineDetails(model)
             Divider()
             HStack {
-                NavigationLink {
-                    ModelDetailView(model: model)
-                        .environment(appState)
-                } label: {
-                    Text("Details")
-                }
-                .foregroundStyle(accent)
+                detailsButton(model)
                 Spacer()
                 Button("Delete", role: .destructive) { removalTarget = model }
+                    .buttonStyle(.borderless)
             }
             .font(.subheadline.weight(.semibold))
         }
@@ -436,37 +466,83 @@ struct ModelsView: View {
                     .background(.green.opacity(0.16), in: Capsule())
             }
 
+            inlineDetails(model)
             if appState.downloadingModelID == model.id {
-                ProgressView(value: appState.downloadProgress)
-                    .tint(accent)
-            } else {
-                HStack(spacing: 8) {
-                    NavigationLink {
-                        ModelDetailView(model: model)
-                            .environment(appState)
-                    } label: {
-                        Text("Details")
-                            .frame(minWidth: 78)
+                let progress = appState.downloadProgress
+                ProgressView(value: progress) {
+                    if progress >= 1 {
+                        Text("Preparing model…")
+                    } else {
+                        Text("Downloading…")
                     }
-                    .buttonStyle(.bordered)
-                    .tint(accent)
-                    Button("Download") { beginDownload(model) }
-                        .appPrimaryButton()
-                        .disabled(appState.downloadingModelID != nil)
+                } currentValueLabel: {
+                    Text(min(progress, progress >= 1 ? 1 : 0.99), format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
                 }
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity)
+                .tint(accent)
             }
+
+            HStack {
+                detailsButton(model)
+                Spacer()
+                if appState.downloadingModelID != model.id {
+                    Button("Download", systemImage: "arrow.down") {
+                        Task {
+                            await appState.download(model)
+                            if appState.downloadedModelIDs.contains(model.id) {
+                                showFeedback(String(localized: "Download complete"))
+                            }
+                        }
+                    }
+                    .appPrimaryButton()
+                    .disabled(appState.downloadingModelID != nil)
+                }
+            }
+            .font(.subheadline.weight(.semibold))
         }
         .padding(18)
         .appCard()
     }
 
-    private func beginDownload(_ model: LocalModel) {
-        if appState.downloadedModels.count >= AppState.modelLimit {
-            replacementTarget = model
-        } else {
-            Task { await appState.download(model) }
+    @ViewBuilder
+    private func inlineDetails(_ model: LocalModel) -> some View {
+        if expandedModelID == model.id {
+            Text(model.summary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func detailsButton(_ model: LocalModel) -> some View {
+        Button(expandedModelID == model.id ? String(localized: "Hide details") : String(localized: "Details")) {
+            expandedModelID = expandedModelID == model.id ? nil : model.id
+        }
+        .buttonStyle(.borderless)
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(accent)
+    }
+
+    private func showFeedback(_ message: String) {
+        feedback = message
+        AccessibilityNotification.Announcement(message).post()
+    }
+
+    private func deletionMessage(for model: LocalModel) -> String {
+        let removal = String(localized: "This removes the model (\(model.sizeLabel)) from your iPhone.")
+        let recovery = String(localized: "Your chats are kept, and you can download it again anytime.")
+        guard model.id == appState.activeModelID, !appState.usesFoundationModel else {
+            return "\(removal) \(recovery)"
+        }
+
+        let nextModel: String
+        if let replacement = appState.downloadedModels.first(where: { $0.id != model.id }) {
+            nextModel = String(localized: "New chats will use \(replacement.name).")
+        } else if appState.foundationModelAvailable {
+            nextModel = String(localized: "New chats will use Apple Foundation Models.")
+        } else {
+            nextModel = String(localized: "Download a model to start new chats.")
+        }
+        return "\(removal) \(nextModel) \(recovery)"
     }
 }
