@@ -78,6 +78,7 @@ struct ChatsView: View {
                     .onTapGesture { isSearchFocused = false }
             }
             .navigationTitle("History")
+            .navigationBarTitleDisplayMode(.inline)
             .onChange(of: appState.selectedTab) { _, selectedTab in
                 if selectedTab != .history { isSearchFocused = false }
             }

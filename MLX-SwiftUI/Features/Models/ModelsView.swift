@@ -167,7 +167,7 @@ struct ModelsView: View {
                 }
             }
             .navigationTitle("Models")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 #if !targetEnvironment(simulator)
                 ToolbarItem(placement: .topBarTrailing) {
