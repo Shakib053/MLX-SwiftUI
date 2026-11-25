@@ -4,7 +4,6 @@ import UIKit
 struct FeedbackView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.openURL) private var openURL
-    @State private var feedbackType: FeedbackType = .problem
     @State private var message = ""
     @State private var includeDeviceDetails = true
     @State private var showMailUnavailable = false
@@ -15,49 +14,29 @@ struct FeedbackView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Image(systemName: "bubble.left.and.text.bubble.right.fill")
-                        .font(.title2)
-                        .foregroundStyle(AppPalette.accent)
-                        .frame(width: 52, height: 52)
-                        .appCard(cornerRadius: 16)
-
                     Text("Send feedback")
                         .font(.title.bold())
-                    Text("Tell us what happened or share an idea. Your email app will open so you can review and send your message.")
+                    Text("Your email app will open so you can review and send your message.")
                         .foregroundStyle(.secondary)
-                    Text(supportEmail)
-                        .font(.subheadline)
-                        .textSelection(.enabled)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Feedback type")
-                        .font(.headline)
-                    Picker("Feedback type", selection: $feedbackType) {
-                        ForEach(FeedbackType.allCases) { type in
-                            Text(type.shortTitle).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(feedbackType == .problem ? "What happened?" : "What would you like to see?")
+                    Text("Your feedback")
                         .font(.headline)
                     ZStack(alignment: .topLeading) {
                         if message.isEmpty {
-                            Text(feedbackType == .problem
-                                 ? "Describe the issue and the steps to reproduce it..."
-                                 : "Describe your idea and how it would help...")
+                            Text("Please share your feedback or suggestions.")
                                 .foregroundStyle(.tertiary)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 8)
                                 .allowsHitTesting(false)
+                                .accessibilityHidden(true)
                         }
                         TextEditor(text: $message)
                             .frame(minHeight: 150)
                             .scrollContentBackground(.hidden)
-                            .accessibilityLabel(feedbackType == .problem ? "Describe the problem" : "Describe your suggestion")
+                            .accessibilityLabel("Your feedback")
+                            .accessibilityHint("Please share your feedback or suggestions.")
                     }
                     .padding(12)
                     .appCard(cornerRadius: 16)
@@ -90,23 +69,16 @@ struct FeedbackView: View {
             .padding(20)
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-                Button {
-                    openURL(emailURL) { accepted in
-                        if !accepted { showMailUnavailable = true }
-                    }
-                } label: {
-                    Label("Email Support", systemImage: "envelope")
-                        .frame(maxWidth: .infinity)
+            Button {
+                openURL(emailURL) { accepted in
+                    if !accepted { showMailUnavailable = true }
                 }
-                .appPrimaryButton()
-                .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                Text("Addressed to \(supportEmail). Nothing is sent automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+            } label: {
+                Label("Open Email Draft", systemImage: "envelope")
+                    .frame(maxWidth: .infinity)
             }
+            .appPrimaryButton()
+            .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
@@ -119,7 +91,7 @@ struct FeedbackView: View {
         .alert("Email Unavailable", isPresented: $showMailUnavailable) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("No email app is available. Copy \(supportEmail) and email us from another device.")
+            Text("No email app could open the draft. Set up an email app on this device and try again.")
         }
     }
 
@@ -131,7 +103,7 @@ struct FeedbackView: View {
     private var feedbackText: String {
         let content = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let details = includeDeviceDetails ? "\n\n\(deviceDetails)" : ""
-        return "MLX Chat — \(feedbackType.title)\n\n\(content)\(details)"
+        return "MLX Chat Feedback\n\n\(content)\(details)"
     }
 
     private var emailURL: URL {
@@ -139,30 +111,9 @@ struct FeedbackView: View {
         components.scheme = "mailto"
         components.path = supportEmail
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "MLX Chat — \(feedbackType.title)"),
+            URLQueryItem(name: "subject", value: "MLX Chat Feedback"),
             URLQueryItem(name: "body", value: feedbackText)
         ]
         return components.url!
-    }
-}
-
-private enum FeedbackType: String, CaseIterable, Identifiable {
-    case problem
-    case suggestion
-
-    var id: Self { self }
-
-    var shortTitle: String {
-        switch self {
-        case .problem: String(localized: "Problem")
-        case .suggestion: String(localized: "Suggestion")
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .problem: String(localized: "Report a problem")
-        case .suggestion: String(localized: "Suggest an improvement")
-        }
     }
 }
