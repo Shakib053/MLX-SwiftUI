@@ -91,6 +91,18 @@ struct ModelsView: View {
                     simulatorUnavailableView
                     #endif
                     #else
+                    if let model = appState.pendingStarterModel {
+                        if appState.downloadedModels.count < AppState.modelLimit {
+                            suggestedCard(model)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        } else {
+                            Text("Remove a downloaded model to make room for \(model.name).")
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        }
+                    }
+
                     ForEach(appState.downloadedModels) { model in
                         installedModelCard(model)
                             .listRowBackground(Color.clear)
@@ -110,7 +122,7 @@ struct ModelsView: View {
 
                     if appState.downloadedModels.count < AppState.modelLimit {
                         let suggestions = LocalModel.catalog.filter {
-                            !appState.downloadedModelIDs.contains($0.id)
+                            !appState.downloadedModelIDs.contains($0.id) && $0.id != appState.pendingStarterModel?.id
                         }
                         if !suggestions.isEmpty {
                             Text("Suggested models")

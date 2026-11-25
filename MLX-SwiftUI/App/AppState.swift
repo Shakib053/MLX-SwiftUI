@@ -23,6 +23,7 @@ final class AppState {
     }
     var downloadedModelIDs: [String]
     var activeModelID: String
+    private(set) var pendingStarterModel: LocalModel?
     var downloadingModelID: String?
     var downloadProgress = 0.0
     var downloadError: String?
@@ -115,6 +116,18 @@ final class AppState {
         AppLogger.app.info("Activated model: \(model.name, privacy: .public)")
     }
 
+    func setUpStarterModel(_ model: LocalModel) {
+        if downloadedModelIDs.contains(model.id) {
+            pendingStarterModel = nil
+            activate(model)
+            return
+        }
+
+        pendingStarterModel = model
+        guard downloadingModelID == nil, downloadedModelIDs.count < Self.modelLimit else { return }
+        Task { await download(model) }
+    }
+
     func download(_ model: LocalModel) async {
         guard !downloadedModelIDs.contains(model.id), downloadingModelID == nil else { return }
         guard downloadedModelIDs.count < Self.modelLimit else {
@@ -128,6 +141,9 @@ final class AppState {
         defer {
             downloadingModelID = nil
             downloadProgress = 0
+            if let starter = pendingStarterModel, starter.id != model.id {
+                setUpStarterModel(starter)
+            }
         }
 
         #if targetEnvironment(simulator)
@@ -149,7 +165,12 @@ final class AppState {
             guard !Task.isCancelled else { return }
             downloadedModelIDs.append(model.id)
             if activeModelID.isEmpty { activeModelID = model.id }
-            persistModelState()
+            if pendingStarterModel?.id == model.id {
+                pendingStarterModel = nil
+                activate(model)
+            } else {
+                persistModelState()
+            }
         } catch is CancellationError {
             return
         } catch {

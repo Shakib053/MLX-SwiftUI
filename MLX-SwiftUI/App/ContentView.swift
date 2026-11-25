@@ -11,10 +11,16 @@ struct ContentView: View {
         .environment(appState)
         .preferredColorScheme(appState.appearance.colorScheme)
         .fullScreenCover(isPresented: onboardingBinding) {
-            OnboardingView {
+            OnboardingView { model in
                 hasCompletedOnboarding = true
+                if let model {
+                    appState.selectedTab = .home
+                    #if !targetEnvironment(simulator)
+                    appState.setUpStarterModel(model)
+                    #endif
+                }
             }
-            .preferredColorScheme(appState.appearance.colorScheme)
+            .environment(appState)
         }
     }
 

@@ -100,14 +100,32 @@ struct HomeView: View {
                 appState.selectedTab = .models
             } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: appState.hasUsableDefaultModel ? "checkmark.circle.fill" : "cpu")
+                    Image(systemName: appState.pendingStarterModel == nil && appState.hasUsableDefaultModel
+                          ? "checkmark.circle.fill" : "cpu")
                         .foregroundStyle(Color(red: 0.50, green: 0.91, blue: 0.76))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(appState.hasUsableDefaultModel ? appState.defaultModelName : String(localized: "Model library"))
-                            .font(.subheadline.weight(.semibold))
-                        Text(appState.hasUsableDefaultModel ? String(localized: "Ready on this device") : String(localized: "No on-device model ready"))
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.82))
+                        if let model = appState.pendingStarterModel {
+                            Text(model.name)
+                                .font(.subheadline.weight(.semibold))
+                            if appState.downloadingModelID == model.id {
+                                ProgressView(value: appState.downloadProgress) {
+                                    Text(appState.downloadProgress >= 1 ? "Preparing model…" : "Downloading…")
+                                } currentValueLabel: {
+                                    Text(appState.downloadProgress, format: .percent.precision(.fractionLength(0)))
+                                }
+                                .tint(.white)
+                                .font(.caption)
+                            } else {
+                                Text("Open Models to finish setup")
+                                    .font(.caption)
+                            }
+                        } else {
+                            Text(appState.hasUsableDefaultModel ? appState.defaultModelName : String(localized: "Model library"))
+                                .font(.subheadline.weight(.semibold))
+                            Text(appState.hasUsableDefaultModel ? String(localized: "Ready on this device") : String(localized: "No on-device model ready"))
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.82))
+                        }
                     }
                     Spacer()
                     Image(systemName: "chevron.right").font(.caption.weight(.semibold))
