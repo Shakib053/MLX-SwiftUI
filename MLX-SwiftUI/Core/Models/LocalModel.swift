@@ -32,7 +32,7 @@ struct LocalModel: Identifiable, Equatable {
 
     var licenseURL: URL {
         switch id {
-        case "qwen": URL(string: "https://www.apache.org/licenses/LICENSE-2.0")!
+        case "qwen", "smollm-135m", "qwen25-05b", "qwen25-15b", "qwen3-17b": URL(string: "https://www.apache.org/licenses/LICENSE-2.0")!
         case "gemma": URL(string: "https://ai.google.dev/gemma/terms")!
         default: URL(string: "https://www.llama.com/llama3_2/license/")!
         }
@@ -93,5 +93,73 @@ struct LocalModel: Identifiable, Equatable {
         contextWindowTokens: 131072
     )
 
-    static let catalog = [qwen, gemma, llama]
+    static let smolLM = LocalModel(
+        id: "smollm-135m",
+        name: "SmolLM 135M Instruct",
+        shortName: "SmolLM 135M",
+        initials: "SM",
+        sizeGB: 0.0792,
+        sizeLabel: "79.2 MB",
+        quantization: "4-bit",
+        focus: String(localized: "Lightweight"),
+        provider: "Hugging Face / MLX Community",
+        summary: String(localized: "A small English model for short prompts and simple chat."),
+        license: String(localized: "Apache 2.0. The MLX Community conversion is based on SmolLM."),
+        colors: [.mint, .teal],
+        configuration: LLMRegistry.smolLM_135M_4bit,
+        contextWindowTokens: 2048
+    )
+
+    static let qwen25Small = LocalModel(
+        id: "qwen25-05b",
+        name: "Qwen 2.5 0.5B Instruct",
+        shortName: "Qwen 2.5 0.5B",
+        initials: "Q2",
+        sizeGB: 0.290,
+        sizeLabel: "290 MB",
+        quantization: "4-bit",
+        focus: String(localized: "Fast"),
+        provider: "Qwen / MLX Community",
+        summary: String(localized: "A compact instruction-tuned model for quick questions and simple writing tasks."),
+        license: String(localized: "Apache 2.0. The MLX Community conversion is based on Qwen2.5."),
+        colors: [.blue, .indigo],
+        configuration: ModelConfiguration(id: "mlx-community/Qwen2.5-0.5B-Instruct-4bit"),
+        contextWindowTokens: 32768
+    )
+
+    static let qwen25 = LocalModel(
+        id: "qwen25-15b",
+        name: "Qwen 2.5 1.5B Instruct",
+        shortName: "Qwen 2.5 1.5B",
+        initials: "Q2",
+        sizeGB: 0.881,
+        sizeLabel: "881 MB",
+        quantization: "4-bit",
+        focus: String(localized: "General purpose"),
+        provider: "Qwen / MLX Community",
+        summary: String(localized: "An instruction-tuned model for conversation, writing, and structured outputs."),
+        license: String(localized: "Apache 2.0. The MLX Community conversion is based on Qwen2.5."),
+        colors: [.indigo, .cyan],
+        configuration: LLMRegistry.qwen2_5_1_5b,
+        contextWindowTokens: 32768
+    )
+
+    static let qwen3Large = LocalModel(
+        id: "qwen3-17b",
+        name: "Qwen 3 1.7B",
+        shortName: "Qwen 3 1.7B",
+        initials: "Q3",
+        sizeGB: 0.984,
+        sizeLabel: "984 MB",
+        quantization: "4-bit",
+        focus: String(localized: "Reasoning"),
+        provider: "Qwen / MLX Community",
+        summary: String(localized: "A multilingual model for chat, coding, and reasoning tasks."),
+        license: String(localized: "Apache 2.0. The MLX Community conversion is based on Qwen3."),
+        colors: [.purple, .pink],
+        configuration: LLMRegistry.qwen3_1_7b_4bit,
+        contextWindowTokens: 32768
+    )
+
+    static let catalog = [qwen, gemma, llama, smolLM, qwen25Small, qwen25, qwen3Large]
 }

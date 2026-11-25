@@ -62,12 +62,20 @@ struct SettingsView: View {
                         Label("Contact Us", systemImage: "envelope")
                     }
 
-                    Button("Replay introduction", systemImage: "play.circle", action: showOnboarding)
-
                     Link(destination: URL(string: "https://mlx-swiftui-privacy-policy.vercel.app/")!) {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
                 }
+
+                #if DEBUG
+                Section {
+                    DisclosureGroup {
+                        Button("Replay introduction", systemImage: "play.circle", action: showOnboarding)
+                    } label: {
+                        Label("Debug", systemImage: "ladybug")
+                    }
+                }
+                #endif
 
                 #if DEBUG && targetEnvironment(simulator)
                 SimulatorTestingSection()
