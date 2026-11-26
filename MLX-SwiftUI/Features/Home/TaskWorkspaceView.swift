@@ -806,18 +806,16 @@ private extension TaskWorkspaceView {
                 let request = ChatRequest(
                     prompt: prompt(for: source),
                     contextWindowTokens: appState.activeModel.contextWindowTokens,
-                    enablesThinking: input.action != .extract
+                    enablesThinking: false
                 )
                 var output = ""
                 for try await event in backend.streamResponse(for: request) {
                     try Task.checkCancellation()
                     if case .chunk(let chunk) = event { output += chunk }
                 }
-                if input.action == .extract {
-                    output = ChatResponseSanitizer.extractingFinalAnswer(from: output)
-                }
-                guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw WorkspaceError.emptyResult }
-                result = output
+                let finalAnswer = ChatResponseSanitizer.extractingFinalAnswer(from: output)
+                guard !finalAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw WorkspaceError.emptyResult }
+                result = finalAnswer
             } catch is CancellationError {
                 // The input stays available when generation is stopped.
             } catch {
