@@ -483,11 +483,8 @@ struct ModelsView: View {
             if appState.downloadingModelID == model.id {
                 let progress = appState.downloadProgress
                 ProgressView(value: progress) {
-                    if progress >= 1 {
-                        Text("Preparing model…")
-                    } else {
-                        Text("Downloading…")
-                    }
+                    let status = progress >= 1 ? String(localized: "Preparing model…") : String(localized: "Downloading…")
+                    Text(status)
                 } currentValueLabel: {
                     Text(min(progress, progress >= 1 ? 1 : 0.99), format: .percent.precision(.fractionLength(0)))
                         .monospacedDigit()
