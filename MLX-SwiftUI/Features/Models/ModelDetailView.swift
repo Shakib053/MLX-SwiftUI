@@ -20,6 +20,13 @@ struct ModelDetailView: View {
 
                 Text(model.summary)
 
+                if model.hasHigherRAMUse {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ModelMemoryBadge(model: model)
+                        ModelMemoryNote()
+                    }
+                }
+
                 ViewThatFits(in: .horizontal) {
                     HStack { modelStats }
                     VStack(spacing: 8) { modelStats }

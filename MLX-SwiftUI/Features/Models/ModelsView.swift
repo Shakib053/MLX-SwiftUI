@@ -398,6 +398,7 @@ struct ModelsView: View {
                     Text("\(model.sizeLabel) · \(model.quantization) · \(model.focus)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    ModelMemoryBadge(model: model)
                 }
             }
             inlineDetails(model)
@@ -430,6 +431,7 @@ struct ModelsView: View {
                     Text("\(model.sizeLabel) · \(model.quantization) · \(model.focus)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    ModelMemoryBadge(model: model)
                 }
                 Spacer(minLength: 0)
                 if model.id != appState.activeModelID || appState.prefersFoundationModel {
@@ -469,14 +471,9 @@ struct ModelsView: View {
                     Text("\(model.sizeLabel) · \(model.focus)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    ModelMemoryBadge(model: model)
                 }
                 Spacer()
-                Text("Fits")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.green)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.green.opacity(0.16), in: Capsule())
             }
 
             inlineDetails(model)
@@ -492,11 +489,10 @@ struct ModelsView: View {
                 .tint(accent)
             }
 
-            HStack {
-                detailsButton(model)
-                Spacer()
+            HStack(spacing: 12) {
+                detailsButton(model, fillsWidth: true)
                 if appState.downloadingModelID != model.id {
-                    Button("Download", systemImage: "arrow.down") {
+                    ModelDownloadButton {
                         Task {
                             await appState.download(model)
                             if appState.downloadedModelIDs.contains(model.id) {
@@ -504,7 +500,6 @@ struct ModelsView: View {
                             }
                         }
                     }
-                    .appPrimaryButton()
                     .disabled(appState.downloadingModelID != nil)
                 }
             }
@@ -517,16 +512,24 @@ struct ModelsView: View {
     @ViewBuilder
     private func inlineDetails(_ model: LocalModel) -> some View {
         if expandedModelID == model.id {
-            Text(model.summary)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(model.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if model.hasHigherRAMUse {
+                    ModelMemoryNote()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func detailsButton(_ model: LocalModel) -> some View {
-        Button(expandedModelID == model.id ? String(localized: "Hide details") : String(localized: "Details")) {
+    private func detailsButton(_ model: LocalModel, fillsWidth: Bool = false) -> some View {
+        Button {
             expandedModelID = expandedModelID == model.id ? nil : model.id
+        } label: {
+            Text(expandedModelID == model.id ? String(localized: "Hide details") : String(localized: "Details"))
+                .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: fillsWidth ? 44 : nil)
         }
         .buttonStyle(.borderless)
         .font(.subheadline.weight(.semibold))

@@ -16,6 +16,52 @@ struct ModelMark: View {
     }
 }
 
+struct ModelMemoryBadge: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let model: LocalModel
+
+    var body: some View {
+        let isDark = colorScheme == .dark
+        let foreground = isDark ? Color(red: 1, green: 0.75, blue: 0.43) : Color(red: 0.48, green: 0.22, blue: 0.04)
+        let background = isDark ? Color(red: 0.25, green: 0.14, blue: 0.06) : Color(red: 1, green: 0.92, blue: 0.82)
+
+        if model.hasHigherRAMUse {
+            Text("Higher RAM use")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(foreground)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(background, in: Capsule())
+        }
+    }
+}
+
+struct ModelMemoryNote: View {
+    var body: some View {
+        Text("This model can use more memory, especially in longer chats, and may run slowly on older iPhones.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+}
+
+struct ModelDownloadButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down")
+                    .accessibilityHidden(true)
+                Text("Download")
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .appPrimaryButton()
+    }
+}
+
 struct ModelStat: View {
     let icon: String
     let label: LocalizedStringKey

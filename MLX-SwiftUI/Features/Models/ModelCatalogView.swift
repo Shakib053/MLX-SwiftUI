@@ -41,11 +41,14 @@ struct ModelCatalogView: View {
                     Text("\(model.sizeLabel) · \(model.quantization) · \(model.focus)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    ModelMemoryBadge(model: model)
                 }
-                Spacer()
-                Text(appState.downloadedModelIDs.contains(model.id) ? String(localized: "Downloaded") : String(localized: "Compatible"))
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.green)
+                Spacer(minLength: 0)
+                if appState.downloadedModelIDs.contains(model.id) {
+                    Text("Downloaded")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.green)
+                }
             }
             if appState.downloadingModelID == model.id {
                 ProgressView(value: appState.downloadProgress) {
@@ -56,18 +59,17 @@ struct ModelCatalogView: View {
                 }
                 .tint(AppPalette.accent)
             } else {
-                HStack {
+                HStack(spacing: 12) {
                     NavigationLink {
                         ModelDetailView(model: model)
                             .environment(appState)
                     } label: {
                         Text("Details")
+                            .frame(maxWidth: .infinity, minHeight: 32)
                     }
                     .buttonStyle(.bordered)
-                    Spacer()
                     if !appState.downloadedModelIDs.contains(model.id) {
-                        Button("Download", systemImage: "arrow.down") { beginDownload(model) }
-                            .appPrimaryButton()
+                        ModelDownloadButton { beginDownload(model) }
                             .disabled(appState.downloadingModelID != nil)
                     }
                 }
