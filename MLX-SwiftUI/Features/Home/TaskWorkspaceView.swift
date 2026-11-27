@@ -42,6 +42,34 @@ enum WorkspaceSourceKind: String, Hashable {
     case text, image, document
 }
 
+private enum ExtractionCategory: String, CaseIterable {
+    case names = "Names"
+    case dates = "Dates and deadlines"
+    case amounts = "Amounts"
+    case actionItems = "Action items"
+    case keyPoints = "Key points"
+
+    var instruction: String {
+        switch self {
+        case .names: "List the people named in the source. Copy each name as written."
+        case .dates: "Copy dates, times, and relative deadlines as written. Say what each one is for."
+        case .amounts: "Copy each amount with its currency or unit. Say what each amount refers to."
+        case .actionItems: "List the tasks and next steps. Include who is responsible and when each task is due if the source says."
+        case .keyPoints: "List the main facts and decisions in short bullets."
+        }
+    }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .names: "Names"
+        case .dates: "Dates and deadlines"
+        case .amounts: "Amounts"
+        case .actionItems: "Action items"
+        case .keyPoints: "Key points"
+        }
+    }
+}
+
 private struct RewriteOptionsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -146,6 +174,7 @@ struct TaskWorkspaceView: View {
     @State private var question = ""
     @State private var tone = "Professional"
     @State private var detail = "Short"
+    @State private var extractionCategories = Set(ExtractionCategory.allCases)
     @State private var result = ""
     @State private var errorMessage: String?
     @State private var isWorking = false
@@ -282,6 +311,8 @@ private extension TaskWorkspaceView {
                     wordCount
                 }
 
+                extractionOptions
+
                 Button(action: run) {
                     Label("Extract", systemImage: "sparkles")
                         .font(.headline)
@@ -290,13 +321,6 @@ private extension TaskWorkspaceView {
                 }
                 .appPrimaryButton()
                 .disabled(!canRun)
-
-                Label("Extract names, dates, key points, and more.", systemImage: "lightbulb")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(AppPalette.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
 
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 #if !targetEnvironment(simulator)
@@ -311,6 +335,49 @@ private extension TaskWorkspaceView {
         }
         .navigationTitle("Extract")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var extractionOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("What to extract")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            VStack(spacing: 0) {
+                ForEach(ExtractionCategory.allCases, id: \.self) { category in
+                    if category != ExtractionCategory.allCases.first {
+                        Divider().padding(.horizontal, 14)
+                    }
+
+                    let isSelected = extractionCategories.contains(category)
+                    Button {
+                        if isSelected {
+                            extractionCategories.remove(category)
+                        } else {
+                            extractionCategories.insert(category)
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(category.title)
+                                .foregroundStyle(.primary)
+                            Spacer(minLength: 0)
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .font(.title3)
+                                .foregroundStyle(isSelected ? AppPalette.accent : Color.secondary)
+                                .contentTransition(.symbolEffect(.replace))
+                                .accessibilityHidden(true)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 46)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+            }
+            .appCard(cornerRadius: 16)
+        }
     }
 
     private var summarizeView: some View {
@@ -434,6 +501,7 @@ private extension TaskWorkspaceView {
     private var canRun: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !isImporting && appState.hasUsableDefaultModel
+            && (input.action != .extract || !extractionCategories.isEmpty)
     }
 
     private var sourceTextHeading: some View {
@@ -785,7 +853,8 @@ private extension TaskWorkspaceView {
 
     private func run() {
         let source = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !source.isEmpty else { return }
+        guard !source.isEmpty, input.action != .extract || !extractionCategories.isEmpty else { return }
+        let requestPrompt = prompt(for: source)
         errorMessage = nil
         isWorking = true
         task = Task { @MainActor in
@@ -804,7 +873,7 @@ private extension TaskWorkspaceView {
                     #endif
                 }
                 let request = ChatRequest(
-                    prompt: prompt(for: source),
+                    prompt: requestPrompt,
                     contextWindowTokens: appState.activeModel.contextWindowTokens,
                     enablesThinking: false
                 )
@@ -830,7 +899,25 @@ private extension TaskWorkspaceView {
         switch input.action {
         case .summarize: instruction = "Summarize the essential points. Length: \(detail)."
         case .rewrite: instruction = "Rewrite clearly, preserving meaning. Tone: \(tone). Length: \(detail)."
-        case .extract: instruction = "Extract dates, amounts, people, and action items. Mark missing details as Not stated."
+        case .extract:
+            let categories = ExtractionCategory.allCases
+                .filter { extractionCategories.contains($0) }
+                .map { "- \($0.rawValue): \($0.instruction)" }
+                .joined(separator: "\n")
+            return """
+                Read the source below and extract the actual details for the requested categories.
+                Keep names, dates, amounts, and units as written. Use only information in the source.
+
+                SOURCE:
+                \(source)
+                END OF SOURCE
+
+                Requested categories:
+                \(categories)
+
+                Use the requested headings in order. Under each heading, list the matching details.
+                If there are no matches for a category, write "None found" for that category.
+                """
         case .understandImage: instruction = "Explain the visible text recognized in this image. Do not claim to see the image itself."
         case .analyzeDocument:
             instruction = question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
