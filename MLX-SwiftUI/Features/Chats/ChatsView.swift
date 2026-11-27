@@ -7,14 +7,18 @@ struct ChatsView: View {
     @Query(sort: \Conversation.updatedAt, order: .reverse) private var conversations: [Conversation]
     @Query(sort: \SavedTaskResult.createdAt, order: .reverse) private var savedResults: [SavedTaskResult]
     @State private var searchText = ""
+    @State private var isSearchActive = false
     @State private var conversationToDelete: Conversation?
     @State private var persistenceError: String?
     @State private var resultToDelete: SavedTaskResult?
     @State private var startsNewChat = false
     @FocusState private var isSearchFocused: Bool
 
+    private var query: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var filteredResults: [SavedTaskResult] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return savedResults }
         return savedResults.filter {
             $0.title.localizedCaseInsensitiveContains(query) ||
@@ -24,7 +28,6 @@ struct ChatsView: View {
     }
 
     private var filteredConversations: [Conversation] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return conversations }
         return conversations.filter { conversation in
             conversation.title.localizedCaseInsensitiveContains(query) ||
@@ -46,25 +49,32 @@ struct ChatsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    searchField
-
-                    if !conversations.isEmpty || !savedResults.isEmpty {
-                        Label("Saved on this device", systemImage: "iphone")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    if filteredConversations.isEmpty && filteredResults.isEmpty {
+                    if !query.isEmpty {
+                        if filteredConversations.isEmpty && filteredResults.isEmpty {
+                            ContentUnavailableView {
+                                Label("No Results", systemImage: "magnifyingglass")
+                            } description: {
+                                Text("Check the spelling or try a new search.")
+                            }
+                            .frame(minHeight: 240)
+                        } else {
+                            VStack(alignment: .leading, spacing: 12) {
+                                sectionHeader("RESULTS")
+                                if !filteredResults.isEmpty {
+                                    savedResultSection
+                                }
+                                if !filteredConversations.isEmpty {
+                                    conversationList(filteredConversations)
+                                }
+                            }
+                        }
+                    } else if conversations.isEmpty && savedResults.isEmpty {
                         emptyState
-                            .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
                     } else {
-                        if !filteredResults.isEmpty {
+                        if !savedResults.isEmpty {
                             savedResultSection
-                                .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
                         }
                         conversationSections
-                            .simultaneousGesture(TapGesture().onEnded { isSearchFocused = false })
                     }
                 }
                 .padding(.horizontal, 20)
@@ -73,28 +83,39 @@ struct ChatsView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                searchField
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: 650)
+                    .frame(maxWidth: .infinity)
+                    .background(AppPalette.background)
+            }
             .background {
                 AppBackground()
                     .onTapGesture { isSearchFocused = false }
             }
             .navigationTitle("History")
-            .mainTabBar()
-            .navigationBarTitleDisplayMode(.inline)
+            .mainTabBar(keepsPositionDuringKeyboard: true)
+            .navigationBarTitleDisplayMode(isSearchActive ? .inline : .large)
+            .onChange(of: isSearchFocused) { _, focused in
+                if focused {
+                    withAnimation(.easeInOut(duration: 0.2)) { isSearchActive = true }
+                }
+            }
             .onChange(of: appState.selectedTab) { _, selectedTab in
-                if selectedTab != .history { isSearchFocused = false }
+                if selectedTab != .history { cancelSearch() }
             }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        startNewChat()
-                    } label: {
-                        Image(systemName: "plus")
+                if !isSearchActive {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            startNewChat()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Start new conversation")
                     }
-                    .accessibilityLabel("Start new conversation")
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { isSearchFocused = false }
                 }
             }
             .navigationDestination(isPresented: $startsNewChat) {
@@ -140,7 +161,12 @@ struct ChatsView: View {
 
     private var savedResultSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("SAVED RESULTS")
+            if query.isEmpty {
+                sectionHeader("SAVED RESULTS")
+                if recentConversations.isEmpty && pinnedConversations.isEmpty {
+                    storageNote
+                }
+            }
             ForEach(filteredResults) { item in
                 NavigationLink {
                     SavedTaskResultView(item: item)
@@ -148,7 +174,15 @@ struct ChatsView: View {
                     HStack {
                         Image(systemName: "bookmark")
                         VStack(alignment: .leading) {
-                            Text(item.title).font(.headline)
+                            Text(historyMatch(item.title, query: query)).font(.headline)
+                            if !query.isEmpty {
+                                let excerpt = item.resultText.localizedCaseInsensitiveContains(query)
+                                    ? item.resultText : item.sourceText
+                                if excerpt.localizedCaseInsensitiveContains(query) {
+                                    Text(historyMatch(excerpt, query: query, isPreview: true))
+                                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                            }
                             Text(WorkspaceAction(rawValue: item.actionRawValue)?.title ?? String(localized: "Result"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
@@ -170,14 +204,22 @@ struct ChatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             if !pinnedConversations.isEmpty {
                 sectionHeader("PINNED")
+                if recentConversations.isEmpty { storageNote }
                 conversationList(pinnedConversations)
             }
 
             if !recentConversations.isEmpty {
                 sectionHeader("RECENT", showsClear: true)
+                storageNote
                 conversationList(recentConversations)
             }
         }
+    }
+
+    private var storageNote: some View {
+        Label("Saved on this device", systemImage: "lock.fill")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     private func sectionHeader(_ title: LocalizedStringKey, showsClear: Bool = false) -> some View {
@@ -207,7 +249,7 @@ struct ChatsView: View {
                 NavigationLink {
                     ChatView(conversationID: conversation.id)
                 } label: {
-                    ConversationRow(conversation: conversation)
+                    ConversationRow(conversation: conversation, query: query)
                 }
                 .buttonStyle(.plain)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -249,30 +291,53 @@ struct ChatsView: View {
 
     private var searchField: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search history", text: $searchText)
-                .focused($isSearchFocused)
-                .textInputAutocapitalization(.never)
-                .submitLabel(.search)
-                .onSubmit { isSearchFocused = false }
-            if !searchText.isEmpty {
-                Button { searchText = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: 44, minHeight: 44)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                TextField("Search", text: $searchText)
+                    .accessibilityLabel("Search history")
+                    .focused($isSearchFocused)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.search)
+                    .onSubmit { isSearchFocused = false }
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                        isSearchFocused = true
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear search")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, searchText.isEmpty ? 12 : 0)
+            .frame(height: 44)
+            .background(AppPalette.card, in: RoundedRectangle(cornerRadius: 13))
+            .overlay {
+                RoundedRectangle(cornerRadius: 13)
+                    .stroke(AppPalette.border)
+                    .allowsHitTesting(false)
+            }
+
+            if isSearchActive {
+                Button("Cancel", action: cancelSearch)
+                    .foregroundStyle(AppPalette.accent)
+                    .frame(minHeight: 44)
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 44)
-        .background(AppPalette.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(AppPalette.border)
-                .allowsHitTesting(false)
+    }
+
+    private func cancelSearch() {
+        isSearchFocused = false
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isSearchActive = false
+            searchText = ""
         }
     }
 
@@ -288,11 +353,9 @@ struct ChatsView: View {
             }
 
             VStack(spacing: 7) {
-                Text(searchText.isEmpty ? String(localized: "Nothing saved yet") : String(localized: "No Results"))
+                Text("Nothing saved yet")
                     .font(.title2.weight(.bold))
-                Text(searchText.isEmpty
-                     ? String(localized: "Saved results and conversations will appear here.")
-                     : String(localized: "There are no saved results or conversations matching “\(searchText)”."))
+                Text("Saved results and conversations will appear here.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -343,6 +406,7 @@ struct ChatsView: View {
 
 private struct ConversationRow: View {
     let conversation: Conversation
+    let query: String
 
     var body: some View {
         HStack(spacing: 12) {
@@ -354,7 +418,7 @@ private struct ConversationRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(conversation.title)
+                    Text(historyMatch(conversation.title, query: query))
                         .font(.headline)
                         .lineLimit(1)
                     Spacer()
@@ -363,9 +427,7 @@ private struct ConversationRow: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text(conversation.latestMessage?.text.isEmpty == false
-                     ? conversation.latestMessage?.text ?? ""
-                     : String(localized: "No response yet"))
+                Text(historyMatch(preview, query: query, isPreview: true))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -380,6 +442,16 @@ private struct ConversationRow: View {
         .contentShape(Rectangle())
     }
 
+    private var preview: String {
+        if !query.isEmpty,
+           let match = conversation.messages.filter({ $0.text.localizedCaseInsensitiveContains(query) })
+               .max(by: { $0.createdAt < $1.createdAt }) {
+            return match.text
+        }
+        let latest = conversation.latestMessage?.text ?? ""
+        return latest.isEmpty ? String(localized: "No response yet") : latest
+    }
+
     private var initials: String {
         let words = conversation.title.split(separator: " ")
         return String(words.prefix(2).compactMap(\.first)).uppercased()
@@ -390,4 +462,18 @@ private struct ConversationRow: View {
     }
 
     private var avatarColor: Color { AppPalette.accentFill }
+}
+
+private func historyMatch(_ text: String, query: String, isPreview: Bool = false) -> AttributedString {
+    guard !query.isEmpty, let match = text.range(of: query, options: .caseInsensitive, locale: .current) else {
+        return AttributedString(text)
+    }
+
+    let prefix = text[..<match.lowerBound]
+    var result = AttributedString(isPreview && prefix.count > 16 ? "…" + prefix.suffix(16) : String(prefix))
+    var highlight = AttributedString(text[match])
+    highlight.backgroundColor = Color.yellow.opacity(0.45)
+    result += highlight
+    result += AttributedString(text[match.upperBound...])
+    return result
 }

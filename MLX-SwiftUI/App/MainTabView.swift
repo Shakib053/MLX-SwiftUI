@@ -29,11 +29,27 @@ struct MainTabView: View {
 }
 
 extension View {
-    func mainTabBar() -> some View {
-        toolbar(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                MainTabBar()
+    @ViewBuilder
+    func mainTabBar(keepsPositionDuringKeyboard: Bool = false) -> some View {
+        if keepsPositionDuringKeyboard {
+            ZStack(alignment: .bottom) {
+                self.safeAreaInset(edge: .bottom, spacing: 0) {
+                    MainTabBar().hidden().accessibilityHidden(true)
+                }
+
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    MainTabBar()
+                }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
+            .toolbar(.hidden, for: .tabBar)
+        } else {
+            toolbar(.hidden, for: .tabBar)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    MainTabBar()
+                }
+        }
     }
 }
 
