@@ -51,7 +51,7 @@ struct SettingsView: View {
                     NavigationLink {
                         AboutView()
                     } label: {
-                        Label("About MLX-SwiftUI", systemImage: "info.circle")
+                        Label("About Private AI Model Hub", systemImage: "info.circle")
                     }
                 }
 

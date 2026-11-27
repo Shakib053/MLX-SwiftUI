@@ -12,18 +12,18 @@ Instructions for Codex and other coding agents working in this repository.
 
 ## Project Snapshot
 
-This is an iOS 26 SwiftUI app for local-first LLM chat. It can use Apple Foundation Models when available, runs MLX Swift models on physical devices, and uses a Hugging Face hosted fallback only on Simulator. Conversations and saved task results are persisted with SwiftData. The app target lives under `MLX-SwiftUI/`.
+This is an iOS 26 SwiftUI app for local-first LLM chat. It can use Apple Foundation Models when available, runs MLX Swift models on physical devices, and uses a Hugging Face hosted fallback only on Simulator. Conversations and saved task results are persisted with SwiftData. The app target lives under `Private AI Model Hub/`.
 
 Important areas:
 
-- `MLX-SwiftUI/App`: app entry point, root state, tabs, and top-level navigation.
-- `MLX-SwiftUI/Core`: shared domain and MLX model loading.
-- `MLX-SwiftUI/Features/Chats`: chat domain, persistence, safety, backend selection, and UI.
-- `MLX-SwiftUI/Features/Models`: model catalog, model detail, and model selection UI.
-- `MLX-SwiftUI/Features/Home`: task workspace and result extraction.
-- `MLX-SwiftUI/Features/Onboarding`: first-launch experience.
-- `MLX-SwiftUI/Features/Settings`: settings, licenses, feedback, and appearance controls.
-- `MLX-SwiftUI/Shared`: reusable UI primitives and shared data.
+- `Private AI Model Hub/App`: app entry point, root state, tabs, and top-level navigation.
+- `Private AI Model Hub/Core`: shared domain and MLX model loading.
+- `Private AI Model Hub/Features/Chats`: chat domain, persistence, safety, backend selection, and UI.
+- `Private AI Model Hub/Features/Models`: model catalog, model detail, and model selection UI.
+- `Private AI Model Hub/Features/Home`: task workspace and result extraction.
+- `Private AI Model Hub/Features/Onboarding`: first-launch experience.
+- `Private AI Model Hub/Features/Settings`: settings, licenses, feedback, and appearance controls.
+- `Private AI Model Hub/Shared`: reusable UI primitives and shared data.
 
 ### State and ownership
 
@@ -133,7 +133,7 @@ Run SwiftLint locally only when the user explicitly asks for it, or when diagnos
 Primary build command:
 
 ```sh
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project MLX-SwiftUI.xcodeproj -scheme MLX-SwiftUI -destination 'generic/platform=iOS' -configuration Debug -derivedDataPath /tmp/MLX-SwiftUI-device-derived CODE_SIGNING_ALLOWED=NO build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project "Private AI Model Hub.xcodeproj" -scheme "Private AI Model Hub" -destination 'generic/platform=iOS' -configuration Debug -derivedDataPath /tmp/Private-AI-Model-Hub-device-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
 The project expects a local `Secrets.xcconfig`. For builds that do not exercise the hosted fallback, a temporary placeholder is sufficient; do not commit it. For simulator fallback testing, use a valid `HF_TOKEN` as described in `README.md`.
@@ -141,14 +141,14 @@ The project expects a local `Secrets.xcconfig`. For builds that do not exercise 
 Simulator build command, matching CI:
 
 ```sh
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project MLX-SwiftUI.xcodeproj -scheme MLX-SwiftUI -configuration Debug -destination 'generic/platform=iOS Simulator' -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project "Private AI Model Hub.xcodeproj" -scheme "Private AI Model Hub" -configuration Debug -destination 'generic/platform=iOS Simulator' -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
 ```
 
 For focused compiler output:
 
 ```sh
 set -o pipefail
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project MLX-SwiftUI.xcodeproj -scheme MLX-SwiftUI -destination 'generic/platform=iOS' -configuration Debug -derivedDataPath /tmp/MLX-SwiftUI-device-derived CODE_SIGNING_ALLOWED=NO build 2>&1 | rg -C 5 'error:|fatal error:|BUILD (SUCCEEDED|FAILED)'
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project "Private AI Model Hub.xcodeproj" -scheme "Private AI Model Hub" -destination 'generic/platform=iOS' -configuration Debug -derivedDataPath /tmp/Private-AI-Model-Hub-device-derived CODE_SIGNING_ALLOWED=NO build 2>&1 | rg -C 5 'error:|fatal error:|BUILD (SUCCEEDED|FAILED)'
 ```
 
 Use simulator builds when checking the hosted fallback. In `DEBUG` simulator builds, the normal and hosted-only download scenarios use the hosted backend; the other simulated scenarios can exercise local-load states. Use physical-device generic builds when checking MLX/device compatibility.

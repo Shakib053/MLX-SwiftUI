@@ -1,10 +1,10 @@
-# MLX-SwiftUI
+# Private AI Model Hub
 
 An on-device AI workspace for iPhone and iPad, built with SwiftUI, Apple Foundation Models, and MLX Swift.
 
 ## Overview
 
-MLX-SwiftUI brings chat, text and document tasks, and saved results into one iOS app. On physical devices, it uses Apple Foundation Models when available or a downloaded MLX model. Conversations and saved results are stored on the device.
+Private AI Model Hub brings chat, text and document tasks, and saved results into one iOS app. On physical devices, it uses Apple Foundation Models when available or a downloaded MLX model. Conversations and saved results are stored on the device.
 
 ### Screenshots and demo
 
@@ -28,10 +28,10 @@ Replace these placeholders with screenshots and a video recorded from the app. K
 ## Project Structure
 
 ```text
-MLX-SwiftUI/
-└── MLX-SwiftUI/
+Private AI Model Hub/
+└── Private AI Model Hub/
     ├── App
-    │   ├── MLXSwiftUIApp.swift
+    │   ├── PrivateAIModelHubApp.swift
     │   ├── ContentView.swift
     │   ├── MainTabView.swift
     │   ├── AppState.swift
@@ -61,7 +61,7 @@ MLX-SwiftUI/
 
 ## Architecture
 
-- `MLXSwiftUIApp` defines the app entry point and launches the main SwiftUI scene.
+- `PrivateAIModelHubApp` defines the app entry point and launches the main SwiftUI scene.
 - `ContentView` owns application state, appearance, and onboarding presentation.
 - `MainTabView` owns type-safe navigation between Home, Models, History, and Settings.
 - Each folder under `Features` owns its screens, state, and feature-specific components.
@@ -78,9 +78,9 @@ MLX-SwiftUI/
 
 ### Run the app
 
-1. Open `MLX-SwiftUI.xcodeproj` in Xcode.
+1. Open `Private AI Model Hub.xcodeproj` in Xcode.
 2. Allow Swift Package Manager to resolve dependencies.
-3. Select the `MLX-SwiftUI` scheme and an iPhone, iPad, or simulator destination.
+3. Select the `Private AI Model Hub` scheme and an iPhone, iPad, or simulator destination.
 4. For a physical device, configure your development team in Xcode if signing is required, then build and run.
 5. In the app, use Apple Foundation Models when available or download an MLX model from the Models tab. Downloaded models are reused on later launches.
 
@@ -92,8 +92,8 @@ Conversations and saved task results are kept in the app's local storage. MLX mo
 
 ## Localization
 
-The app uses Apple's native String Catalogs. `MLX-SwiftUI/Localizable.xcstrings` contains app text, and `MLX-SwiftUI/InfoPlist.xcstrings` contains the camera permission description. English is the source language. Additional languages can be added in Xcode's catalog editor; no localization package or custom language manager is required.
+The app uses Apple's native String Catalogs. `Private AI Model Hub/Localizable.xcstrings` contains app text, and `Private AI Model Hub/InfoPlist.xcstrings` contains the camera permission description. English is the source language. Additional languages can be added in Xcode's catalog editor; no localization package or custom language manager is required.
 
-To add a language, open each catalog in Xcode, click **+** in the language sidebar, select the language, and enter its translations. Build in Xcode to update extracted strings. For command-line extraction, use `xcodebuild -exportLocalizations -project MLX-SwiftUI.xcodeproj -localizationPath /tmp/MLX-SwiftUI-localizations -exportLanguage en CODE_SIGNING_ALLOWED=NO`. Test using **Product > Scheme > Edit Scheme > Run > Options > App Language**, including the double-length and right-to-left pseudolanguages for layout checks. The app uses the user's system or per-app language preference when translations are available.
+To add a language, open each catalog in Xcode, click **+** in the language sidebar, select the language, and enter its translations. Build in Xcode to update extracted strings. For command-line extraction, use `xcodebuild -exportLocalizations -project "Private AI Model Hub.xcodeproj" -localizationPath /tmp/Private-AI-Model-Hub-localizations -exportLanguage en CODE_SIGNING_ALLOWED=NO`. Test using **Product > Scheme > Edit Scheme > Run > Options > App Language**, including the double-length and right-to-left pseudolanguages for layout checks. The app uses the user's system or per-app language preference when translations are available.
 
 Keep literal SwiftUI labels such as `Text("Settings")` as they are. Use `LocalizedStringKey` for reusable view parameters containing interface labels, and `String(localized: "…")` when app code needs a translated `String`, including status messages and errors. Preserve interpolation so translations can reorder values, and use catalog plural variants for counts. Picker tags, persistence identifiers, model names, and AI prompt instructions remain stable; user content and generated responses are not translated by the catalog. Existing saved conversation titles and task content retain their stored text.

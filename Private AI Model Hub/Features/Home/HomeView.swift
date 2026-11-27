@@ -79,7 +79,7 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        Label("MLX Studio", systemImage: "cpu")
+        Label("Private AI Model Hub", systemImage: "cpu")
             .font(.headline)
             .foregroundStyle(AppPalette.accent)
             .accessibilityAddTraits(.isHeader)

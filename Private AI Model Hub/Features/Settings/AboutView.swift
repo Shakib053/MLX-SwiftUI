@@ -11,7 +11,7 @@ struct AboutView: View {
                         .foregroundStyle(.white)
                         .background(AppPalette.hero, in: RoundedRectangle(cornerRadius: 20))
 
-                    Text("MLX Studio")
+                    Text("Private AI Model Hub")
                         .font(.title2.bold())
 
                     Text("An AI workspace for your iPhone and iPad.")

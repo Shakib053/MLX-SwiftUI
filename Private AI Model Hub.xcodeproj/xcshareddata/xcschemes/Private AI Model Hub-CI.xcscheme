@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0C3B37AD2FD1CF730062165A"
-               BuildableName = "MLX-SwiftUI.app"
-               BlueprintName = "MLX-SwiftUI"
-               ReferencedContainer = "container:MLX-SwiftUI.xcodeproj">
+               BuildableName = "Private AI Model Hub.app"
+               BlueprintName = "Private AI Model Hub"
+               ReferencedContainer = "container:Private AI Model Hub.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0C3B37AD2FD1CF730062165A"
-            BuildableName = "MLX-SwiftUI.app"
-            BlueprintName = "MLX-SwiftUI"
-            ReferencedContainer = "container:MLX-SwiftUI.xcodeproj">
+            BuildableName = "Private AI Model Hub.app"
+            BlueprintName = "Private AI Model Hub"
+            ReferencedContainer = "container:Private AI Model Hub.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0C3B37AD2FD1CF730062165A"
-            BuildableName = "MLX-SwiftUI.app"
-            BlueprintName = "MLX-SwiftUI"
-            ReferencedContainer = "container:MLX-SwiftUI.xcodeproj">
+            BuildableName = "Private AI Model Hub.app"
+            BlueprintName = "Private AI Model Hub"
+            ReferencedContainer = "container:Private AI Model Hub.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

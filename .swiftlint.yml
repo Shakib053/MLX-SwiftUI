@@ -1,7 +1,7 @@
 # .swiftlint.yml
 
 included:
-  - MLX-SwiftUI
+  - Private AI Model Hub
 
 strict: false
 

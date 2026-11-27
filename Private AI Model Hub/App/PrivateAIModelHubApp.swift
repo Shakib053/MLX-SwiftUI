@@ -1,6 +1,6 @@
 //
-//  MLXSwiftUIApp.swift
-//  MLX-SwiftUI
+//  PrivateAIModelHubApp.swift
+//  Private AI Model Hub
 //
 //  Created by Kazi Tanjim Shakib on 4/6/26.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct MLXSwiftUIApp: App {
+struct PrivateAIModelHubApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -1,6 +1,6 @@
 //
 //  ChatViewModel.swift
-//  MLX-SwiftUI
+//  Private AI Model Hub
 //
 //  Created by Kazi Tanjim Shakib on 4/6/26.
 //

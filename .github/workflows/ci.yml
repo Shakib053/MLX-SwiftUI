@@ -35,11 +35,11 @@ jobs:
         run: |
           echo "HF_TOKEN = ci-placeholder" > Secrets.xcconfig
 
-      - name: Build MLX-SwiftUI
+      - name: Build Private AI Model Hub
         run: |
           xcodebuild \
-            -project MLX-SwiftUI.xcodeproj \
-            -scheme MLX-SwiftUI \
+            -project "Private AI Model Hub.xcodeproj" \
+            -scheme "Private AI Model Hub" \
             -configuration Debug \
             -destination '${{ matrix.destination }}' \
             -skipMacroValidation \
