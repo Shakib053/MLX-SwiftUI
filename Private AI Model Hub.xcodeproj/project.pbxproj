@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0C56506D300152A00079AABB /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 0C56506C300152A00079AABB /* README.md */; };
+		0CB5061C30BAA06F00EA7500 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0CB5061B30BAA06F00EA7500 /* PrivacyInfo.xcprivacy */; };
 		4D0C7B9A3C1E4D2C8A0F0001 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0001 /* MLXLLM */; };
 		4D0C7B9A3C1E4D2C8A0F0002 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0002 /* MLXLMCommon */; };
 		4D0C7B9A3C1E4D2C8A0F0003 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 4D0C7B993C1E4D2C8A0F0003 /* MLXHuggingFace */; };
@@ -19,6 +20,7 @@
 		0C3B37AE2FD1CF730062165A /* Private AI Model Hub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Private AI Model Hub.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C56506C300152A00079AABB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = .swiftlint.yml; sourceTree = "<group>"; };
+		0CB5061B30BAA06F00EA7500 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8F0D2AA930168DDF00FD0002 /* Private AI Model Hub/Shared/AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Private AI Model Hub/Shared/AppLogger.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -67,6 +69,7 @@
 		0C3B37A52FD1CF730062165A = {
 			isa = PBXGroup;
 			children = (
+				0CB5061B30BAA06F00EA7500 /* PrivacyInfo.xcprivacy */,
 				0C5E649D30113C9B00EF2A32 /* .swiftlint.yml */,
 				0CAA868E3007F8DE003D8F7F /* .github */,
 				0C56506C300152A00079AABB /* README.md */,
@@ -160,6 +163,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0CB5061C30BAA06F00EA7500 /* PrivacyInfo.xcprivacy in Resources */,
 				0C56506D300152A00079AABB /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
