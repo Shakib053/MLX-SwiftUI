@@ -38,9 +38,7 @@ struct LocalModel: Identifiable, Equatable {
              "smollm2-360m", "smollm3-3b", "qwen35-08b", "qwen35-2b":
             URL(string: "https://www.apache.org/licenses/LICENSE-2.0")!
         case "gemma": URL(string: "https://ai.google.dev/gemma/terms")!
-        case "exaone4-12b": URL(string: "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B/blob/main/LICENSE")!
         case "lfm25-12b": URL(string: "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct/blob/main/LICENSE")!
-        case "qwen25-3b": URL(string: "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct/blob/main/LICENSE")!
         default: URL(string: "https://www.llama.com/llama3_2/license/")!
         }
     }
@@ -219,23 +217,6 @@ struct LocalModel: Identifiable, Equatable {
         contextWindowTokens: 8192
     )
 
-    static let exaone4 = LocalModel(
-        id: "exaone4-12b",
-        name: "EXAONE 4.0 1.2B",
-        shortName: "EXAONE 4.0 1.2B",
-        initials: "EX",
-        sizeGB: 0.731,
-        sizeLabel: "731 MB",
-        quantization: "4-bit",
-        focus: String(localized: "Reasoning"),
-        provider: "LG AI Research / MLX Community",
-        summary: String(localized: "A compact multilingual model for conversation and reasoning."),
-        license: String(localized: "EXAONE AI Model License Agreement 1.2 – Noncommercial."),
-        colors: [.blue, .cyan],
-        configuration: LLMRegistry.exaone_4_0_1_2b_4bit,
-        contextWindowTokens: 32768
-    )
-
     static let qwen35 = LocalModel(
         id: "qwen35-2b",
         name: "Qwen 3.5 2B",
@@ -251,23 +232,6 @@ struct LocalModel: Identifiable, Equatable {
         colors: [.purple, .pink],
         configuration: ModelConfiguration(id: "mlx-community/Qwen3.5-2B-4bit"),
         contextWindowTokens: 262144
-    )
-
-    static let qwen25Large = LocalModel(
-        id: "qwen25-3b",
-        name: "Qwen 2.5 3B Instruct",
-        shortName: "Qwen 2.5 3B",
-        initials: "Q2",
-        sizeGB: 1.75,
-        sizeLabel: "1.75 GB",
-        quantization: "4-bit",
-        focus: String(localized: "General purpose"),
-        provider: "Qwen / MLX Community",
-        summary: String(localized: "An instruction-tuned model for multilingual chat and structured outputs."),
-        license: String(localized: "Qwen Research License."),
-        colors: [.indigo, .cyan],
-        configuration: ModelConfiguration(id: "mlx-community/Qwen2.5-3B-Instruct-4bit"),
-        contextWindowTokens: 32768
     )
 
     static let smolLM3 = LocalModel(
@@ -306,6 +270,6 @@ struct LocalModel: Identifiable, Equatable {
 
     static let catalog = [
         qwen, gemma, llama, smolLM, qwen25Small, qwen25, qwen3Large,
-        qwen35Small, lfm25, smolLM2, exaone4, qwen35, qwen25Large, smolLM3, llamaLarge
+        qwen35Small, lfm25, smolLM2, qwen35, smolLM3, llamaLarge
     ]
 }
