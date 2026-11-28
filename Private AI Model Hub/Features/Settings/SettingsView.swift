@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
-    let showOnboarding: () -> Void
 
     var body: some View {
         @Bindable var appState = appState
@@ -66,16 +65,6 @@ struct SettingsView: View {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
                 }
-
-                #if DEBUG
-                Section {
-                    DisclosureGroup {
-                        Button("Replay introduction", systemImage: "play.circle", action: showOnboarding)
-                    } label: {
-                        Label("Debug", systemImage: "ladybug")
-                    }
-                }
-                #endif
 
                 #if DEBUG && targetEnvironment(simulator)
                 SimulatorTestingSection()

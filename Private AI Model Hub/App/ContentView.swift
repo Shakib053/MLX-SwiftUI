@@ -5,9 +5,7 @@ struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        MainTabView {
-            hasCompletedOnboarding = false
-        }
+        MainTabView()
         .environment(appState)
         .preferredColorScheme(appState.appearance.colorScheme)
         .fullScreenCover(isPresented: onboardingBinding) {

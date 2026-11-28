@@ -2,7 +2,6 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(AppState.self) private var appState
-    let showOnboarding: () -> Void
 
     var body: some View {
         @Bindable var appState = appState
@@ -21,7 +20,7 @@ struct MainTabView: View {
             }
 
             Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
-                SettingsView(showOnboarding: showOnboarding)
+                SettingsView()
             }
         }
         .tint(AppPalette.accent)

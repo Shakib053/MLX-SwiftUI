@@ -1,11 +1,8 @@
 import SwiftUI
-import UIKit
 
 struct FeedbackView: View {
-    @Environment(AppState.self) private var appState
     @Environment(\.openURL) private var openURL
     @State private var message = ""
-    @State private var includeDeviceDetails = true
     @State private var showMailUnavailable = false
 
     private let supportEmail = "nusratjahan.iosdev@gmail.com"
@@ -41,30 +38,6 @@ struct FeedbackView: View {
                     .padding(12)
                     .appCard(cornerRadius: 16)
                 }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle(isOn: $includeDeviceDetails) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Include device details")
-                                .font(.headline)
-                            Text("Helps us understand issues with a specific device or model.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .tint(AppPalette.accentFill)
-
-                    if includeDeviceDetails {
-                        Text(deviceDetails)
-                            .font(.footnote.monospaced())
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(AppPalette.background, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-                .padding(16)
-                .appCard(cornerRadius: 16)
             }
             .padding(20)
         }
@@ -95,24 +68,13 @@ struct FeedbackView: View {
         }
     }
 
-    private var deviceDetails: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
-        return "Device: \(UIDevice.current.model)\niOS: \(UIDevice.current.systemVersion)\nApp: \(version)\nModel: \(appState.defaultModelName)"
-    }
-
-    private var feedbackText: String {
-        let content = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        let details = includeDeviceDetails ? "\n\n\(deviceDetails)" : ""
-        return "MLX Chat Feedback\n\n\(content)\(details)"
-    }
-
     private var emailURL: URL {
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = supportEmail
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "MLX Chat Feedback"),
-            URLQueryItem(name: "body", value: feedbackText)
+            URLQueryItem(name: "subject", value: "Private AI Model Hub Feedback"),
+            URLQueryItem(name: "body", value: message.trimmingCharacters(in: .whitespacesAndNewlines))
         ]
         return components.url!
     }
